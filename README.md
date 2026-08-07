@@ -76,30 +76,27 @@ inherits the whole toolchain through `PATH`.
 
 ## Templates
 
-Templates marked (new) are ones this repository adds on top of the upstream
-[the-nix-way/dev-templates][upstream] set.
-
 ### Systems and application languages
 
 | Template | Tooling |
 | :--- | :--- |
 | [`c-cpp`](./c-cpp/) | `cmake`, `ninja`, `meson`, `bear`, `gtest`, `lcov`, `doxygen`, `clang-tools`, ... |
-| [`crystal`](./crystal/) (new) | `crystal`, `shards`, `crystalline`, `ameba`, `semgrep`, `trivy` |
+| [`crystal`](./crystal/) | `crystal`, `shards`, `crystalline`, `ameba`, `semgrep`, `trivy` |
 | [`csharp`](./csharp/) | `dotnet-sdk_10`, `msbuild`, `mono`, `omnisharp-roslyn`, `csharpier`, `netcoredbg`, `semgrep`, `trivy` |
-| [`dart`](./dart/) (new) | `dart`, `flutter`, `semgrep`, `trivy` |
-| [`fortran`](./fortran/) (new) | `gfortran`, `fpm`, `fortls`, `fprettify`, `semgrep`, `trivy` |
-| [`fsharp`](./fsharp/) (new) | `dotnet-sdk_10`, `msbuild`, `fsautocomplete`, `fantomas`, `semgrep`, `trivy` |
+| [`dart`](./dart/) | `dart`, `flutter`, `semgrep`, `trivy` |
+| [`fortran`](./fortran/) | `gfortran`, `fpm`, `fortls`, `fprettify`, `semgrep`, `trivy` |
+| [`fsharp`](./fsharp/) | `dotnet-sdk_10`, `msbuild`, `fsautocomplete`, `fantomas`, `semgrep`, `trivy` |
 | [`go`](./go/) | `go`, `gotools`, `gotestsum`, `delve`, `gopls`, `golangci-lint`, `go-tools`, `gofumpt`, ... |
 | [`haxe`](./haxe/) | `haxe`, `neko`, `semgrep`, `trivy` |
 | [`java`](./java/) | `jdk`, `maven`, `gradle`, `jdt-language-server`, `checkstyle`, `pmd`, `google-java-format`, `semgrep`, ... |
-| [`julia`](./julia/) (new) | `julia`, `pandoc`, `trivy` |
+| [`julia`](./julia/) | `julia`, `pandoc`, `trivy` |
 | [`kotlin`](./kotlin/) | `kotlin`, `gradle`, `jdk`, `kotlin-language-server`, `ktlint`, `detekt`, `ktfmt`, `semgrep`, ... |
 | [`nim`](./nim/) | `nim`, `nimble`, `nimlangserver`, `nph`, `semgrep`, `trivy` |
 | [`odin`](./odin/) | `odin`, `ols`, `trivy` |
-| [`perl`](./perl/) (new) | `perl`, `perlnavigator`, `PLS`, `PerlCritic`, `PerlTidy`, `semgrep`, `trivy` |
+| [`perl`](./perl/) | `perl`, `perlnavigator`, `PLS`, `PerlCritic`, `PerlTidy`, `semgrep`, `trivy` |
 | [`php`](./php/) | `php`, `composer`, `phpactor`, `phpstan`, `psalm`, `php-codesniffer`, `php-cs-fixer`, `semgrep`, ... |
 | [`python`](./python/) | `python`, `uv`, `basedpyright`, `ruff`, `mypy`, `vulture`, `bandit`, `semgrep`, ... |
-| [`racket`](./racket/) (new) | `racket`, `trivy` |
+| [`racket`](./racket/) | `racket`, `trivy` |
 | [`ruby`](./ruby/) | `ruby_3_4`, `ruby-lsp`, `solargraph`, `rubocop`, `bundler-audit`, `semgrep`, `trivy` |
 | [`rust`](./rust/) | `rustToolchain`, `cargo-edit`, `cargo-watch`, `cargo-nextest`, `bacon`, `rust-analyzer`, `cargo-deny`, `cargo-machete`, ... |
 | [`scala`](./scala/) | `scala`, `sbt`, `scala-cli`, `mill`, `coursier`, `jdk`, `metals`, `scalafix`, ... |
@@ -114,7 +111,7 @@ Templates marked (new) are ones this repository adds on top of the upstream
 | [`clojure`](./clojure/) | `clojure`, `leiningen`, `boot`, `babashka`, `clojure-lsp`, `clj-kondo`, `cljfmt`, `zprint`, ... |
 | [`elixir`](./elixir/) | `elixir`, `elixir-ls`, `nodejs`, `semgrep`, `trivy` |
 | [`elm`](./elm/) | `elm`, `elm-json`, `elm2nix`, `elm-language-server`, `elm-review`, `elm-test`, `elm-format`, `nodejs`, ... |
-| [`erlang`](./erlang/) (new) | `erlang`, `rebar3`, `erlang-language-platform`, `erlfmt`, `semgrep`, `trivy` |
+| [`erlang`](./erlang/) | `erlang`, `rebar3`, `erlang-language-platform`, `erlfmt`, `semgrep`, `trivy` |
 | [`gleam`](./gleam/) | `gleam`, `erlang`, `rebar3`, `nodejs`, `semgrep`, `trivy` |
 | [`haskell`](./haskell/) | `ghc`, `cabal-install`, `stack`, `hoogle`, `haskell-language-server`, `hlint`, `ormolu`, `cabal-fmt`, ... |
 | [`lean4`](./lean4/) | `lean4`, `trivy` |
@@ -127,18 +124,18 @@ Templates marked (new) are ones this repository adds on top of the upstream
 | :--- | :--- |
 | [`bun`](./bun/) | `bun`, `nodejs`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `biome`, `oxlint`, `prettier`, ... |
 | [`deno`](./deno/) | `deno`, `semgrep`, `trivy` |
-| [`graphql`](./graphql/) (new) | `nodejs`, `pnpm`, `typescript`, `graphql-language-service-cli`, `typescript-language-server`, `eslint`, `biome`, `prettier`, ... |
+| [`graphql`](./graphql/) | `nodejs`, `pnpm`, `typescript`, `graphql-language-service-cli`, `typescript-language-server`, `eslint`, `biome`, `prettier`, ... |
 | [`node`](./node/) | `nodejs`, `pnpm`, `yarn`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `eslint`, `oxlint`, ... |
-| [`typescript`](./typescript/) (new) | `nodejs`, `pnpm`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `biome`, `eslint`, `oxlint`, ... |
-| [`web`](./web/) (new) | `nodejs`, `pnpm`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `tailwindcss-language-server`, `emmet-language-server`, `eslint`, ... |
+| [`typescript`](./typescript/) | `nodejs`, `pnpm`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `biome`, `eslint`, `oxlint`, ... |
+| [`web`](./web/) | `nodejs`, `pnpm`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `tailwindcss-language-server`, `emmet-language-server`, `eslint`, ... |
 
 ### Scripting and glue
 
 | Template | Tooling |
 | :--- | :--- |
-| [`assembly`](./assembly/) (new) | `nasm`, `yasm`, `binutils`, `asm-lsp`, `radare2`, `lldb` |
-| [`groovy`](./groovy/) (new) | `groovy`, `gradle`, `jdk`, `groovy-language-server`, `npm-groovy-lint`, `semgrep`, `trivy` |
-| [`lua`](./lua/) (new) | `lua5_4`, `luajit`, `lua-language-server`, `selene`, `luacheck`, `stylua`, `semgrep`, `trivy` |
+| [`assembly`](./assembly/) | `nasm`, `yasm`, `binutils`, `asm-lsp`, `radare2`, `lldb` |
+| [`groovy`](./groovy/) | `groovy`, `gradle`, `jdk`, `groovy-language-server`, `npm-groovy-lint`, `semgrep`, `trivy` |
+| [`lua`](./lua/) | `lua5_4`, `luajit`, `lua-language-server`, `selene`, `luacheck`, `stylua`, `semgrep`, `trivy` |
 | [`powershell`](./powershell/) | `powershell`, `powershell-editor-services`, `semgrep`, `trivy` |
 | [`shell`](./shell/) | `bash`, `bats`, `bash-language-server`, `shellcheck`, `shfmt`, `semgrep`, `trivy` |
 | [`swi-prolog`](./swi-prolog/) | `swi-prolog` |
@@ -158,27 +155,27 @@ Templates marked (new) are ones this repository adds on top of the upstream
 
 | Template | Tooling |
 | :--- | :--- |
-| [`ansible`](./ansible/) (new) | `ansible`, `sshpass`, `ansible-language-server`, `yaml-language-server`, `ansible-lint`, `yamllint`, `yamlfmt`, `trivy` |
-| [`docker`](./docker/) (new) | `docker-compose`, `docker-buildx`, `podman`, `buildah`, `skopeo`, `dive`, `dockerfile-language-server-nodejs`, `yaml-language-server`, ... |
-| [`github-actions`](./github-actions/) (new) | `act`, `gh`, `yaml-language-server`, `actionlint`, `yamllint`, `yamlfmt`, `zizmor`, `trivy` |
+| [`ansible`](./ansible/) | `ansible`, `sshpass`, `ansible-language-server`, `yaml-language-server`, `ansible-lint`, `yamllint`, `yamlfmt`, `trivy` |
+| [`docker`](./docker/) | `docker-compose`, `docker-buildx`, `podman`, `buildah`, `skopeo`, `dive`, `dockerfile-language-server-nodejs`, `yaml-language-server`, ... |
+| [`github-actions`](./github-actions/) | `act`, `gh`, `yaml-language-server`, `actionlint`, `yamllint`, `yamlfmt`, `zizmor`, `trivy` |
 | [`hashi`](./hashi/) | `terraform`, `vault`, `nomad`, `consul`, `packer`, `terragrunt`, `nomad-autoscaler`, `nomad-pack`, ... |
-| [`kubernetes`](./kubernetes/) (new) | `kubectl`, `kubernetes-helm`, `kustomize`, `kubectx`, `k9s`, `stern`, `yaml-language-server`, `helm-ls`, ... |
+| [`kubernetes`](./kubernetes/) | `kubectl`, `kubernetes-helm`, `kustomize`, `kubectx`, `k9s`, `stern`, `yaml-language-server`, `helm-ls`, ... |
 | [`pulumi`](./pulumi/) | `pulumi-bin`, `python313`, `go`, `nodejs`, `jdk`, `maven`, `gopls`, `basedpyright`, ... |
-| [`terraform`](./terraform/) (new) | `opentofu`, `terragrunt`, `terraform-ls`, `tflint`, `terraform-docs`, `tfsec`, `checkov`, `trivy` |
+| [`terraform`](./terraform/) | `opentofu`, `terragrunt`, `terraform-ls`, `tflint`, `terraform-docs`, `tfsec`, `checkov`, `trivy` |
 
 ### Data, hardware and documents
 
 | Template | Tooling |
 | :--- | :--- |
-| [`hdl`](./hdl/) (new) | `verilator`, `iverilog`, `ghdl`, `yosys`, `gtkwave`, `verible`, `svls` |
+| [`hdl`](./hdl/) | `verilator`, `iverilog`, `ghdl`, `yosys`, `gtkwave`, `verible`, `svls` |
 | [`jupyter`](./jupyter/) | `python`, `ipykernel`, `poetry`, `uv`, `basedpyright`, `ruff`, `mypy`, `nbstripout`, ... |
 | [`latex`](./latex/) | `scheme-full`, `tectonic`, `texlab`, `vale`, `pandoc` |
-| [`markdown`](./markdown/) (new) | `marksman`, `harper`, `markdownlint-cli2`, `vale`, `lychee`, `mdformat`, `prettier`, `pandoc`, ... |
+| [`markdown`](./markdown/) | `marksman`, `harper`, `markdownlint-cli2`, `vale`, `lychee`, `mdformat`, `prettier`, `pandoc`, ... |
 | [`platformio`](./platformio/) | `platformio`, `cmake`, `ninja`, `bear`, `clang-tools`, `cppcheck`, `codespell`, `gtest`, ... |
 | [`presenterm`](./presenterm/) | `presenterm`, `mermaid-cli`, `typst`, `pandoc`, `marksman`, `harper`, `markdownlint-cli2`, `vale`, ... |
 | [`r`](./r/) | `rEnv`, `pandoc`, `scheme-full`, `trivy` |
-| [`solidity`](./solidity/) (new) | `solc`, `solc-select`, `foundry`, `nodejs`, `pnpm`, `slither-analyzer`, `semgrep`, `trivy` |
-| [`sql`](./sql/) (new) | `postgresql`, `sqlite`, `pgcli`, `usql`, `sqls`, `sqlfluff`, `sqruff`, `pgformatter`, ... |
+| [`solidity`](./solidity/) | `solc`, `solc-select`, `foundry`, `nodejs`, `pnpm`, `slither-analyzer`, `semgrep`, `trivy` |
+| [`sql`](./sql/) | `postgresql`, `sqlite`, `pgcli`, `usql`, `sqls`, `sqlfluff`, `sqruff`, `pgformatter`, ... |
 | [`typst`](./typst/) | `typst`, `tinymist`, `typstyle`, `vale`, `pandoc` |
 
 ### Starting point
@@ -210,6 +207,5 @@ build                 # build every template's devShell
 format                # nixfmt every .nix file
 ```
 
-[upstream]: https://github.com/the-nix-way/dev-templates
 [direnv-ext]: https://marketplace.visualstudio.com/items?itemName=mkhl.direnv
 [direnv-vim]: https://github.com/direnv/direnv.vim
