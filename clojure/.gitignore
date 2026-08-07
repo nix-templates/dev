@@ -1,0 +1,14 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Clojure
+/target/
+.cpcache/
+.lsp/.cache/
+.clj-kondo/.cache/

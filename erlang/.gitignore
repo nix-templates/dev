@@ -1,0 +1,15 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Erlang
+/_build/
+/deps/
+*.beam
+erl_crash.dump
+.rebar3/

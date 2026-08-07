@@ -1,0 +1,18 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.pdf

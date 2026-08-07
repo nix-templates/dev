@@ -1,0 +1,16 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Node.js
+node_modules/
+dist/
+build/
+.next/
+*.tsbuildinfo
+npm-debug.log*

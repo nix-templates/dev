@@ -1,0 +1,15 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Solidity
+/out/
+/cache/
+/broadcast/
+node_modules/
+/artifacts/

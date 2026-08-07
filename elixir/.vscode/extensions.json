@@ -1,0 +1,10 @@
+{
+  "//": "Recommended extensions for this environment. mkhl.direnv is the important one: it loads the Nix devShell into VS Code so every tool below is found automatically.",
+  "recommendations": [
+    "mkhl.direnv",
+    "jnoortheen.nix-ide",
+    "EditorConfig.EditorConfig",
+    "JakeBecker.elixir-ls",
+    "phoenixframework.phoenix"
+  ]
+}

@@ -1,0 +1,14 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Perl
+blib/
+/_build/
+MYMETA.*
+*.bak

@@ -1,0 +1,14 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# HDL (Verilog/VHDL)
+obj_dir/
+*.vcd
+*.fst
+work-obj*.cf

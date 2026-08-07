@@ -1,0 +1,14 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Haskell
+dist-newstyle/
+.stack-work/
+*.hi
+*.o

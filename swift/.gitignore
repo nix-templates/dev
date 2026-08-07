@@ -1,0 +1,13 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Swift
+/.build/
+/Packages/
+*.xcodeproj/

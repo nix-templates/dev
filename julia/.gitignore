@@ -1,0 +1,13 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Julia
+/Manifest.toml
+*.jl.cov
+*.jl.mem

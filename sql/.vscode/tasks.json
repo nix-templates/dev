@@ -1,0 +1,60 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "lint",
+      "type": "shell",
+      "command": "lint",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [
+        {
+          "owner": "dev-lint",
+          "fileLocation": [
+            "autoDetect",
+            "${workspaceFolder}"
+          ],
+          "pattern": {
+            "regexp": "^(.+?):(\\d+):(\\d+):\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "message": 4
+          }
+        }
+      ],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "fmt",
+      "type": "shell",
+      "command": "fmt",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "label": "scan",
+      "type": "shell",
+      "command": "scan",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}

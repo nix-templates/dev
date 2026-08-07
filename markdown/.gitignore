@@ -1,0 +1,12 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Markdown / docs
+/book/
+/_site/

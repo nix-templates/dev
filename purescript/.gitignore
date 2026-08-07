@@ -1,0 +1,13 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# PureScript
+/output/
+/.spago/
+node_modules/

@@ -1,0 +1,14 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Web front-end
+node_modules/
+dist/
+.vite/
+.parcel-cache/

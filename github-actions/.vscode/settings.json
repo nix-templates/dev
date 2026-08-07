@@ -1,0 +1,31 @@
+{
+  "//": "Settings for this environment. Every tool path is a bare binary name so that it resolves through the direnv-provided PATH from the Nix devShell.",
+  "direnv.restart.automatic": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.eol": "\n",
+  "editor.formatOnSave": true,
+  "editor.rulers": [
+    100
+  ],
+  "search.exclude": {
+    "**/.direnv": true,
+    "**/result": true,
+    "**/node_modules": true,
+    "**/target": true,
+    "**/.venv": true
+  },
+  "files.watcherExclude": {
+    "**/.direnv/**": true,
+    "**/result/**": true
+  },
+  "nix.formatterPath": "nixfmt",
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.{yml,yaml}",
+    "https://json.schemastore.org/github-action.json": "action.{yml,yaml}"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.tabSize": 2
+  }
+}

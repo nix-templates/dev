@@ -1,0 +1,13 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Kubernetes
+charts/*.tgz
+kubeconfig
+*.kubeconfig

@@ -1,0 +1,15 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# C/C++
+build/
+*.o
+*.a
+*.so
+compile_commands.json

@@ -1,0 +1,14 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# HashiCorp
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars

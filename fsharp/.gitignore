@@ -1,0 +1,12 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# F#
+bin/
+obj/

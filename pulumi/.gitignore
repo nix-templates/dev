@@ -1,0 +1,14 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Pulumi
+Pulumi.*.yaml.bak
+node_modules/
+__pycache__/
+.venv/

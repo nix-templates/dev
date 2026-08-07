@@ -1,0 +1,11 @@
+.direnv/
+result
+result-*
+
+# Templates are published without a lock file so that `nix flake init` always
+# resolves against current nixpkgs; the lock files generated while testing them
+# must not be committed.
+*/flake.lock
+
+target
+.idea/

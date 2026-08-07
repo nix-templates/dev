@@ -1,0 +1,11 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Protocol Buffers
+/gen/

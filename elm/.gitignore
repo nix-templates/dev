@@ -1,0 +1,12 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Elm
+/elm-stuff/
+elm.js

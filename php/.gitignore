@@ -1,0 +1,13 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# PHP
+/vendor/
+.phpunit.result.cache
+.php-cs-fixer.cache

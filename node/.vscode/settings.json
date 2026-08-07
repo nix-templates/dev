@@ -1,0 +1,36 @@
+{
+  "//": "Settings for this environment. Every tool path is a bare binary name so that it resolves through the direnv-provided PATH from the Nix devShell.",
+  "direnv.restart.automatic": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.eol": "\n",
+  "editor.formatOnSave": true,
+  "editor.rulers": [
+    100
+  ],
+  "search.exclude": {
+    "**/.direnv": true,
+    "**/result": true,
+    "**/node_modules": true,
+    "**/target": true,
+    "**/.venv": true
+  },
+  "files.watcherExclude": {
+    "**/.direnv/**": true,
+    "**/result/**": true
+  },
+  "nix.formatterPath": "nixfmt",
+  "eslint.useFlatConfig": true,
+  "eslint.runtime": "node",
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}

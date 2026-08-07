@@ -1,0 +1,15 @@
+# Nix / direnv
+.direnv/
+result
+result-*
+
+# Editors
+.idea/
+*.swp
+
+# Terraform / OpenTofu
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform.lock.hcl
