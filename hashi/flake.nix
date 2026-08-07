@@ -24,6 +24,11 @@
               # Terraform, Vault, Nomad, Consul and Packer moved to the BUSL, which
               # nixpkgs classifies as unfree. Opting in is what makes this shell work.
               config.allowUnfree = true;
+              # Checkov depends on python-ecdsa, which nixpkgs marks insecure over
+              # CVE-2024-23342, a timing side channel in ECDSA signing. Checkov only
+              # parses infrastructure code and never signs anything, so that path is
+              # unreachable here. Matched by name so a version bump keeps working.
+              config.allowInsecurePredicate = pkg: inputs.nixpkgs.lib.getName pkg == "ecdsa";
             };
           }
         );

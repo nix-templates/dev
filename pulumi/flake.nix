@@ -21,6 +21,11 @@
             inherit system;
             pkgs = import inputs.nixpkgs {
               inherit system;
+              # Checkov depends on python-ecdsa, which nixpkgs marks insecure over
+              # CVE-2024-23342, a timing side channel in ECDSA signing. Checkov only
+              # parses infrastructure code and never signs anything, so that path is
+              # unreachable here. Matched by name so a version bump keeps working.
+              config.allowInsecurePredicate = pkg: inputs.nixpkgs.lib.getName pkg == "ecdsa";
             };
           }
         );

@@ -32,26 +32,30 @@
           # Everything this environment puts on your PATH: compilers, language
           # servers, linters, formatters and security scanners. Editors pick all
           # of it up automatically once direnv has loaded the shell.
-          tools = with pkgs; [
-            # Simulation and synthesis
-            verilator
-            iverilog
-            ghdl
-            yosys
-            gtkwave
+          tools =
+            with pkgs;
+            [
+              # Simulation and synthesis
+              verilator
+              iverilog
+              ghdl
+              gtkwave
 
-            # Language servers
-            verible
-            svls
+              # Language servers
+              verible
+              svls
 
-            # Linter and formatter (both from Verible)
-            verible
+              # Linter and formatter (both from Verible)
+              verible
 
-            # Repo hygiene, spelling and secret scanning
-            gitleaks
-            typos
-            editorconfig-checker
-          ];
+              # Repo hygiene, spelling and secret scanning
+              gitleaks
+              typos
+              editorconfig-checker
+            ]
+            # Yosys builds against sv-lang, which nixpkgs marks broken on Darwin, so
+            # macOS gets the rest of the environment rather than no shell at all.
+            ++ lib.optional (!stdenv.hostPlatform.isDarwin) yosys;
 
           # A tiny shell library shared by the three scripts below. `run` keeps
           # going after a failure so that one pass surfaces every problem, and
