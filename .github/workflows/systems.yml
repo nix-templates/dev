@@ -1,8 +1,9 @@
 name: systems
 
 # The templates on real machines: is the dev shell made there, and do the five
-# commands run in a project fresh from the template? On macOS it also looks
-# whether `security` with arguments is still the keychain tool.
+# commands run in a project fresh from the template, with a small sample of the
+# language in it? On macOS it also looks whether `security` with arguments is
+# still the keychain tool.
 #
 # A pull request and a push to main try a handful of templates on every
 # system. Once a week, and when started by hand, every template is tried on
@@ -106,7 +107,7 @@ jobs:
       - uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7.2.0
         with:
           distribution: Ubuntu-24.04
-          additional-packages: curl git xz-utils ca-certificates
+          additional-packages: curl git xz-utils ca-certificates python3
 
       - name: Install Nix inside WSL
         shell: wsl-bash {0}

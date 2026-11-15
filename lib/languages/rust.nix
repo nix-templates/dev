@@ -98,8 +98,13 @@ in
     run = [
       ''
         when Cargo.toml cargo nextest run --all-features --no-tests=warn
-        # nextest does not run doctests.
-        when Cargo.toml cargo test --doc --all-features
+        # nextest does not run doctests. Only a library has them: for a package
+        # of binaries alone, cargo calls `test --doc` an error.
+        if [ -e Cargo.toml ] && cargo metadata --no-deps --format-version 1 2> /dev/null | grep -qE '"kind":\["(lib|rlib|dylib|cdylib|staticlib|proc-macro)"'; then
+          run cargo test --doc --all-features
+        else
+          echo ":: skipping cargo test --doc (no library here)"
+        fi
       ''
     ];
     coverage = [

@@ -3,7 +3,12 @@
 #
 # A project fresh from a template of this checkout, on this machine: its dev
 # shell is made, and the five commands run in it. The template takes the
-# library from this checkout, not from what is published.
+# library from this checkout, not from what is published. The project gets the
+# small sample of its language that the tests of `ci` use, so that the
+# language's own tools have files to run on.
+#
+# A few samples are known to be clean (CLEAN in lib/ci/tests/samples.py). For
+# those, every command has to end with 0.
 #
 # It ends with 0 when all of that worked, and with 1 when something did not.
 # In a workflow it adds one row to the run's summary.
@@ -24,11 +29,13 @@ results=$work.results
 cd "$work"
 git init --quiet --initial-branch=main .
 nix flake init --template "path:$here#$template"
+python3 "$here/lib/ci/tests/samples.py" "$template" .
 git add --all
+clean=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import samples; print("true" if sys.argv[2] in samples.CLEAN else "false")' "$here/lib/ci/tests" "$template")
 
 shell=made
 code=0
-RESULTS=$results nix develop --override-input dev "path:$here" --command bash "$here/.github/systems/in-shell.sh" || code=$?
+RESULTS=$results EXPECT_CLEAN=$clean nix develop --override-input dev "path:$here" --command bash "$here/.github/systems/in-shell.sh" || code=$?
 # No results at all: the dev shell itself could not be made or entered.
 if [ ! -s "$results" ]; then
   shell="not made"

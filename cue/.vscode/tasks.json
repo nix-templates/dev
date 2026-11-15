@@ -13,10 +13,7 @@
       "problemMatcher": [
         {
           "owner": "dev-quality",
-          "fileLocation": [
-            "autoDetect",
-            "${workspaceFolder}"
-          ],
+          "fileLocation": ["autoDetect", "${workspaceFolder}"],
           "pattern": {
             "regexp": "^(.+?):(\\d+):(\\d+):\\s+(.*)$",
             "file": 1,
@@ -68,10 +65,7 @@
       "problemMatcher": [
         {
           "owner": "dev-architecture",
-          "fileLocation": [
-            "autoDetect",
-            "${workspaceFolder}"
-          ],
+          "fileLocation": ["autoDetect", "${workspaceFolder}"],
           "pattern": {
             "regexp": "^(.+?):(\\d+):\\s+(.*)$",
             "file": 1,

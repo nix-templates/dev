@@ -525,6 +525,7 @@ what is published.
 language's files. If it has no reader, or shares its files with another
 language, name the files that give it away in `marks`, and the languages it
 replaces in `insteadOf`. [`deno.nix`](./lib/languages/deno.nix) shows both.
-Then add a sample to `lib/ci/tests/test_detect.py`.
+Then add a sample to `lib/ci/tests/samples.py`. The `systems` workflow uses the
+same sample to give the language's tools something to run on.
 
 [direnv-ext]: https://marketplace.visualstudio.com/items?itemName=mkhl.direnv

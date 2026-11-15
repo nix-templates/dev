@@ -5,9 +5,7 @@
   "files.insertFinalNewline": true,
   "files.eol": "\n",
   "editor.formatOnSave": true,
-  "editor.rulers": [
-    100
-  ],
+  "editor.rulers": [100],
   "search.exclude": {
     "**/.direnv": true,
     "**/result": true,
@@ -24,8 +22,6 @@
   "dart.lineLength": 100,
   "[dart]": {
     "editor.defaultFormatter": "Dart-Code.dart-code",
-    "editor.rulers": [
-      100
-    ]
+    "editor.rulers": [100]
   }
 }
