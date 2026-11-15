@@ -493,7 +493,8 @@ nix flake update      # a newer nixpkgs for ci, layers and the MCP server
 
 `flake.lock` names the nixpkgs that `ci`, `layers` and the MCP server run
 with. A project with a flake of its own follows its own nixpkgs and never
-sees it, and the templates stay without a lock file.
+sees it, and the templates stay without a lock file. On the first of each
+month a workflow opens a pull request with a newer lock.
 
 | Path | What it is |
 | :--- | :--- |

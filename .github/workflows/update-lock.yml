@@ -1,0 +1,100 @@
+name: update lock
+
+# Once a month: a newer nixpkgs for `ci`, `layers` and the MCP server, as a pull
+# request. Projects with a flake of their own follow their own nixpkgs and are
+# not touched by it.
+#
+# Opening the pull request needs "Allow GitHub Actions to create and approve
+# pull requests" (Settings, Actions, General). Without it the branch is still
+# pushed, and the run says where to open the pull request by hand.
+#
+# Two jobs, so that nothing but git and gh runs with a token that may write:
+# the first asks Nix for the new lock, the second proposes it. The actions are
+# pinned to a commit for the same reason.
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      lock: ${{ steps.lock.outputs.lock }}
+      said: ${{ steps.lock.outputs.said }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
+
+      - name: Update flake.lock
+        id: lock
+        run: |
+          nix flake update 2>&1 | tee update.log
+          if git diff --quiet -- flake.lock; then
+            echo "flake.lock is up to date" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "lock=$(base64 --wrap=0 flake.lock)" >> "$GITHUB_OUTPUT"
+            echo "said=$(grep -v '^warning: updating lock file' update.log | base64 --wrap=0)" >> "$GITHUB_OUTPUT"
+          fi
+
+  propose:
+    needs: update
+    if: needs.update.outputs.lock != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      # Starting the check workflow on the new branch: a pull request that a
+      # workflow opens does not start it by itself.
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Open a pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          LOCK: ${{ needs.update.outputs.lock }}
+          SAID: ${{ needs.update.outputs.said }}
+        run: |
+          title="A newer nixpkgs for ci, layers and the MCP server"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # git pushes with the token of this job, which is kept out of the checkout.
+          gh auth setup-git
+
+          # Last month's branch, when it was never merged. Its pull request closes with it.
+          git push origin --delete update-lock 2> /dev/null || true
+          git switch --create update-lock
+          echo "$LOCK" | base64 --decode > flake.lock
+          git commit --quiet --message "$title" -- flake.lock
+          git push origin update-lock
+
+          {
+            echo "The monthly workflow ran nix flake update:"
+            echo
+            echo '```text'
+            echo "$SAID" | base64 --decode
+            echo '```'
+            echo
+            echo "The check workflow was started on this branch. Projects with a flake of their own are not touched by this."
+          } > "$RUNNER_TEMP/body.md"
+
+          gh workflow run check.yml --ref update-lock
+          if ! gh pr create --base main --head update-lock --title "$title" --body-file "$RUNNER_TEMP/body.md"; then
+            {
+              echo "The branch \`update-lock\` is pushed, and this workflow may not open the pull request."
+              echo "Open it here: https://github.com/$REPOSITORY/compare/main...update-lock?expand=1"
+              echo "Or switch on \"Allow GitHub Actions to create and approve pull requests\" in Settings, Actions, General."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
