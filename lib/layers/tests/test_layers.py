@@ -202,6 +202,11 @@ class Rust(unittest.TestCase):
             },
         )
 
+    def test_a_rust_file_without_a_manifest_fails_instead_of_passing_unread(self):
+        files = dict(RUST_WORKSPACE)
+        files["architecture.toml"] = 'exclude = ["crates/core/Cargo.toml"]\n' + textwrap.dedent(files["architecture.toml"])
+        self.assertIn(("unreadable", "crates/core/src/lib.rs", "-"), found(tree(files)))
+
     def test_modules_inside_one_crate(self):
         root = tree(
             {

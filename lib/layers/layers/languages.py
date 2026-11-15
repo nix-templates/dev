@@ -19,6 +19,7 @@ from .generic import (
     Syntax,
     blank,
     close_of,
+    is_test,
     namespaces,
     nearest,
     paths,
@@ -440,7 +441,9 @@ def _path_literals(pattern: str, endings: tuple[str, ...], index: tuple[str, ...
                     repo.internal(source.path, line, [target], match.group(1))
                 elif directories and candidate in repo.dirs and not (here + "/").startswith(candidate + "/" if candidate else ""):
                     # `./.` and the like name the tree the file itself is in: that says nothing about layers.
-                    repo.internal(source.path, line, repo.below(candidate), match.group(1))
+                    # Tests that lie in the directory come along; packaging them is not using them.
+                    inside = [path for path in repo.below(candidate) if not is_test(path)]
+                    repo.internal(source.path, line, inside, match.group(1))
 
     return reader
 

@@ -336,7 +336,9 @@ def extract(root: str, files: list[str], include_tests: bool, scan: Scan) -> Non
     for path in sources:
         crate = owner[path]
         if crate is None:
-            scan.warnings.append(f"{path}: no Cargo.toml above it, skipped")
+            # Without its manifest a file's uses cannot be told apart, and a file in a layer never passes unread.
+            scan.files.append(path)
+            scan.unreadable.append((path, "no Cargo.toml above it"))
             continue
         if not include_tests and _is_test(crate, path):
             continue

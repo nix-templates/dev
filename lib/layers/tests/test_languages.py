@@ -1204,6 +1204,7 @@ class NixDirectories(unittest.TestCase):
             "architecture.toml": rules('"packages/**"', '"sources/**"', pure=False),
             "packages/app.nix": "{ stdenv }:\nstdenv.mkDerivation {\n  src = ../sources/app;\n  all = ./.;\n  up = ../.;\n}\n",
             "sources/app/main.c": "int main(void) { return 0; }\n",
+            "sources/app/tests/main_test.py": "import os\n",
         }
         self.assertEqual(found(tree(files)), {layer("packages/app.nix", "sources/app/main.c")})
 
