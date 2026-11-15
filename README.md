@@ -1,93 +1,144 @@
-# Nix flake templates for batteries-included dev environments
+# dev
 
-Every template in this repository gives you a `nix develop` shell that already
-contains the language server, linters, formatters and security scanners that
-language's community actually uses, wired into direnv, VS Code and Neovim so
-they work the moment you open the project.
+[![check](https://github.com/nix-templates/dev/actions/workflows/check.yml/badge.svg)](https://github.com/nix-templates/dev/actions/workflows/check.yml)
 
-There are two ways to use it:
+A Nix dev shell for your language, with the tools already in it.
 
-- **Copy a template.** `nix flake init` writes one language's environment into
-  your project. It is yours from then on; see [Getting started](#getting-started).
-- **Take it as a library.** Your flake names this repository as an input and
-  lists its languages. One shell covers all of them, `nix flake update` brings
-  in every later improvement, and `archcheck` enforces your architecture rules.
-  See [Use it as a library](#use-it-as-a-library).
+Run `nix develop` and you have the compiler, the language server, the linters,
+the formatter, the security scanners and the test tools. There are 68 language
+templates, and all of them answer to the same five commands:
 
-## What you get
+| Command | What it runs |
+| :--- | :--- |
+| `lint` | Every linter and static analyser for your languages. |
+| `fmt` | Every formatter. `fmt --check` reports and changes nothing. |
+| `scan` | Leaked secrets, vulnerable dependencies, SAST. |
+| `arch --check` | Your architecture rules. |
+| `tests` | Your tests. `tests --coverage` and `tests --mutation` where the language has a tool for it. |
 
-Each template ships six files:
+The terminal, VS Code and Neovim all call these same five, so your editor and
+your CI never disagree about what "clean" means.
 
-| File | What it does |
-| :--- | :----------- |
-| `flake.nix` | The devShell: toolchain, LSP, linters, formatters, SAST and secret scanners |
-| `.envrc` | `use flake`, so direnv puts all of it on `PATH` on `cd` |
-| `.vscode/extensions.json` | Recommends `mkhl.direnv` plus the language's extensions |
-| `.vscode/settings.json` | Points every extension at the devShell's binaries and turns on format-on-save |
-| `.vscode/tasks.json` | `lint`, `fmt` and `scan` as VS Code tasks |
-| `.nvim.lua` | Plugin-free LSP setup via `vim.lsp.config`, format-on-save and `:DevLint` / `:DevFmt` / `:DevScan` |
-
-Every devShell also exposes three commands, so the terminal, VS Code and Neovim
-all run the same checks:
+## Quick start
 
 ```shell
-lint    # every linter and static analyser for this language
-fmt     # every formatter, in place
-scan    # SAST, dependency and secret scanning
+nix flake init -t github:nix-templates/dev#rust
+direnv allow        # or: nix develop
 ```
 
-## Getting started
+Pick any name from the [tables below](#templates).
 
-Initialise a template (`${ENV}` is any name from the tables below):
+You get a short `flake.nix` that names your language. The tool list itself
+stays here, in [`lib/languages/`](./lib/languages/). That is on purpose:
+`nix flake update dev` hands you every tool that gets added later, and you
+never copy a new version of a template by hand.
+
+A project in several languages lists several names:
+
+```nix
+languages = [ "rust" "python" "nix" ];
+```
+
+One shell, three toolsets, and each command covers all three.
+
+Don't like what a language brings? Copy its file from `lib/languages/` next to
+your flake, edit it, and list the path instead of the name:
+`languages = [ ./rust.nix ]`.
+
+## Tools wait for their config
+
+Most tools only run when your project has their config file. No `deny.toml`,
+no cargo-deny. No `.go-arch-lint.yml`, no go-arch-lint. A new project starts
+quiet and gets stricter as you add config.
+
+Every project gets `typos`, `editorconfig-checker` and `gitleaks` regardless.
+
+## Architecture rules
+
+`arch --check` reads `architecture.toml` and fails when code breaks it.
+
+```toml
+version = 1
+
+[[layer]]
+name = "core"
+paths = ["src/core"]
+pure = true
+
+[[layer]]
+name = "adapters"
+paths = ["src/adapters"]
+may_use = ["core"]
+
+[[layer]]
+name = "app"
+paths = ["src"]
+may_use = ["core", "adapters"]
+```
+
+Two rules, and that is all of it:
+
+- **Layers.** A file may use its own layer and the layers its layer names.
+- **Purity.** A `pure` layer is a functional core. Same input, same output, and
+  nothing outside the function changes. So no files, network, clock,
+  environment, randomness, threads or shared state in there.
+
+A failure tells you where, why, and what to do about it:
+
+```text
+core/plan.py:2: layer: 'core' may not use 'adapters': adapters.disk is adapters/disk.py
+    fix: 'core' may use no other layer. Move what both need into a layer 'core' may use,
+    or define the interface in 'core' and implement it in 'adapters'.
+```
+
+That last line is written for coding agents as much as for people. An agent
+that hits it gets told how to fix the design, which beats it papering over
+the error.
+
+### Old code
+
+Existing code won't pass new rules on day one. So:
 
 ```shell
-nix flake init -t github:nix-templates/dev#${ENV}
+arch --explain   # which file landed in which layer
+arch --accept    # write today's violations to architecture-baseline.json
 ```
 
-or start a new project directory:
+After that, known violations pass and new ones fail. The baseline can only
+shrink. Fix a violation and `arch --check` fails until `arch --prune` takes it
+off the list. In CI, `arch --check --since origin/main` also fails if someone
+grew the baseline.
 
-```shell
-nix flake new -t github:nix-templates/dev#${ENV} ${NEW_PROJECT_DIRECTORY}
-```
+### What it reads
 
-Then turn the environment on:
+| Language | How |
+| :--- | :--- |
+| Rust | Crate dependencies from every `Cargo.toml`, exactly. Inside a crate, `use` and qualified paths. |
+| Python | Imports from the syntax tree, plus calls like `open()`, `print()` and `datetime.now()`. |
+| JavaScript, TypeScript | `import`, `export ... from`, `require()`, plus `fetch`, `Date.now()`, `console`, the DOM. |
+| C, C++ | `#include` lines. |
 
-```shell
-direnv allow      # with direnv installed; recommended
-nix develop       # without it
-```
+It reads source text, not the compiler's view. Things like `#[path]` modules,
+`importlib` and `tsconfig.json` path mappings are invisible to it. A file it
+cannot parse fails the check. It never passes unread.
 
-### Editor setup, once per machine
+For the other languages, `arch --check` runs the language's own tool when you
+have its config: go-arch-lint, `cargo deny check bans`, deptry and
+import-linter, dependency-cruiser and knip, the Maven enforcer, Gradle's
+`buildHealth`, sbt-explicit-dependencies, `mix xref`, `rebar3 xref`, deptrac,
+packwerk, weeder, `dependency_validator`, periphery and `buf breaking`.
 
-**VS Code.** Install the [direnv extension][direnv-ext]. It loads the devShell
-into the editor process so extensions find the binaries. Opening the project
-prompts you to install the rest of the recommended extensions.
+More settings: `strict = true` fails on files in no layer, `exclude` skips
+paths, `forbid_external` keeps packages out of a layer, `hint` adds your own
+advice to a layer's failures, and `[purity] allow` and `forbid` adjust what
+counts as pure.
 
-```shell
-code --install-extension mkhl.direnv
-```
+One more thing. `arch` with no arguments prints the machine type, exactly
+like the `arch` from coreutils. Scripts that call it keep working.
 
-**Neovim.** The `.nvim.lua` files are project-local configuration, which Neovim
-only reads when `exrc` is on. Add this to your `init.lua`:
+## In your own flake
 
-```lua
-vim.o.exrc = true
-```
-
-The first time you open a project Neovim asks you to trust the file; answer with
-`:trust`. Nothing else is needed, since the LSP setup uses Neovim 0.11+'s
-built-in `vim.lsp.config` and `vim.lsp.enable` with no plugins at all. Pair it
-with [direnv.vim][direnv-vim] if you want the environment loaded when you `:cd`
-around.
-
-**Anything else.** Launch it from a directory where direnv is active and it
-inherits the whole toolchain through `PATH`.
-
-## Use it as a library
-
-A template is a copy, so what improves here later does not reach a project that
-already has one. A project that should keep up names this repository as a flake
-input and says which languages it is written in:
+The templates are a thin layer over one function. Call it yourself:
 
 ```nix
 {
@@ -103,7 +154,7 @@ input and says which languages it is written in:
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       project = dev.lib.mkProject {
         inherit pkgs;
-        languages = [ "rust" "python" "nix" "shell" ];
+        languages = [ "rust" "python" ];
         src = self;
       };
     in
@@ -114,255 +165,189 @@ input and says which languages it is written in:
 }
 ```
 
-`nix flake update dev` then brings in newer tools and rules. The
-[`project`](./project/) template is this flake for every supported system, with
-a starting `architecture.toml`:
+The tools are built from the `pkgs` you pass in, so they match what your
+project builds with.
 
-```shell
-nix flake init -t github:nix-templates/dev#project
-```
-
-The shell has the tools of every language you listed, and four commands:
-
-```shell
-lint          # every linter of every listed language, then archcheck
-fmt           # every formatter, in place
-fmt --check   # the same formatters, reporting only: for CI
-scan          # SAST, dependency and secret scanning
-archcheck     # the rules in architecture.toml
-```
-
-The tools come from the `pkgs` you pass in, so they match the versions your
-project builds with. That matters most for Rust: clippy's lints change with
-every release, so pass your pinned toolchain as `rustToolchain`.
-
-| `mkProject` argument | What it is |
+| Argument | What it is |
 | :--- | :--- |
-| `pkgs` | Your package set. Required. |
-| `languages` | Names from the table below, in the order their checks should run. A module of your own works too: `{ pkgs, lib, options }: { tools; lint; fmt; fmtCheck; scan; }`, every part optional. |
-| `src` | Your source tree, `self` in a flake. Turns on `checks`. |
-| `rustToolchain` | One derivation with `cargo`, `rustc`, `clippy` and `rustfmt`. Default: the four from `pkgs`. |
-| `python` | The Python interpreter. Default: `pkgs.python3`. |
-| `extraTools` | More packages for the shell and the commands' `PATH`. |
+| `pkgs` | Your package set. The only required one. |
+| `languages` | Names, paths to your own language files, or both. |
+| `src` | Your source tree, `self` in a flake. Turns on `checks`, which needs an `architecture.toml`. |
+| `rustToolchain` | Your pinned Rust toolchain. Clippy changes its lints every release, so pin it. |
+| `python` | Another Python interpreter. |
+| `extraTools` | More packages for the shell. |
+| `options.pythonVenv` | `true` makes and activates a `.venv` when you enter the shell. |
 
-| It returns | What it is |
-| :--- | :--- |
-| `devShell` | A shell with all tools and commands. |
-| `packages`, `tools`, `env` | The same pieces, for a shell you build yourself: `pkgs.mkShell { inherit (project) packages env; }`. |
-| `commands` | `lint`, `fmt`, `scan` and `archcheck` as packages, for CI jobs and `nix run`. |
-| `checks` | `archcheck` as a flake check. It runs inside the Nix sandbox, so `nix flake check` covers it and unchanged sources are not checked twice. It fails without an `architecture.toml`, so leave `src` out until you have one. `lint` and `scan` need the network and stay commands. |
+It returns `devShell`, the pieces for a shell of your own (`packages`,
+`tools`, `env`), the five `commands` as packages for CI, and `checks`.
+The [`project`](./project/) template is this, for every system, with a
+starting `architecture.toml`.
 
-| Language | Tooling |
-| :--- | :--- |
-| `c-cpp` | `clang-tools`, `cppcheck`, `include-what-you-use`, `codespell`, `flawfinder`, `cmake`, `ninja`, `meson`, ... |
-| `nix` | `nixd`, `statix`, `deadnix`, `nixfmt`, `vulnix`, ... |
-| `python` | `uv`, `basedpyright`, `ruff`, `mypy`, `vulture`, `bandit` |
-| `qml` | `qmllint`, `qmlformat`, `qmlls` |
-| `rust` | your toolchain, `rust-analyzer`, `cargo-nextest`, `cargo-deny`, `cargo-machete`, `cargo-audit`, `taplo`, ... |
-| `shell` | `bash`, `bats`, `bash-language-server`, `shellcheck`, `shfmt` |
+## For coding agents
 
-Every project also gets `typos`, `editorconfig-checker`, `gitleaks` and `trivy`,
-and `semgrep` when one of its languages has rules for it.
+There is an MCP server. It lets an agent look up what the library has and
+write the flake for the project it is working on.
 
-The library knows these six languages so far. The other templates still carry
-their own copy of their tools and scripts.
-
-## Architecture rules with archcheck
-
-`archcheck` reads `architecture.toml` at the root of a repository and fails
-when code breaks the rules in it. Two kinds of rule:
-
-- **Dependency rules.** The code is divided into layers. A file may use its own
-  layer and the layers its layer names, and nothing else.
-- **Purity rules.** A layer marked `pure` is a functional core: the same input
-  gives the same output, and nothing outside the function changes. It may not
-  touch files, the network, processes, the clock, the environment, randomness,
-  threads or shared mutable state. That work belongs in the layers around it.
-
-```toml
-version = 1
-
-[[layer]]
-name = "core"
-paths = ["src/core"]
-pure = true
-
-[[layer]]
-name = "adapters"
-paths = ["src/adapters"]
-may_use = ["core"]
-forbid_external = ["tokio"]   # this layer may not depend on these packages
-hint = "Adapters talk to one outside system each."
-
-[[layer]]
-name = "app"
-paths = ["src"]
-may_use = ["core", "adapters"]
+```json
+{
+  "mcpServers": {
+    "nix-dev": {
+      "command": "nix",
+      "args": ["run", "github:nix-templates/dev#mcp"]
+    }
+  }
+}
 ```
 
-The first layer whose `paths` match a file is that file's layer, so the narrow
-ones go first. `*` stays inside one path segment and `**` crosses them.
-
-A failure names the file and line, the rule, and what to do instead:
-
-```text
-core/plan.py:2: layer: 'core' may not use 'adapters': adapters.disk is adapters/disk.py
-    fix: 'core' may use no other layer. Move what both need into a layer 'core' may use,
-    or define the interface in 'core' and implement it in 'adapters'. Do not add this to
-    the baseline.
-```
-
-| Other settings | What it does |
+| Tool | What it does |
 | :--- | :--- |
-| `strict = true` | A source file in no layer is a failure, so new code must be given a place. |
-| `exclude = ["generated"]` | Paths to leave out. Hidden directories and build output are left out already. |
-| `include_tests = true` | Check test code too. By default tests may use anything. |
-| `[purity] allow = ["logging"]` | Let pure layers use this after all. |
-| `[purity] forbid = ["numpy"]` | Keep this out of pure layers as well. |
-| `[python] roots = ["python"]` | Directories that hold top-level packages, when they are not found by themselves. |
-| `[cpp] include_dirs = ["include"]` | Where quoted includes are looked up, besides next to the file. |
-| `[javascript.aliases] "@/" = "src/"` | Import prefixes that stand for a directory. |
+| `list_languages` | Every language, with its test modes and whether it has architecture tools. |
+| `describe_language` | Every tool in one language's shell, and exactly what each command runs. |
+| `generate_flake` | The `flake.nix` and `.envrc` for the languages you name. |
+| `architecture_rules` | An `architecture.toml` from a list of layers, checked by the real parser. |
 
-### Adopting it in existing code
-
-Existing code rarely follows new rules at once. The baseline holds the
-violations that were there on the day the rules arrived:
-
-```shell
-archcheck --explain   # which files are in which layer
-archcheck --accept    # write today's violations to architecture-baseline.json
-```
-
-From then on a violation in the baseline passes and a new one fails. The
-baseline may only get shorter: an entry that no longer occurs fails too, until
-`archcheck --prune` takes it out, so the change that fixes a violation also
-shortens the list. In CI, `archcheck --since origin/main` also fails when the
-baseline has entries that `origin/main`'s baseline lacks.
-
-### How it reads each language
-
-| Language | What it reads | What it does not see |
-| :--- | :--- | :--- |
-| Rust | Crate dependencies from every `Cargo.toml`, exactly. Inside a crate, `use` declarations and qualified paths, with modules found by the standard file layout. | `#[path]` modules, names brought in by glob imports or macros. |
-| Python | Imports from the syntax tree, relative ones included, plus calls such as `open()`, `print()` and `datetime.now()`, and `global`. | Imports made at run time with `importlib`. |
-| JavaScript, TypeScript | `import`, `export ... from`, `require()` and `import()`, plus uses of `fetch`, `Date.now()`, `Math.random()`, `console`, the DOM and timers. | Paths mapped in `tsconfig.json`; map them under `[javascript.aliases]`. |
-| C, C++ | `#include` lines. | Anything behind the preprocessor. |
-
-It reads the text, not the compiler's view, so treat it as the rule that keeps
-the structure in place, next to the language's own tools: `clippy.toml` with
-`disallowed-methods`, `cargo-deny`, `import-linter`, `eslint-plugin-functional`.
-A file it cannot parse fails the check instead of passing unread.
+It writes nothing to disk. It hands back file contents and the agent decides.
 
 ## Templates
 
+`arch` means the language has an architecture tool of its own on top of
+`architecture.toml`. `tests` lists the extra modes next to plain `tests`.
+
 ### Systems and application languages
 
-| Template | Tooling |
-| :--- | :--- |
-| [`c-cpp`](./c-cpp/) | `cmake`, `ninja`, `meson`, `bear`, `gtest`, `lcov`, `doxygen`, `clang-tools`, ... |
-| [`crystal`](./crystal/) | `crystal`, `shards`, `crystalline`, `ameba`, `semgrep`, `trivy` |
-| [`csharp`](./csharp/) | `dotnet-sdk_10`, `msbuild`, `mono`, `omnisharp-roslyn`, `csharpier`, `netcoredbg`, `semgrep`, `trivy` |
-| [`dart`](./dart/) | `dart`, `flutter`, `semgrep`, `trivy` |
-| [`fortran`](./fortran/) | `gfortran`, `fpm`, `fortls`, `fprettify`, `semgrep`, `trivy` |
-| [`fsharp`](./fsharp/) | `dotnet-sdk_10`, `msbuild`, `fsautocomplete`, `fantomas`, `semgrep`, `trivy` |
-| [`go`](./go/) | `go`, `gotools`, `gotestsum`, `delve`, `gopls`, `golangci-lint`, `go-tools`, `gofumpt`, ... |
-| [`haxe`](./haxe/) | `haxe`, `neko`, `semgrep`, `trivy` |
-| [`java`](./java/) | `jdk`, `maven`, `gradle`, `jdt-language-server`, `checkstyle`, `pmd`, `google-java-format`, `semgrep`, ... |
-| [`julia`](./julia/) | `julia`, `pandoc`, `trivy` |
-| [`kotlin`](./kotlin/) | `kotlin`, `gradle`, `jdk`, `kotlin-language-server`, `ktlint`, `detekt`, `ktfmt`, `semgrep`, ... |
-| [`nim`](./nim/) | `nim`, `nimble`, `nimlangserver`, `nph`, `semgrep`, `trivy` |
-| [`odin`](./odin/) | `odin`, `ols`, `trivy` |
-| [`perl`](./perl/) | `perl`, `perlnavigator`, `PLS`, `PerlCritic`, `PerlTidy`, `semgrep`, `trivy` |
-| [`php`](./php/) | `php`, `composer`, `phpactor`, `phpstan`, `psalm`, `php-codesniffer`, `php-cs-fixer`, `semgrep`, ... |
-| [`python`](./python/) | `python`, `uv`, `basedpyright`, `ruff`, `mypy`, `vulture`, `bandit`, `semgrep`, ... |
-| [`racket`](./racket/) | `racket`, `trivy` |
-| [`ruby`](./ruby/) | `ruby_3_4`, `ruby-lsp`, `solargraph`, `rubocop`, `bundler-audit`, `semgrep`, `trivy` |
-| [`rust`](./rust/) | `rustToolchain`, `cargo-edit`, `cargo-watch`, `cargo-nextest`, `bacon`, `rust-analyzer`, `cargo-deny`, `cargo-machete`, ... |
-| [`scala`](./scala/) | `scala`, `sbt`, `scala-cli`, `mill`, `coursier`, `jdk`, `metals`, `scalafix`, ... |
-| [`swift`](./swift/) | `swift`, `sourcekit-lsp`, `swiftlint`, `swiftformat`, `semgrep`, `trivy` |
-| [`vlang`](./vlang/) | `vlang`, `trivy` |
-| [`zig`](./zig/) | `zig`, `zls`, `lldb`, `trivy` |
+| Template | In the shell | `arch` | `tests` |
+| :--- | :--- | :---: | :--- |
+| [`c-cpp`](./c-cpp/) | `cmake`, `ninja`, `meson`, `bear`, `gtest`, `lcov`, `doxygen`, ... |  | ✓ |
+| [`crystal`](./crystal/) | `crystal`, `shards`, `crystalline`, `ameba` |  | ✓ |
+| [`csharp`](./csharp/) | `dotnet-sdk`, `msbuild`, `mono`, `omnisharp-roslyn`, `csharpier`, `netcoredbg` |  | ✓ coverage, mutation |
+| [`dart`](./dart/) | `dart`, `flutter` | ✓ | ✓ coverage |
+| [`fortran`](./fortran/) | `gfortran`, `fpm`, `fortls`, `fprettify` |  | ✓ |
+| [`fsharp`](./fsharp/) | `dotnet-sdk`, `msbuild`, `fsautocomplete`, `fantomas` |  | ✓ coverage, mutation |
+| [`go`](./go/) | `go`, `gotools`, `gotestsum`, `delve`, `gopls`, `golangci-lint`, `go-tools`, ... | ✓ | ✓ coverage, bench |
+| [`haxe`](./haxe/) | `haxe`, `neko` |  |  |
+| [`java`](./java/) | `openjdk`, `maven`, `gradle`, `jdt-language-server`, `checkstyle`, `pmd`, `google-java-format`, ... | ✓ | ✓ coverage, mutation |
+| [`julia`](./julia/) | `julia`, `pandoc-cli` |  | ✓ coverage |
+| [`kotlin`](./kotlin/) | `kotlin`, `gradle`, `openjdk`, `kotlin-language-server`, `ktlint`, `detekt`, `ktfmt`, ... | ✓ | ✓ coverage, mutation |
+| [`nim`](./nim/) | `x86_64-unknown-linux-gnu-nim`, `nimble`, `nimlangserver`, `nph` |  | ✓ |
+| [`odin`](./odin/) | `odin`, `ols` |  | ✓ |
+| [`perl`](./perl/) | `perl`, `perlnavigator`, `PLS`, `Perl-Critic`, `Perl-Tidy` |  | ✓ |
+| [`php`](./php/) | `php-with-extensions`, `composer`, `phpactor`, `phpstan`, `psalm`, `php-codesniffer`, `php-cs-fixer`, ... | ✓ | ✓ mutation |
+| [`python`](./python/) | `python3`, `uv`, `basedpyright`, `ruff`, `mypy`, `vulture`, `bandit`, ... | ✓ | ✓ coverage, mutation |
+| [`racket`](./racket/) | `racket` |  | ✓ |
+| [`ruby`](./ruby/) | `ruby`, `ruby-lsp`, `solargraph`, `rubocop`, `bundler-audit` | ✓ | ✓ |
+| [`rust`](./rust/) | `cargo`, `rustc`, `clippy`, `rustfmt`, `cargo-edit`, `cargo-watch`, `cargo-nextest`, ... | ✓ | ✓ coverage, mutation, bench |
+| [`scala`](./scala/) | `scala`, `sbt`, `scala-cli`, `mill`, `coursier`, `openjdk`, `metals`, ... | ✓ | ✓ coverage, mutation |
+| [`swift`](./swift/) | `swift`, `sourcekit-lsp`, `swiftlint`, `swiftformat` | ✓ | ✓ coverage |
+| [`vlang`](./vlang/) | `vlang` |  | ✓ |
+| [`zig`](./zig/) | `zig`, `zls`, `lldb` |  | ✓ |
+| `qml` (library only) | `qtdeclarative` |  |  |
 
 ### Functional languages
 
-| Template | Tooling |
-| :--- | :--- |
-| [`clojure`](./clojure/) | `clojure`, `leiningen`, `boot`, `babashka`, `clojure-lsp`, `clj-kondo`, `cljfmt`, `zprint`, ... |
-| [`elixir`](./elixir/) | `elixir`, `elixir-ls`, `nodejs`, `semgrep`, `trivy` |
-| [`elm`](./elm/) | `elm`, `elm-json`, `elm2nix`, `elm-language-server`, `elm-review`, `elm-test`, `elm-format`, `nodejs`, ... |
-| [`erlang`](./erlang/) | `erlang`, `rebar3`, `erlang-language-platform`, `erlfmt`, `semgrep`, `trivy` |
-| [`gleam`](./gleam/) | `gleam`, `erlang`, `rebar3`, `nodejs`, `semgrep`, `trivy` |
-| [`haskell`](./haskell/) | `ghc`, `cabal-install`, `stack`, `hoogle`, `haskell-language-server`, `hlint`, `ormolu`, `cabal-fmt`, ... |
-| [`lean4`](./lean4/) | `lean4`, `trivy` |
-| [`ocaml`](./ocaml/) | `ocaml`, `opam`, `dune_3`, `utop`, `odoc`, `ocaml-lsp`, `ocamlformat`, `semgrep`, ... |
-| [`purescript`](./purescript/) | `purescript`, `spago`, `nodejs`, `esbuild`, `semgrep`, `trivy` |
+| Template | In the shell | `arch` | `tests` |
+| :--- | :--- | :---: | :--- |
+| [`clojure`](./clojure/) | `clojure`, `leiningen`, `boot`, `babashka`, `clojure-lsp`, `clj-kondo`, `cljfmt`, ... |  | ✓ coverage |
+| [`elixir`](./elixir/) | `elixir`, `git`, `elixir-ls`, `nodejs`, `inotify-tools`, `libnotify`, `gigalixir` | ✓ | ✓ coverage |
+| [`elm`](./elm/) | `elm`, `elm-json`, `elm2nix`, `elm-language-server`, `elm-review`, `elm-test`, `elm-format`, ... |  | ✓ |
+| [`erlang`](./erlang/) | `erlang`, `rebar3`, `erlang-language-platform`, `erlfmt` | ✓ | ✓ coverage |
+| [`gleam`](./gleam/) | `gleam`, `erlang`, `rebar3`, `nodejs` |  | ✓ |
+| [`haskell`](./haskell/) | `ghc`, `cabal-install`, `stack`, `hoogle`, `haskell-language-server`, `hlint`, `ormolu`, ... | ✓ | ✓ coverage, bench |
+| [`lean4`](./lean4/) | `lean4` |  | ✓ |
+| [`ocaml`](./ocaml/) | `ocaml`, `opam`, `dune`, `utop`, `odoc`, `ocaml-lsp-server`, `ocamlformat` |  | ✓ coverage |
+| [`purescript`](./purescript/) | `purescript`, `spago-legacy`, `nodejs`, `esbuild` |  | ✓ |
 
 ### JavaScript and the web
 
-| Template | Tooling |
-| :--- | :--- |
-| [`bun`](./bun/) | `bun`, `nodejs`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `biome`, `oxlint`, `prettier`, ... |
-| [`deno`](./deno/) | `deno`, `semgrep`, `trivy` |
-| [`graphql`](./graphql/) | `nodejs`, `pnpm`, `typescript`, `graphql-language-service-cli`, `typescript-language-server`, `eslint`, `biome`, `prettier`, ... |
-| [`node`](./node/) | `nodejs`, `pnpm`, `yarn`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `eslint`, `oxlint`, ... |
-| [`typescript`](./typescript/) | `nodejs`, `pnpm`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `biome`, `eslint`, `oxlint`, ... |
-| [`web`](./web/) | `nodejs`, `pnpm`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `tailwindcss-language-server`, `emmet-language-server`, `eslint`, ... |
+| Template | In the shell | `arch` | `tests` |
+| :--- | :--- | :---: | :--- |
+| [`bun`](./bun/) | `bun`, `nodejs`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `biome`, `oxlint`, ... | ✓ | ✓ coverage, mutation, browser |
+| [`deno`](./deno/) | `deno` |  | ✓ coverage, bench |
+| [`graphql`](./graphql/) | `nodejs`, `pnpm`, `typescript`, `graphql-language-service-cli`, `typescript-language-server`, `eslint`, `biome`, ... | ✓ | ✓ coverage, mutation, browser |
+| [`node`](./node/) | `nodejs`, `pnpm`, `yarn`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `eslint`, ... | ✓ | ✓ coverage, mutation, browser |
+| [`typescript`](./typescript/) | `nodejs`, `pnpm`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `biome`, `eslint`, ... | ✓ | ✓ coverage, mutation, browser |
+| [`web`](./web/) | `nodejs`, `pnpm`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `tailwindcss-language-server`, `emmet-language-server`, ... | ✓ | ✓ coverage, mutation, browser |
 
 ### Scripting and glue
 
-| Template | Tooling |
-| :--- | :--- |
-| [`assembly`](./assembly/) | `nasm`, `yasm`, `binutils`, `asm-lsp`, `radare2`, `lldb` |
-| [`groovy`](./groovy/) | `groovy`, `gradle`, `jdk`, `groovy-language-server`, `npm-groovy-lint`, `semgrep`, `trivy` |
-| [`lua`](./lua/) | `lua5_4`, `luajit`, `lua-language-server`, `selene`, `luacheck`, `stylua`, `semgrep`, `trivy` |
-| [`powershell`](./powershell/) | `powershell`, `powershell-editor-services`, `semgrep`, `trivy` |
-| [`shell`](./shell/) | `bash`, `bats`, `bash-language-server`, `shellcheck`, `shfmt`, `semgrep`, `trivy` |
-| [`swi-prolog`](./swi-prolog/) | `swi-prolog` |
+| Template | In the shell | `arch` | `tests` |
+| :--- | :--- | :---: | :--- |
+| [`assembly`](./assembly/) | `nasm`, `yasm`, `binutils`, `asm-lsp`, `radare2`, `lldb`, `gdb` |  |  |
+| [`groovy`](./groovy/) | `groovy`, `gradle`, `openjdk`, `groovy-language-server`, `npm-groovy-lint` | ✓ | ✓ coverage |
+| [`lua`](./lua/) | `lua`, `luajit`, `lua-language-server`, `selene`, `luacheck`, `stylua`, `busted` |  | ✓ |
+| [`powershell`](./powershell/) | `powershell`, `powershell-editor-services` |  | ✓ |
+| [`shell`](./shell/) | `bash-interactive`, `bats`, `bash-language-server`, `ShellCheck`, `shfmt`, `shellspec` |  | ✓ |
+| [`swi-prolog`](./swi-prolog/) | `swi-prolog` |  |  |
 
 ### Configuration and policy languages
 
-| Template | Tooling |
-| :--- | :--- |
-| [`cue`](./cue/) | `cue`, `cuelsp`, `trivy` |
-| [`dhall`](./dhall/) | `dhall`, `dhall-json`, `dhall-bash`, `dhall-docs`, `dhall-nix`, `dhall-lsp-server`, `trivy` |
-| [`nickel`](./nickel/) | `nickel`, `nls`, `trivy` |
-| [`nix`](./nix/) | `nixd`, `statix`, `deadnix`, `nixfmt`, `vulnix`, `nix-tree`, `nix-diff`, `nurl`, ... |
-| [`opa`](./opa/) | `open-policy-agent`, `conftest`, `regal`, `trivy` |
-| [`protobuf`](./protobuf/) | `protobuf`, `buf`, `grpcurl`, `protolint`, `trivy` |
+| Template | In the shell | `arch` | `tests` |
+| :--- | :--- | :---: | :--- |
+| [`cue`](./cue/) | `cue`, `cuelsp` |  | ✓ |
+| [`dhall`](./dhall/) | `dhall`, `dhall-json`, `dhall-bash`, `dhall-docs`, `dhall-nix`, `dhall-lsp-server` |  |  |
+| [`nickel`](./nickel/) | `nickel`, `nls` |  |  |
+| [`nix`](./nix/) | `nixd`, `statix`, `deadnix`, `nixfmt`, `vulnix`, `nix-tree`, `nix-diff`, ... |  | ✓ |
+| [`opa`](./opa/) | `open-policy-agent`, `conftest`, `regal` |  | ✓ |
+| [`protobuf`](./protobuf/) | `protobuf`, `buf`, `grpcurl`, `protolint` | ✓ |  |
 
 ### Infrastructure and operations
 
-| Template | Tooling |
-| :--- | :--- |
-| [`ansible`](./ansible/) | `ansible`, `sshpass`, `ansible-language-server`, `yaml-language-server`, `ansible-lint`, `yamllint`, `yamlfmt`, `trivy` |
-| [`docker`](./docker/) | `docker-compose`, `docker-buildx`, `podman`, `buildah`, `skopeo`, `dive`, `dockerfile-language-server-nodejs`, `yaml-language-server`, ... |
-| [`github-actions`](./github-actions/) | `act`, `gh`, `yaml-language-server`, `actionlint`, `yamllint`, `yamlfmt`, `zizmor`, `trivy` |
-| [`hashi`](./hashi/) | `terraform`, `vault`, `nomad`, `consul`, `packer`, `terragrunt`, `nomad-autoscaler`, `nomad-pack`, ... |
-| [`kubernetes`](./kubernetes/) | `kubectl`, `kubernetes-helm`, `kustomize`, `kubectx`, `k9s`, `stern`, `yaml-language-server`, `helm-ls`, ... |
-| [`pulumi`](./pulumi/) | `pulumi-bin`, `python313`, `go`, `nodejs`, `jdk`, `maven`, `gopls`, `basedpyright`, ... |
-| [`terraform`](./terraform/) | `opentofu`, `terragrunt`, `terraform-ls`, `tflint`, `terraform-docs`, `tfsec`, `checkov`, `trivy` |
+| Template | In the shell | `arch` | `tests` |
+| :--- | :--- | :---: | :--- |
+| [`ansible`](./ansible/) | `ansible-core`, `sshpass`, `ansible-language-server`, `yaml-language-server`, `ansible-lint`, `yamllint`, `yamlfmt`, ... |  | ✓ |
+| [`docker`](./docker/) | `docker-compose`, `docker-buildx`, `podman`, `buildah`, `skopeo`, `dive`, `dockerfile-language-server`, ... |  |  |
+| [`github-actions`](./github-actions/) | `act`, `gh`, `yaml-language-server`, `actionlint`, `yamllint`, `yamlfmt`, `zizmor`, ... |  |  |
+| [`hashi`](./hashi/) | `terraform`, `vault`, `nomad`, `consul`, `packer`, `terragrunt`, `nomad-autoscaler`, ... |  | ✓ |
+| [`kubernetes`](./kubernetes/) | `kubectl`, `kubernetes-helm`, `kustomize`, `kubectx`, `k9s`, `stern`, `yaml-language-server`, ... |  | ✓ |
+| [`pulumi`](./pulumi/) | `pulumi`, `python3`, `go`, `nodejs`, `openjdk`, `maven`, `gopls`, ... |  |  |
+| [`terraform`](./terraform/) | `opentofu`, `terragrunt`, `terraform-ls`, `tflint`, `terraform-docs`, `tfsec`, `checkov`, ... |  | ✓ |
 
 ### Data, hardware and documents
 
-| Template | Tooling |
-| :--- | :--- |
-| [`hdl`](./hdl/) | `verilator`, `iverilog`, `ghdl`, `yosys`, `gtkwave`, `verible`, `svls` |
-| [`jupyter`](./jupyter/) | `python`, `ipykernel`, `poetry`, `uv`, `basedpyright`, `ruff`, `mypy`, `nbstripout`, ... |
-| [`latex`](./latex/) | `scheme-full`, `tectonic`, `texlab`, `vale`, `pandoc` |
-| [`markdown`](./markdown/) | `marksman`, `harper`, `markdownlint-cli2`, `vale`, `lychee`, `mdformat`, `prettier`, `pandoc`, ... |
-| [`platformio`](./platformio/) | `platformio`, `cmake`, `ninja`, `bear`, `clang-tools`, `cppcheck`, `codespell`, `gtest`, ... |
-| [`presenterm`](./presenterm/) | `presenterm`, `mermaid-cli`, `typst`, `pandoc`, `marksman`, `harper`, `markdownlint-cli2`, `vale`, ... |
-| [`r`](./r/) | `rEnv`, `pandoc`, `scheme-full`, `trivy` |
-| [`solidity`](./solidity/) | `solc`, `solc-select`, `foundry`, `nodejs`, `pnpm`, `slither-analyzer`, `semgrep`, `trivy` |
-| [`sql`](./sql/) | `postgresql`, `sqlite`, `pgcli`, `usql`, `sqls`, `sqlfluff`, `sqruff`, `pgformatter`, ... |
-| [`typst`](./typst/) | `typst`, `tinymist`, `typstyle`, `vale`, `pandoc` |
+| Template | In the shell | `arch` | `tests` |
+| :--- | :--- | :---: | :--- |
+| [`hdl`](./hdl/) | `verilator`, `iverilog`, `ghdl-mcode`, `gtkwave`, `verible`, `svls`, `sby`, ... |  | ✓ |
+| [`jupyter`](./jupyter/) | `python3`, `poetry`, `uv`, `basedpyright`, `ruff`, `mypy`, `nbstripout`, ... |  | ✓ |
+| [`latex`](./latex/) | `texlive-combined-full`, `tectonic`, `texlab`, `vale`, `pandoc-cli` |  |  |
+| [`markdown`](./markdown/) | `marksman`, `harper`, `markdownlint-cli2`, `vale`, `lychee`, `mdformat`, `prettier`, ... |  |  |
+| [`platformio`](./platformio/) | `platformio`, `cmake`, `ninja`, `bear`, `clang-tools`, `cppcheck`, `codespell`, ... |  | ✓ |
+| [`presenterm`](./presenterm/) | `presenterm`, `mermaid-cli`, `typst`, `pandoc-cli`, `marksman`, `harper`, `markdownlint-cli2`, ... |  |  |
+| [`r`](./r/) | `R`, `pandoc-cli`, `texlive-combined-full` |  | ✓ coverage |
+| [`solidity`](./solidity/) | `solc`, `solc-select`, `foundry`, `nodejs`, `pnpm`, `slither-analyzer` |  | ✓ coverage, bench |
+| [`sql`](./sql/) | `postgresql`, `sqlite`, `pgcli`, `usql`, `sqls`, `sqlfluff`, `sqruff`, ... |  |  |
+| [`typst`](./typst/) | `typst`, `tinymist`, `typstyle`, `vale`, `pandoc-cli` |  |  |
 
 ### Starting point
 
-| Template | Tooling |
-| :--- | :--- |
-| [`empty`](./empty/) | `treefmt`, `dprint`, `taplo`, `yamlfmt`, `yamllint`, `markdownlint-cli2`, `actionlint`, `semgrep`, ... |
-| [`project`](./project/) | The library, for a project in several languages: you list them in `flake.nix`. Comes with `architecture.toml` and no editor files. |
+| Template | In the shell | `arch` | `tests` |
+| :--- | :--- | :---: | :--- |
+| [`empty`](./empty/) | `treefmt`, `dprint`, `taplo`, `yamlfmt`, `yamllint`, `markdownlint-cli2`, `actionlint` |  |  |
+| [`project`](./project/) | For several languages at once: you list them in `flake.nix`. Comes with an `architecture.toml`. |  |  |
+
+## Editors
+
+Every language template comes with `.envrc`, `.vscode/` and `.nvim.lua`.
+
+**VS Code.** Install the [direnv extension][direnv-ext]. It loads the shell into
+the editor so extensions find the binaries, and the five commands show up as
+tasks.
+
+```shell
+code --install-extension mkhl.direnv
+```
+
+**Neovim.** `.nvim.lua` is project-local config, which Neovim reads when
+`exrc` is on:
+
+```lua
+vim.o.exrc = true
+```
+
+Answer `:trust` the first time. You get LSP through the built-in
+`vim.lsp.config` (Neovim 0.11+, no plugins), format on save, and
+`:DevLint`, `:DevFmt`, `:DevScan`, `:DevArch` and `:DevTests`.
+
+**Anything else.** Start it from a directory where direnv is active and it
+inherits the whole toolchain through `PATH`.
 
 ## Notes on individual templates
 
@@ -382,27 +367,23 @@ A file it cannot parse fails the check instead of passing unread.
 
 ```shell
 nix develop           # or direnv allow
-check                 # nix flake check, every template
-build                 # build every template's devShell
+check                 # evaluate every template, on every system
+build                 # build every template's shell
 format                # nixfmt every .nix file
-nix flake check       # the library: archcheck's tests, and shellcheck on its scripts
+nix flake check       # the tests of arch and the MCP server, shellcheck on every command
 ```
-
-The library is in [`lib/`](./lib/):
 
 | Path | What it is |
 | :--- | :--- |
-| `lib/default.nix` | `mkProject`, and the list of languages |
-| `lib/languages/` | One file per language: its tools and its part of `lint`, `fmt` and `scan` |
-| `lib/helpers.sh` | The shell helpers those parts use (`run`, `run_on`, `when`, ...) |
-| `lib/archcheck/` | `archcheck`, in Python with no dependencies, and its tests |
+| `lib/languages/` | One file per language: its tools and its part of each command. |
+| `lib/default.nix` | `mkProject`, which puts languages together. |
+| `lib/helpers.sh` | The shell helpers the commands share (`run`, `when`, `run_on`, ...). |
+| `lib/arch/` | `arch`, in Python with no dependencies, and its tests. |
+| `mcp/` | The MCP server, same. |
+| `<name>/` | A template: a flake that names its language, plus editor files. |
 
-To add a language to the library, add its file under `lib/languages/` and its
-name in `lib/default.nix`. `nix flake check` then checks its scripts together
-with all the others.
-
-A template that takes this repository as an input, as `project` does, is checked
-by `check` and `build` against your checkout, not against what is published.
+To add a language, add `lib/languages/<name>.nix` and a template folder for
+it. `check` and `build` test templates against your checkout, not against
+what is published.
 
 [direnv-ext]: https://marketplace.visualstudio.com/items?itemName=mkhl.direnv
-[direnv-vim]: https://github.com/direnv/direnv.vim
