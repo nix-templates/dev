@@ -129,7 +129,10 @@ def main(argv: list[str] | None = None) -> int:
                 root, args.since, os.path.relpath(config_path, root), os.path.relpath(baseline_path, root)
             )
             before = baseline.file_at(root, args.since, os.path.relpath(config_path, root))
-            if before is not None and not args.allow_weaker:
+            if before is None:
+                # Say so: a run that compared nothing must not look like one that found nothing.
+                scan.warnings.append(f"{args.since} has no {CONFIG}, so --since had nothing to compare with")
+            elif not args.allow_weaker:
                 weaker = ratchet.weaker(parse(before), config, scan.files)
     except (ConfigError, baseline.BaselineError) as error:
         print(f"layers: {error}", file=sys.stderr)

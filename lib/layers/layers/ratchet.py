@@ -22,6 +22,16 @@ def weaker(old: Config, new: Config, files: list[str]) -> list[str]:
         found.append(f"[purity] allow gained '{entry}'")
     for entry in sorted(set(old.purity_forbid) - set(new.purity_forbid)):
         found.append(f"[purity] forbid lost '{entry}'")
+    # Where imports are resolved from: without a root an import stops leading to a file of the
+    # repository, and the use it stood for is no longer seen.
+    for name, before, after in (
+        ("[sources] roots", old.roots, new.roots),
+        ("[python] roots", old.python_roots, new.python_roots),
+        ("[cpp] include_dirs", old.cpp_include_dirs, new.cpp_include_dirs),
+        ("[javascript] aliases", sorted(old.js_aliases), sorted(new.js_aliases)),
+    ):
+        for entry in sorted(set(before) - set(after)):
+            found.append(f"{name} lost '{entry}'")
 
     now = {layer.name: layer for layer in new.layers}
     for layer in old.layers:
