@@ -2,6 +2,7 @@
 
 import os
 import re
+import subprocess
 from functools import lru_cache
 
 # Build output and vendored code. Hidden directories are skipped as well.
@@ -15,6 +16,14 @@ SKIP_DIRS = frozenset(
         "_build",
         "vendor",
         "__pycache__",
+        "deps",
+        "venv",
+        "site-packages",
+        "bower_components",
+        "elm-stuff",
+        "nimcache",
+        "zig-out",
+        "Pods",
     }
 )
 
@@ -68,8 +77,39 @@ def any_match(patterns: list[str], path: str) -> bool:
     return any(glob_match(p, path) for p in patterns)
 
 
+def _git_files(root: str) -> list[str] | None:
+    """The files git tracks or would add, or None when root is not in a work tree."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", root, "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    return [path for path in result.stdout.decode("utf-8", "surrogateescape").split("\0") if path]
+
+
 def walk(root: str, exclude: list[str]) -> list[str]:
-    """Every file below root as a sorted, repository-relative posix path."""
+    """Every file below root as a sorted, repository-relative posix path.
+
+    In a git work tree that is what git tracks or would add, so what
+    .gitignore leaves out is left out here. Build output, vendored code and
+    hidden directories are skipped either way.
+    """
+    listed = _git_files(root)
+    if listed is not None:
+        found = []
+        for path in listed:
+            parts = path.split("/")
+            if any(part.startswith(".") or part in SKIP_DIRS for part in parts[:-1]):
+                continue
+            if any_match(exclude, path) or not os.path.isfile(os.path.join(root, path)):
+                continue
+            found.append(path)
+        return sorted(found)
     found = []
     for directory, subdirs, names in os.walk(root):
         rel_dir = os.path.relpath(directory, root).replace(os.sep, "/")

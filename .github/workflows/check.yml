@@ -37,6 +37,6 @@ jobs:
       - name: Evaluate every template
         run: nix develop --command check
 
-      # The tests of arch and of the MCP server, and shellcheck on every command.
+      # The tests of layers and of the MCP server, and shellcheck on every command.
       - name: Check the library
         run: nix flake check

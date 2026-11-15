@@ -28,7 +28,7 @@
     run_on '*.erl' erlfmt --write
   '';
 
-  arch = [
+  layers = [
     ''
       when rebar.config rebar3 xref
     ''

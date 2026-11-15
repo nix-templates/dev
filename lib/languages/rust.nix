@@ -84,7 +84,7 @@ in
     when deny.toml cargo deny check
   '';
 
-  arch = [
+  layers = [
     ''
       # Banned crates, and which crates may pull one in (`wrappers`), from deny.toml.
       when deny.toml cargo deny check bans

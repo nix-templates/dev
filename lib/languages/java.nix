@@ -45,7 +45,7 @@
     run_on '*.java' google-java-format --replace
   '';
 
-  arch = [
+  layers = [
     ''
       when_has pom.xml maven-enforcer-plugin mvn -B -q enforcer:enforce
     ''

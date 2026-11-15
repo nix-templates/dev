@@ -60,7 +60,7 @@ def _external_violation(ref: Ref, layer: Layer, entry: str) -> Violation:
     )
 
 
-def _check(ref: Ref, config: Config) -> Violation | None:
+def _check(ref: Ref, config: Config, languages: dict[str, str]) -> Violation | None:
     source = config.layer_of(ref.file)
     if source is None:
         return None
@@ -77,7 +77,7 @@ def _check(ref: Ref, config: Config) -> Violation | None:
     if entry:
         return _external_violation(ref, source, entry)
     if source.pure:
-        language = language_of(ref.file)
+        language = languages.get(ref.file) or language_of(ref.file)
         allowed = tuple(config.purity_allow) + ALLOWED.get(language, ())
         if first_covering(allowed, ref.target, ref.path):
             return None
@@ -91,7 +91,7 @@ def evaluate(config: Config, scan: Scan) -> list[Violation]:
     """Every violation once per (rule, file, target), with the first line and a count."""
     found: dict[tuple[str, str, str], Violation] = {}
     for ref in sorted(scan.refs, key=lambda r: (r.file, r.line)):
-        violation = _check(ref, config)
+        violation = _check(ref, config, scan.language)
         if violation is None:
             continue
         earlier = found.get(violation.key)

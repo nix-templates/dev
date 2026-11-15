@@ -40,7 +40,7 @@
     run prettier --write --ignore-unknown --log-level warn .
   '';
 
-  arch = [
+  layers = [
     ''
       depcruise_sources() {
         if [ -d src ]; then

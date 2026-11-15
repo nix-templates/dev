@@ -89,7 +89,7 @@ in
     run bandit --quiet --recursive . --exclude ./.venv,./.direnv
   '';
 
-  arch = [
+  layers = [
     ''
       when_has pyproject.toml tool.deptry deptry .
     ''

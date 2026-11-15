@@ -1,4 +1,8 @@
-"""What a pure layer may not touch, per language.
+"""What a pure layer may not touch, for the four languages with a reader of their own.
+
+The other languages keep their lists in languages.py and add them to DEFAULTS
+and ALLOWED below.
+
 
 A pure layer is a functional core: the same input gives the same output, and
 nothing outside the function changes. So no files, network, processes, clock,
@@ -159,14 +163,14 @@ CPP = (
     "QtSql",
 )
 
-SEPARATORS = ("::", ".", "/")
+SEPARATORS = ("::", ".", "/", "\\", ":")
 
 
 def language_of(path: str) -> str | None:
     name = path.rsplit("/", 1)[-1]
     if name.endswith(".rs") or name == "Cargo.toml":
         return "rust"
-    if name.endswith(".py"):
+    if name.endswith((".py", ".ipynb")):
         return "python"
     if name.endswith((".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".mts", ".cts")):
         return "javascript"

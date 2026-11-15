@@ -98,9 +98,9 @@
           };
         in
         {
-          # The tests of `arch`.
-          arch =
-            pkgs.runCommand "arch-tests"
+          # The tests of `layers`.
+          layers =
+            pkgs.runCommand "layers-tests"
               {
                 nativeBuildInputs = [
                   pkgs.python3
@@ -108,7 +108,7 @@
                 ];
               }
               ''
-                cd ${./lib/arch}
+                cd ${./lib/layers}
                 export HOME="$TMPDIR"
                 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m unittest discover -s tests
                 touch $out
@@ -126,7 +126,7 @@
               }
               ''
                 cd ${./mcp}
-                PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.:${./lib/arch} python3 -m unittest test_server
+                PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.:${./lib/layers} python3 -m unittest test_server
                 printf '%s\n' \
                   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
                   '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
@@ -165,7 +165,7 @@
           default = self.packages.${system}.dvt;
 
           # Dependency and purity rules from a repository's architecture.toml.
-          arch = self.lib.arch pkgs;
+          layers = self.lib.layers pkgs;
 
           # An MCP server: lets an agent see what the library has and write the
           # flake for a project that uses it. `nix run .#mcp`
@@ -174,7 +174,7 @@
             runtimeInputs = [ pkgs.python3 ];
             text = ''
               export DEV_CATALOGUE=${pkgs.writeText "catalogue.json" (builtins.toJSON (self.lib.catalogue pkgs))}
-              PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=${./mcp}:${./lib/arch} exec python3 ${./mcp}/server.py
+              PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=${./mcp}:${./lib/layers} exec python3 ${./mcp}/server.py
             '';
           };
 

@@ -28,6 +28,7 @@ class Config:
     exclude: list[str] = field(default_factory=list)
     purity_allow: list[str] = field(default_factory=list)
     purity_forbid: list[str] = field(default_factory=list)
+    roots: list[str] = field(default_factory=list)
     python_roots: list[str] = field(default_factory=list)
     cpp_include_dirs: list[str] = field(default_factory=list)
     js_aliases: dict[str, str] = field(default_factory=dict)
@@ -40,7 +41,7 @@ class Config:
         return None
 
 
-_TOP = {"version", "strict", "include_tests", "exclude", "layer", "purity", "python", "cpp", "javascript"}
+_TOP = {"version", "strict", "include_tests", "exclude", "layer", "purity", "sources", "python", "cpp", "javascript"}
 _LAYER = {"name", "paths", "may_use", "pure", "forbid_external", "hint"}
 
 
@@ -70,7 +71,7 @@ def parse(text: str) -> Config:
 
     _only(data, _TOP, "architecture.toml")
     if data.get("version", 1) != 1:
-        raise ConfigError(f"version {data['version']!r} is not supported; this arch reads version 1")
+        raise ConfigError(f"version {data['version']!r} is not supported; this program reads version 1")
 
     raw_layers = data.get("layer", [])
     if not isinstance(raw_layers, list) or not raw_layers:
@@ -116,6 +117,8 @@ def parse(text: str) -> Config:
 
     purity = data.get("purity", {})
     _only(purity, {"allow", "forbid"}, "[purity]")
+    sources = data.get("sources", {})
+    _only(sources, {"roots"}, "[sources]")
     python = data.get("python", {})
     _only(python, {"roots"}, "[python]")
     cpp = data.get("cpp", {})
@@ -133,6 +136,7 @@ def parse(text: str) -> Config:
         exclude=_strings(data.get("exclude", []), "exclude"),
         purity_allow=_strings(purity.get("allow", []), "[purity] allow"),
         purity_forbid=_strings(purity.get("forbid", []), "[purity] forbid"),
+        roots=_strings(sources.get("roots", []), "[sources] roots"),
         python_roots=_strings(python.get("roots", []), "[python] roots"),
         cpp_include_dirs=_strings(cpp.get("include_dirs", []), "[cpp] include_dirs"),
         js_aliases=dict(aliases),

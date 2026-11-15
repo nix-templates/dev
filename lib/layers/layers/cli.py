@@ -1,17 +1,12 @@
-"""The arch command.
-
-With no arguments it prints the machine's hardware name, exactly as the `arch`
-of GNU coreutils does, so a script that calls `arch` still gets what it expects
-when this one comes first on PATH. Everything this program adds is behind a flag.
-"""
+"""The layers command: check a repository against the layers in architecture.toml."""
 
 import argparse
 import os
-import platform
 import sys
 
-from . import __version__, baseline, cpp, javascript, python, report, rust
+from . import __version__, baseline, cpp, generic, javascript, python, report, rust
 from .config import Config, ConfigError, parse
+from .languages import LANGUAGES
 from .model import Scan
 from .rules import evaluate
 from .walk import walk
@@ -24,10 +19,24 @@ def scan_repository(root: str, config: Config) -> Scan:
     files = walk(root, config.exclude)
     scan = Scan()
     rust.extract(root, files, config.include_tests, scan)
-    python.extract(root, files, config.python_roots, config.include_tests, scan)
+    python.extract(root, files, config.python_roots + config.roots, config.include_tests, scan)
     javascript.extract(root, files, config.js_aliases, config.include_tests, scan)
-    cpp.extract(root, files, config.cpp_include_dirs, config.include_tests, scan)
+    cpp.extract(root, files, config.cpp_include_dirs + config.roots, config.include_tests, scan)
+    generic.extract(root, files, LANGUAGES, config, scan)
     return scan
+
+
+# The four languages with a reader of their own, then the ones read from text.
+OWN = (
+    ("rust", (".rs", "Cargo.toml")),
+    ("python", (".py", ".ipynb")),
+    ("javascript", javascript.EXTENSIONS),
+    ("cpp", cpp.EXTENSIONS),
+)
+
+
+def languages() -> list[tuple[str, tuple[str, ...]]]:
+    return sorted(list(OWN) + [(language.name, language.extensions) for language in LANGUAGES])
 
 
 def _explain(config: Config, scan: Scan) -> str:
@@ -48,22 +57,19 @@ def _explain(config: Config, scan: Scan) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    if not argv:
-        print(platform.machine())
-        return 0
 
     parser = argparse.ArgumentParser(
-        prog="arch",
+        prog="layers",
         description="Check the dependency and purity rules in architecture.toml. "
-        "With --check it exits 0 when they hold, 1 when they do not and 2 when it could not run. "
-        "With no arguments it prints the machine's hardware name, as coreutils' arch does.",
+        "It exits 0 when they hold, 1 when they do not and 2 when it could not run.",
     )
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--check", action="store_true", help="check the rules")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--check", action="store_true", help="check the rules (what happens when no other mode is named)")
     mode.add_argument("--accept", action="store_true", help="write every current violation to the baseline (for adopting the rules)")
     mode.add_argument("--prune", action="store_true", help="remove baseline entries that no longer occur, then check")
     mode.add_argument("--explain", action="store_true", help="list the layers and the files in each")
-    mode.add_argument("--version", action="version", version=f"arch {__version__}")
+    mode.add_argument("--languages", action="store_true", help="list the languages this program reads, and their files")
+    mode.add_argument("--version", action="version", version=f"layers {__version__}")
     parser.add_argument("--root", default=".", help="the repository to check (default: the current directory)")
     parser.add_argument("--config", help=f"the rules (default: {CONFIG} in the root)")
     parser.add_argument("--baseline", help=f"the known violations (default: {BASELINE} in the root)")
@@ -72,14 +78,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--since", metavar="REVISION", help="also fail when the baseline has entries that REVISION's baseline lacks")
     args = parser.parse_args(argv)
 
+    if args.languages:
+        for name, extensions in languages():
+            print(f"{name}: {' '.join(extensions)}")
+        return 0
+
     root = args.root
     config_path = args.config or os.path.join(root, CONFIG)
     baseline_path = args.baseline or os.path.join(root, BASELINE)
     if not os.path.exists(config_path):
         if args.config:
-            print(f"arch: {config_path} does not exist", file=sys.stderr)
+            print(f"layers: {config_path} does not exist", file=sys.stderr)
             return 2
-        print(f":: skipping arch (no {CONFIG} here)")
+        print(f":: skipping layers (no {CONFIG} here)")
         return 0
 
     try:
@@ -94,11 +105,11 @@ def main(argv: list[str] | None = None) -> int:
                 root, args.since, os.path.relpath(config_path, root), os.path.relpath(baseline_path, root)
             )
     except (ConfigError, baseline.BaselineError) as error:
-        print(f"arch: {error}", file=sys.stderr)
+        print(f"layers: {error}", file=sys.stderr)
         return 2
 
     for warning in scan.warnings:
-        print(f"arch: warning: {warning}", file=sys.stderr)
+        print(f"layers: warning: {warning}", file=sys.stderr)
 
     if args.explain:
         print(_explain(config, scan))
@@ -107,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
     current = {violation.key for violation in violations}
     if args.accept:
         baseline.save(baseline_path, current)
-        print(f"arch: wrote {len(current)} violations to {baseline_path}")
+        print(f"layers: wrote {len(current)} violations to {baseline_path}")
         return 0
 
     new = [violation for violation in violations if violation.key not in known_keys]
@@ -115,7 +126,7 @@ def main(argv: list[str] | None = None) -> int:
     fixed = sorted(known_keys - current)
     if args.prune:
         baseline.save(baseline_path, known_keys & current)
-        print(f"arch: removed {len(fixed)} entries from {baseline_path}")
+        print(f"layers: removed {len(fixed)} entries from {baseline_path}")
         fixed = []
         known_keys &= current
     grown = sorted(known_keys - previous) if previous is not None else []

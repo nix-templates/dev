@@ -1,11 +1,11 @@
-"""Tests for the MCP server. Run with: PYTHONPATH=.:../lib/arch python -m unittest test_server"""
+"""Tests for the MCP server. Run with: PYTHONPATH=.:../lib/layers python -m unittest test_server"""
 
 import io
 import json
 import unittest
 
 import server
-from arch.config import parse
+from layers.config import parse
 
 CATALOGUE = {
     "rust": {
@@ -14,7 +14,7 @@ CATALOGUE = {
         "lint": "when Cargo.toml cargo clippy\n",
         "fmt": "when Cargo.toml cargo fmt --all\n",
         "scan": "when Cargo.lock cargo audit\n",
-        "arch": ["when deny.toml cargo deny check bans\n"],
+        "layers": ["when deny.toml cargo deny check bans\n"],
         "tests": {"run": ["when Cargo.toml cargo nextest run\n"], "mutation": ["when Cargo.toml cargo mutants\n"]},
         "semgrep": True,
         "trivy": True,
@@ -26,7 +26,7 @@ CATALOGUE = {
         "lint": "",
         "fmt": "",
         "scan": "",
-        "arch": [],
+        "layers": [],
         "tests": {},
         "semgrep": False,
         "trivy": False,
@@ -86,7 +86,7 @@ class Tools(unittest.TestCase):
         self.assertFalse(error)
         self.assertEqual(
             result["languages"][1],
-            {"name": "rust", "description": "Rust development environment", "architecture_tools": True, "tests": ["mutation", "run"]},
+            {"name": "rust", "description": "Rust development environment", "layers_reads": ["rust"], "architecture_tools": True, "tests": ["mutation", "run"]},
         )
 
     def test_describe_language_shows_what_each_command_runs(self):
@@ -128,6 +128,15 @@ class Tools(unittest.TestCase):
         self.assertEqual([(l.name, l.pure, l.may_use) for l in config.layers], [("core", True, []), ("app", False, ["core"])])
         self.assertEqual(config.layers[1].hint, 'Say "why".')
 
+    def test_architecture_rules_writes_roots_and_purity(self):
+        error, result = call(
+            "architecture_rules",
+            {"layers": [{"name": "core", "paths": ["src/core"], "pure": True}], "roots": ["code"], "purity_allow": ["time"], "purity_forbid": ["acme"]},
+        )
+        self.assertFalse(error)
+        config = parse(result["files"]["architecture.toml"])
+        self.assertEqual((config.roots, config.purity_allow, config.purity_forbid), (["code"], ["time"], ["acme"]))
+
     def test_architecture_rules_refuses_rules_the_checker_would_refuse(self):
         error, text = call("architecture_rules", {"layers": [{"name": "core", "paths": ["src"], "may_use": ["nowhere"]}]})
         self.assertTrue(error)
@@ -138,6 +147,8 @@ class Tools(unittest.TestCase):
         error, result = call("architecture_rules")
         self.assertFalse(error)
         self.assertIn("functional core", result["reference"])
+        for language in ("rust", "go", "java", "qml", "shell"):
+            self.assertIn(language, result["reference"])
         self.assertFalse(call("architecture_rules", result["example_arguments"])[0])
 
 

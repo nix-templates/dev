@@ -1,23 +1,22 @@
-"""Tests for arch --check. Run with: PYTHONPATH=. python -m unittest discover -s tests"""
+"""Tests for layers --check. Run with: PYTHONPATH=. python -m unittest discover -s tests"""
 
 import contextlib
 import io
 import json
 import os
-import platform
 import subprocess
 import tempfile
 import textwrap
 import unittest
 
-from arch import baseline, cli, rust
-from arch.config import ConfigError, parse
-from arch.effects import covers
-from arch.walk import glob_match
+from layers import baseline, cli, rust
+from layers.config import ConfigError, parse
+from layers.effects import covers
+from layers.walk import glob_match
 
 
 def tree(files: dict[str, str]) -> str:
-    root = tempfile.mkdtemp(prefix="arch-test-")
+    root = tempfile.mkdtemp(prefix="layers-test-")
     for path, text in files.items():
         full = os.path.join(root, path)
         os.makedirs(os.path.dirname(full), exist_ok=True)
@@ -40,7 +39,7 @@ def call(*argv: str) -> tuple[int, str]:
 
 
 def run(root: str, *args: str) -> tuple[int, str]:
-    """`arch --check` on root, or the mode named in args."""
+    """`layers --check` on root, or the mode named in args."""
     mode = [] if MODES & set(args) else ["--check"]
     return call(*mode, "--root", root, *args)
 
@@ -467,18 +466,34 @@ class Baseline(unittest.TestCase):
         self.assertEqual(run(self.root, "--since", "no-such-revision")[0], 2)
 
 
-class CommandLine(unittest.TestCase):
-    def test_without_arguments_it_is_coreutils_arch(self):
-        self.assertEqual(call(), (0, platform.machine() + "\n"))
+class Walk(unittest.TestCase):
+    def test_what_gitignore_leaves_out_is_not_read(self):
+        files = dict(Python.FILES)
+        files["scratch/copy.py"] = "from app.adapters import disk\n"
+        files["architecture.toml"] = textwrap.dedent(files["architecture.toml"]).replace('"app/core"', '"app/core", "scratch"')
+        root = tree(files)
+        self.assertEqual(found(root), {("layer", "scratch/copy.py", "app/adapters/disk.py")})
+        subprocess.run(["git", "-C", root, "init", "-q"], check=True, capture_output=True)
+        self.assertEqual(found(root), {("layer", "scratch/copy.py", "app/adapters/disk.py")})
+        with open(os.path.join(root, ".gitignore"), "w", encoding="utf-8") as handle:
+            handle.write("scratch/\n")
+        self.assertEqual(found(root), set())
 
-    def test_options_without_a_mode_are_refused(self):
-        self.assertEqual(call("--root", tree(Python.FILES))[0], 2)
+
+class CommandLine(unittest.TestCase):
+    def test_without_a_mode_it_checks(self):
+        self.assertEqual(call("--root", tree(Python.FILES)), call("--check", "--root", tree(Python.FILES)))
+        files = dict(Python.FILES)
+        files["app/core/plan.py"] += "\n            import subprocess\n"
+        self.assertEqual(call("--root", tree(files))[0], 1)
+
+    def test_two_modes_are_refused(self):
         self.assertEqual(call("--check", "--accept")[0], 2)
 
     def test_no_rules_is_a_skip_not_a_failure(self):
         code, out = run(tree({"a.py": ""}))
         self.assertEqual(code, 0)
-        self.assertIn("skipping arch", out)
+        self.assertIn("skipping layers", out)
 
     def test_a_broken_config_exits_2(self):
         self.assertEqual(run(tree({"architecture.toml": "version = 9\n"}))[0], 2)

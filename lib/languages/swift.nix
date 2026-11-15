@@ -33,7 +33,7 @@
     run swiftformat .
   '';
 
-  arch = [
+  layers = [
     ''
       # Periphery finds unused declarations. nixpkgs has it for macOS only, so it
       # runs when it is on PATH.

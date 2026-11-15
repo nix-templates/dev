@@ -39,7 +39,7 @@
     when_any '*.kt' ktlint --format --relative
   '';
 
-  arch = [
+  layers = [
     ''
       if has com.autonomousapps.dependency-analysis build.gradle build.gradle.kts settings.gradle settings.gradle.kts; then
         run gradle --no-daemon -q buildHealth

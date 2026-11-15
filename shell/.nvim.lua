@@ -88,8 +88,8 @@ vim.api.nvim_create_autocmd("BufWritePost", {
   end,
 })
 
--- :DevLint / :DevFmt / :DevScan / :DevArch / :DevTests run the same `lint`,
--- `fmt`, `scan`, `arch --check` and `tests` the devShell exposes. Lint and
+-- :DevLint / :DevFmt / :DevScan / :DevLayers / :DevTests run the same `lint`,
+-- `fmt`, `scan`, `layers` and `tests` the devShell exposes. Lint and
 -- architecture results land in the quickfix list.
 local function dev_run(script, to_quickfix, args)
   if vim.fn.executable(script) ~= 1 then
@@ -126,7 +126,7 @@ vim.api.nvim_create_user_command("DevFmt", function() dev_run("fmt", false) end,
 vim.api.nvim_create_user_command("DevScan", function() dev_run("scan", false) end, {
   desc = "Run this environment's SAST, dependency and secret scanners",
 })
-vim.api.nvim_create_user_command("DevArch", function() dev_run("arch", true, { "--check" }) end, {
+vim.api.nvim_create_user_command("DevLayers", function() dev_run("layers", true) end, {
   desc = "Check the architecture rules into the quickfix list",
 })
 vim.api.nvim_create_user_command("DevTests", function() dev_run("tests", false) end, {

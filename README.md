@@ -13,7 +13,7 @@ templates, and all of them answer to the same five commands:
 | `lint` | Every linter and static analyser for your languages. |
 | `fmt` | Every formatter. `fmt --check` reports and changes nothing. |
 | `scan` | Leaked secrets, vulnerable dependencies, SAST. |
-| `arch --check` | Your architecture rules. |
+| `layers` | Your architecture rules: which code may use which, and what must stay pure. |
 | `tests` | Your tests. `tests --coverage` and `tests --mutation` where the language has a tool for it. |
 
 The terminal, VS Code and Neovim all call these same five, so your editor and
@@ -55,7 +55,7 @@ Every project gets `typos`, `editorconfig-checker` and `gitleaks` regardless.
 
 ## Architecture rules
 
-`arch --check` reads `architecture.toml` and fails when code breaks it.
+`layers` reads `architecture.toml` and fails when code breaks it.
 
 ```toml
 version = 1
@@ -100,41 +100,50 @@ the error.
 Existing code won't pass new rules on day one. So:
 
 ```shell
-arch --explain   # which file landed in which layer
-arch --accept    # write today's violations to architecture-baseline.json
+layers --explain   # which file landed in which layer
+layers --accept    # write today's violations to architecture-baseline.json
 ```
 
 After that, known violations pass and new ones fail. The baseline can only
-shrink. Fix a violation and `arch --check` fails until `arch --prune` takes it
-off the list. In CI, `arch --check --since origin/main` also fails if someone
-grew the baseline.
+shrink. Fix a violation and `layers` fails until `layers --prune` takes it
+off the list. In CI, `layers --since origin/main` also fails if someone grew
+the baseline.
 
 ### What it reads
 
-| Language | How |
+54 languages. `layers --languages` lists them with their file types.
+
+| How a file names what it uses | Languages |
 | :--- | :--- |
-| Rust | Crate dependencies from every `Cargo.toml`, exactly. Inside a crate, `use` and qualified paths. |
-| Python | Imports from the syntax tree, plus calls like `open()`, `print()` and `datetime.now()`. |
-| JavaScript, TypeScript | `import`, `export ... from`, `require()`, plus `fetch`, `Date.now()`, `console`, the DOM. |
-| C, C++ | `#include` lines. |
+| A reader of its own | Rust (crate dependencies from every `Cargo.toml`, then `use` paths), Python (the syntax tree, notebooks included), JavaScript and TypeScript, C and C++ |
+| A declared package or module | Java, Kotlin, Groovy, Scala, C#, F#, PHP, Haxe, Perl, Elixir, Erlang, Haskell, PureScript, Elm, Clojure, Fortran, Rego, VHDL |
+| A path to a file or directory | Go, CUE, Dart, Lua, Nim, Crystal, Zig, V, Odin, Gleam, Lean, Racket, Julia, R, Nix, Dhall, Nickel, shell, PowerShell, Protobuf, GraphQL, Solidity, Terraform, QML, Typst, LaTeX, Prolog, Verilog, assembly |
+| A convention | Swift (a target is a directory under `Sources/`), OCaml (a file is a module, a dune library is a directory), Ruby (`require`, and constants the way Zeitwerk maps them to files) |
 
-It reads source text, not the compiler's view. Things like `#[path]` modules,
-`importlib` and `tsconfig.json` path mappings are invisible to it. A file it
-cannot parse fails the check. It never passes unread.
+What counts as impure differs per language: `java.io` and
+`System.currentTimeMillis()` in Java, `os` and goroutines in Go, `IO` in a
+type signature in Haskell. The lists are in
+[`languages.py`](./lib/layers/layers/languages.py) and
+[`effects.py`](./lib/layers/layers/effects.py).
 
-For the other languages, `arch --check` runs the language's own tool when you
-have its config: go-arch-lint, `cargo deny check bans`, deptry and
-import-linter, dependency-cruiser and knip, the Maven enforcer, Gradle's
-`buildHealth`, sbt-explicit-dependencies, `mix xref`, `rebar3 xref`, deptrac,
-packwerk, weeder, `dependency_validator`, periphery and `buf breaking`.
+It reads source text, not the compiler's view. That makes it close, not
+exact: macros, names built at run time and build-system path mappings are
+invisible to it. When it guesses your import roots wrong, set them with
+`[sources] roots`. A file it cannot parse fails the check. It never passes
+unread. In a git checkout it reads what git tracks or would add, so whatever
+`.gitignore` leaves out stays out.
+
+Some languages have a real architecture tool of their own. `layers` runs it
+after the rules, when you have its config: go-arch-lint, `cargo deny check
+bans`, deptry and import-linter, dependency-cruiser and knip, the Maven
+enforcer, Gradle's `buildHealth`, sbt-explicit-dependencies, `mix xref`,
+`rebar3 xref`, deptrac, packwerk, weeder, `dependency_validator`, periphery
+and `buf breaking`.
 
 More settings: `strict = true` fails on files in no layer, `exclude` skips
 paths, `forbid_external` keeps packages out of a layer, `hint` adds your own
 advice to a layer's failures, and `[purity] allow` and `forbid` adjust what
 counts as pure.
-
-One more thing. `arch` with no arguments prints the machine type, exactly
-like the `arch` from coreutils. Scripts that call it keep working.
 
 ## In your own flake
 
@@ -201,7 +210,7 @@ write the flake for the project it is working on.
 
 | Tool | What it does |
 | :--- | :--- |
-| `list_languages` | Every language, with its test modes and whether it has architecture tools. |
+| `list_languages` | Every language, with its test modes, whether `layers` reads it, and whether it has an architecture tool of its own. |
 | `describe_language` | Every tool in one language's shell, and exactly what each command runs. |
 | `generate_flake` | The `flake.nix` and `.envrc` for the languages you name. |
 | `architecture_rules` | An `architecture.toml` from a list of layers, checked by the real parser. |
@@ -210,116 +219,118 @@ It writes nothing to disk. It hands back file contents and the agent decides.
 
 ## Templates
 
-`arch` means the language has an architecture tool of its own on top of
-`architecture.toml`. `tests` lists the extra modes next to plain `tests`.
+A tick under `layers` means it reads that template's sources, so your
+`architecture.toml` applies to them. `+ tool` means the language also has an
+architecture tool of its own, which runs after the rules. `tests` lists the
+extra modes next to plain `tests`.
 
 ### Systems and application languages
 
-| Template | In the shell | `arch` | `tests` |
-| :--- | :--- | :---: | :--- |
-| [`c-cpp`](./c-cpp/) | `cmake`, `ninja`, `meson`, `bear`, `gtest`, `lcov`, `doxygen`, ... |  | ✓ |
-| [`crystal`](./crystal/) | `crystal`, `shards`, `crystalline`, `ameba` |  | ✓ |
-| [`csharp`](./csharp/) | `dotnet-sdk`, `msbuild`, `mono`, `omnisharp-roslyn`, `csharpier`, `netcoredbg` |  | ✓ coverage, mutation |
-| [`dart`](./dart/) | `dart`, `flutter` | ✓ | ✓ coverage |
-| [`fortran`](./fortran/) | `gfortran`, `fpm`, `fortls`, `fprettify` |  | ✓ |
-| [`fsharp`](./fsharp/) | `dotnet-sdk`, `msbuild`, `fsautocomplete`, `fantomas` |  | ✓ coverage, mutation |
-| [`go`](./go/) | `go`, `gotools`, `gotestsum`, `delve`, `gopls`, `golangci-lint`, `go-tools`, ... | ✓ | ✓ coverage, bench |
-| [`haxe`](./haxe/) | `haxe`, `neko` |  |  |
-| [`java`](./java/) | `openjdk`, `maven`, `gradle`, `jdt-language-server`, `checkstyle`, `pmd`, `google-java-format`, ... | ✓ | ✓ coverage, mutation |
-| [`julia`](./julia/) | `julia`, `pandoc-cli` |  | ✓ coverage |
-| [`kotlin`](./kotlin/) | `kotlin`, `gradle`, `openjdk`, `kotlin-language-server`, `ktlint`, `detekt`, `ktfmt`, ... | ✓ | ✓ coverage, mutation |
-| [`nim`](./nim/) | `x86_64-unknown-linux-gnu-nim`, `nimble`, `nimlangserver`, `nph` |  | ✓ |
-| [`odin`](./odin/) | `odin`, `ols` |  | ✓ |
-| [`perl`](./perl/) | `perl`, `perlnavigator`, `PLS`, `Perl-Critic`, `Perl-Tidy` |  | ✓ |
-| [`php`](./php/) | `php-with-extensions`, `composer`, `phpactor`, `phpstan`, `psalm`, `php-codesniffer`, `php-cs-fixer`, ... | ✓ | ✓ mutation |
-| [`python`](./python/) | `python3`, `uv`, `basedpyright`, `ruff`, `mypy`, `vulture`, `bandit`, ... | ✓ | ✓ coverage, mutation |
-| [`racket`](./racket/) | `racket` |  | ✓ |
-| [`ruby`](./ruby/) | `ruby`, `ruby-lsp`, `solargraph`, `rubocop`, `bundler-audit` | ✓ | ✓ |
-| [`rust`](./rust/) | `cargo`, `rustc`, `clippy`, `rustfmt`, `cargo-edit`, `cargo-watch`, `cargo-nextest`, ... | ✓ | ✓ coverage, mutation, bench |
-| [`scala`](./scala/) | `scala`, `sbt`, `scala-cli`, `mill`, `coursier`, `openjdk`, `metals`, ... | ✓ | ✓ coverage, mutation |
-| [`swift`](./swift/) | `swift`, `sourcekit-lsp`, `swiftlint`, `swiftformat` | ✓ | ✓ coverage |
-| [`vlang`](./vlang/) | `vlang` |  | ✓ |
-| [`zig`](./zig/) | `zig`, `zls`, `lldb` |  | ✓ |
-| `qml` (library only) | `qtdeclarative` |  |  |
+| Template | In the shell | `layers` | `tests` |
+| :--- | :--- | :--- | :--- |
+| [`c-cpp`](./c-cpp/) | `cmake`, `ninja`, `meson`, `bear`, `gtest`, `lcov`, `doxygen`, ... | ✓ | ✓ |
+| [`crystal`](./crystal/) | `crystal`, `shards`, `crystalline`, `ameba` | ✓ | ✓ |
+| [`csharp`](./csharp/) | `dotnet-sdk`, `msbuild`, `mono`, `omnisharp-roslyn`, `csharpier`, `netcoredbg` | ✓ | ✓ coverage, mutation |
+| [`dart`](./dart/) | `dart`, `flutter` | ✓ + tool | ✓ coverage |
+| [`fortran`](./fortran/) | `gfortran`, `fpm`, `fortls`, `fprettify` | ✓ | ✓ |
+| [`fsharp`](./fsharp/) | `dotnet-sdk`, `msbuild`, `fsautocomplete`, `fantomas` | ✓ | ✓ coverage, mutation |
+| [`go`](./go/) | `go`, `gotools`, `gotestsum`, `delve`, `gopls`, `golangci-lint`, `go-tools`, ... | ✓ + tool | ✓ coverage, bench |
+| [`haxe`](./haxe/) | `haxe`, `neko` | ✓ |  |
+| [`java`](./java/) | `openjdk`, `maven`, `gradle`, `jdt-language-server`, `checkstyle`, `pmd`, `google-java-format`, ... | ✓ + tool | ✓ coverage, mutation |
+| [`julia`](./julia/) | `julia`, `pandoc-cli` | ✓ | ✓ coverage |
+| [`kotlin`](./kotlin/) | `kotlin`, `gradle`, `openjdk`, `kotlin-language-server`, `ktlint`, `detekt`, `ktfmt`, ... | ✓ + tool | ✓ coverage, mutation |
+| [`nim`](./nim/) | `x86_64-unknown-linux-gnu-nim`, `nimble`, `nimlangserver`, `nph` | ✓ | ✓ |
+| [`odin`](./odin/) | `odin`, `ols` | ✓ | ✓ |
+| [`perl`](./perl/) | `perl`, `perlnavigator`, `PLS`, `Perl-Critic`, `Perl-Tidy` | ✓ | ✓ |
+| [`php`](./php/) | `php-with-extensions`, `composer`, `phpactor`, `phpstan`, `psalm`, `php-codesniffer`, `php-cs-fixer`, ... | ✓ + tool | ✓ mutation |
+| [`python`](./python/) | `python3`, `uv`, `basedpyright`, `ruff`, `mypy`, `vulture`, `bandit`, ... | ✓ + tool | ✓ coverage, mutation |
+| [`racket`](./racket/) | `racket` | ✓ | ✓ |
+| [`ruby`](./ruby/) | `ruby`, `ruby-lsp`, `solargraph`, `rubocop`, `bundler-audit` | ✓ + tool | ✓ |
+| [`rust`](./rust/) | `cargo`, `rustc`, `clippy`, `rustfmt`, `cargo-edit`, `cargo-watch`, `cargo-nextest`, ... | ✓ + tool | ✓ coverage, mutation, bench |
+| [`scala`](./scala/) | `scala`, `sbt`, `scala-cli`, `mill`, `coursier`, `openjdk`, `metals`, ... | ✓ + tool | ✓ coverage, mutation |
+| [`swift`](./swift/) | `swift`, `sourcekit-lsp`, `swiftlint`, `swiftformat` | ✓ + tool | ✓ coverage |
+| [`vlang`](./vlang/) | `vlang` | ✓ | ✓ |
+| [`zig`](./zig/) | `zig`, `zls`, `lldb` | ✓ | ✓ |
+| `qml` (library only) | `qtdeclarative` | ✓ |  |
 
 ### Functional languages
 
-| Template | In the shell | `arch` | `tests` |
-| :--- | :--- | :---: | :--- |
-| [`clojure`](./clojure/) | `clojure`, `leiningen`, `boot`, `babashka`, `clojure-lsp`, `clj-kondo`, `cljfmt`, ... |  | ✓ coverage |
-| [`elixir`](./elixir/) | `elixir`, `git`, `elixir-ls`, `nodejs`, `inotify-tools`, `libnotify`, `gigalixir` | ✓ | ✓ coverage |
-| [`elm`](./elm/) | `elm`, `elm-json`, `elm2nix`, `elm-language-server`, `elm-review`, `elm-test`, `elm-format`, ... |  | ✓ |
-| [`erlang`](./erlang/) | `erlang`, `rebar3`, `erlang-language-platform`, `erlfmt` | ✓ | ✓ coverage |
-| [`gleam`](./gleam/) | `gleam`, `erlang`, `rebar3`, `nodejs` |  | ✓ |
-| [`haskell`](./haskell/) | `ghc`, `cabal-install`, `stack`, `hoogle`, `haskell-language-server`, `hlint`, `ormolu`, ... | ✓ | ✓ coverage, bench |
-| [`lean4`](./lean4/) | `lean4` |  | ✓ |
-| [`ocaml`](./ocaml/) | `ocaml`, `opam`, `dune`, `utop`, `odoc`, `ocaml-lsp-server`, `ocamlformat` |  | ✓ coverage |
-| [`purescript`](./purescript/) | `purescript`, `spago-legacy`, `nodejs`, `esbuild` |  | ✓ |
+| Template | In the shell | `layers` | `tests` |
+| :--- | :--- | :--- | :--- |
+| [`clojure`](./clojure/) | `clojure`, `leiningen`, `boot`, `babashka`, `clojure-lsp`, `clj-kondo`, `cljfmt`, ... | ✓ | ✓ coverage |
+| [`elixir`](./elixir/) | `elixir`, `git`, `elixir-ls`, `nodejs`, `inotify-tools`, `libnotify`, `gigalixir` | ✓ + tool | ✓ coverage |
+| [`elm`](./elm/) | `elm`, `elm-json`, `elm2nix`, `elm-language-server`, `elm-review`, `elm-test`, `elm-format`, ... | ✓ | ✓ |
+| [`erlang`](./erlang/) | `erlang`, `rebar3`, `erlang-language-platform`, `erlfmt` | ✓ + tool | ✓ coverage |
+| [`gleam`](./gleam/) | `gleam`, `erlang`, `rebar3`, `nodejs` | ✓ | ✓ |
+| [`haskell`](./haskell/) | `ghc`, `cabal-install`, `stack`, `hoogle`, `haskell-language-server`, `hlint`, `ormolu`, ... | ✓ + tool | ✓ coverage, bench |
+| [`lean4`](./lean4/) | `lean4` | ✓ | ✓ |
+| [`ocaml`](./ocaml/) | `ocaml`, `opam`, `dune`, `utop`, `odoc`, `ocaml-lsp-server`, `ocamlformat` | ✓ | ✓ coverage |
+| [`purescript`](./purescript/) | `purescript`, `spago-legacy`, `nodejs`, `esbuild` | ✓ | ✓ |
 
 ### JavaScript and the web
 
-| Template | In the shell | `arch` | `tests` |
-| :--- | :--- | :---: | :--- |
-| [`bun`](./bun/) | `bun`, `nodejs`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `biome`, `oxlint`, ... | ✓ | ✓ coverage, mutation, browser |
-| [`deno`](./deno/) | `deno` |  | ✓ coverage, bench |
-| [`graphql`](./graphql/) | `nodejs`, `pnpm`, `typescript`, `graphql-language-service-cli`, `typescript-language-server`, `eslint`, `biome`, ... | ✓ | ✓ coverage, mutation, browser |
-| [`node`](./node/) | `nodejs`, `pnpm`, `yarn`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `eslint`, ... | ✓ | ✓ coverage, mutation, browser |
-| [`typescript`](./typescript/) | `nodejs`, `pnpm`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `biome`, `eslint`, ... | ✓ | ✓ coverage, mutation, browser |
-| [`web`](./web/) | `nodejs`, `pnpm`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `tailwindcss-language-server`, `emmet-language-server`, ... | ✓ | ✓ coverage, mutation, browser |
+| Template | In the shell | `layers` | `tests` |
+| :--- | :--- | :--- | :--- |
+| [`bun`](./bun/) | `bun`, `nodejs`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `biome`, `oxlint`, ... | ✓ + tool | ✓ coverage, mutation, browser |
+| [`deno`](./deno/) | `deno` | ✓ | ✓ coverage, bench |
+| [`graphql`](./graphql/) | `nodejs`, `pnpm`, `typescript`, `graphql-language-service-cli`, `typescript-language-server`, `eslint`, `biome`, ... | ✓ + tool | ✓ coverage, mutation, browser |
+| [`node`](./node/) | `nodejs`, `pnpm`, `yarn`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `eslint`, ... | ✓ + tool | ✓ coverage, mutation, browser |
+| [`typescript`](./typescript/) | `nodejs`, `pnpm`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `biome`, `eslint`, ... | ✓ + tool | ✓ coverage, mutation, browser |
+| [`web`](./web/) | `nodejs`, `pnpm`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `tailwindcss-language-server`, `emmet-language-server`, ... | ✓ + tool | ✓ coverage, mutation, browser |
 
 ### Scripting and glue
 
-| Template | In the shell | `arch` | `tests` |
-| :--- | :--- | :---: | :--- |
-| [`assembly`](./assembly/) | `nasm`, `yasm`, `binutils`, `asm-lsp`, `radare2`, `lldb`, `gdb` |  |  |
-| [`groovy`](./groovy/) | `groovy`, `gradle`, `openjdk`, `groovy-language-server`, `npm-groovy-lint` | ✓ | ✓ coverage |
-| [`lua`](./lua/) | `lua`, `luajit`, `lua-language-server`, `selene`, `luacheck`, `stylua`, `busted` |  | ✓ |
-| [`powershell`](./powershell/) | `powershell`, `powershell-editor-services` |  | ✓ |
-| [`shell`](./shell/) | `bash-interactive`, `bats`, `bash-language-server`, `ShellCheck`, `shfmt`, `shellspec` |  | ✓ |
-| [`swi-prolog`](./swi-prolog/) | `swi-prolog` |  |  |
+| Template | In the shell | `layers` | `tests` |
+| :--- | :--- | :--- | :--- |
+| [`assembly`](./assembly/) | `nasm`, `yasm`, `binutils`, `asm-lsp`, `radare2`, `lldb`, `gdb` | ✓ |  |
+| [`groovy`](./groovy/) | `groovy`, `gradle`, `openjdk`, `groovy-language-server`, `npm-groovy-lint` | ✓ + tool | ✓ coverage |
+| [`lua`](./lua/) | `lua`, `luajit`, `lua-language-server`, `selene`, `luacheck`, `stylua`, `busted` | ✓ | ✓ |
+| [`powershell`](./powershell/) | `powershell`, `powershell-editor-services` | ✓ | ✓ |
+| [`shell`](./shell/) | `bash-interactive`, `bats`, `bash-language-server`, `ShellCheck`, `shfmt`, `shellspec` | ✓ | ✓ |
+| [`swi-prolog`](./swi-prolog/) | `swi-prolog` | ✓ |  |
 
 ### Configuration and policy languages
 
-| Template | In the shell | `arch` | `tests` |
-| :--- | :--- | :---: | :--- |
-| [`cue`](./cue/) | `cue`, `cuelsp` |  | ✓ |
-| [`dhall`](./dhall/) | `dhall`, `dhall-json`, `dhall-bash`, `dhall-docs`, `dhall-nix`, `dhall-lsp-server` |  |  |
-| [`nickel`](./nickel/) | `nickel`, `nls` |  |  |
-| [`nix`](./nix/) | `nixd`, `statix`, `deadnix`, `nixfmt`, `vulnix`, `nix-tree`, `nix-diff`, ... |  | ✓ |
-| [`opa`](./opa/) | `open-policy-agent`, `conftest`, `regal` |  | ✓ |
-| [`protobuf`](./protobuf/) | `protobuf`, `buf`, `grpcurl`, `protolint` | ✓ |  |
+| Template | In the shell | `layers` | `tests` |
+| :--- | :--- | :--- | :--- |
+| [`cue`](./cue/) | `cue`, `cuelsp` | ✓ | ✓ |
+| [`dhall`](./dhall/) | `dhall`, `dhall-json`, `dhall-bash`, `dhall-docs`, `dhall-nix`, `dhall-lsp-server` | ✓ |  |
+| [`nickel`](./nickel/) | `nickel`, `nls` | ✓ |  |
+| [`nix`](./nix/) | `nixd`, `statix`, `deadnix`, `nixfmt`, `vulnix`, `nix-tree`, `nix-diff`, ... | ✓ | ✓ |
+| [`opa`](./opa/) | `open-policy-agent`, `conftest`, `regal` | ✓ | ✓ |
+| [`protobuf`](./protobuf/) | `protobuf`, `buf`, `grpcurl`, `protolint` | ✓ + tool |  |
 
 ### Infrastructure and operations
 
-| Template | In the shell | `arch` | `tests` |
-| :--- | :--- | :---: | :--- |
+| Template | In the shell | `layers` | `tests` |
+| :--- | :--- | :--- | :--- |
 | [`ansible`](./ansible/) | `ansible-core`, `sshpass`, `ansible-language-server`, `yaml-language-server`, `ansible-lint`, `yamllint`, `yamlfmt`, ... |  | ✓ |
 | [`docker`](./docker/) | `docker-compose`, `docker-buildx`, `podman`, `buildah`, `skopeo`, `dive`, `dockerfile-language-server`, ... |  |  |
 | [`github-actions`](./github-actions/) | `act`, `gh`, `yaml-language-server`, `actionlint`, `yamllint`, `yamlfmt`, `zizmor`, ... |  |  |
-| [`hashi`](./hashi/) | `terraform`, `vault`, `nomad`, `consul`, `packer`, `terragrunt`, `nomad-autoscaler`, ... |  | ✓ |
+| [`hashi`](./hashi/) | `terraform`, `vault`, `nomad`, `consul`, `packer`, `terragrunt`, `nomad-autoscaler`, ... | ✓ | ✓ |
 | [`kubernetes`](./kubernetes/) | `kubectl`, `kubernetes-helm`, `kustomize`, `kubectx`, `k9s`, `stern`, `yaml-language-server`, ... |  | ✓ |
-| [`pulumi`](./pulumi/) | `pulumi`, `python3`, `go`, `nodejs`, `openjdk`, `maven`, `gopls`, ... |  |  |
-| [`terraform`](./terraform/) | `opentofu`, `terragrunt`, `terraform-ls`, `tflint`, `terraform-docs`, `tfsec`, `checkov`, ... |  | ✓ |
+| [`pulumi`](./pulumi/) | `pulumi`, `python3`, `go`, `nodejs`, `openjdk`, `maven`, `gopls`, ... | ✓ |  |
+| [`terraform`](./terraform/) | `opentofu`, `terragrunt`, `terraform-ls`, `tflint`, `terraform-docs`, `tfsec`, `checkov`, ... | ✓ | ✓ |
 
 ### Data, hardware and documents
 
-| Template | In the shell | `arch` | `tests` |
-| :--- | :--- | :---: | :--- |
-| [`hdl`](./hdl/) | `verilator`, `iverilog`, `ghdl-mcode`, `gtkwave`, `verible`, `svls`, `sby`, ... |  | ✓ |
-| [`jupyter`](./jupyter/) | `python3`, `poetry`, `uv`, `basedpyright`, `ruff`, `mypy`, `nbstripout`, ... |  | ✓ |
-| [`latex`](./latex/) | `texlive-combined-full`, `tectonic`, `texlab`, `vale`, `pandoc-cli` |  |  |
+| Template | In the shell | `layers` | `tests` |
+| :--- | :--- | :--- | :--- |
+| [`hdl`](./hdl/) | `verilator`, `iverilog`, `ghdl-mcode`, `gtkwave`, `verible`, `svls`, `sby`, ... | ✓ | ✓ |
+| [`jupyter`](./jupyter/) | `python3`, `poetry`, `uv`, `basedpyright`, `ruff`, `mypy`, `nbstripout`, ... | ✓ | ✓ |
+| [`latex`](./latex/) | `texlive-combined-full`, `tectonic`, `texlab`, `vale`, `pandoc-cli` | ✓ |  |
 | [`markdown`](./markdown/) | `marksman`, `harper`, `markdownlint-cli2`, `vale`, `lychee`, `mdformat`, `prettier`, ... |  |  |
-| [`platformio`](./platformio/) | `platformio`, `cmake`, `ninja`, `bear`, `clang-tools`, `cppcheck`, `codespell`, ... |  | ✓ |
+| [`platformio`](./platformio/) | `platformio`, `cmake`, `ninja`, `bear`, `clang-tools`, `cppcheck`, `codespell`, ... | ✓ | ✓ |
 | [`presenterm`](./presenterm/) | `presenterm`, `mermaid-cli`, `typst`, `pandoc-cli`, `marksman`, `harper`, `markdownlint-cli2`, ... |  |  |
-| [`r`](./r/) | `R`, `pandoc-cli`, `texlive-combined-full` |  | ✓ coverage |
-| [`solidity`](./solidity/) | `solc`, `solc-select`, `foundry`, `nodejs`, `pnpm`, `slither-analyzer` |  | ✓ coverage, bench |
+| [`r`](./r/) | `R`, `pandoc-cli`, `texlive-combined-full` | ✓ | ✓ coverage |
+| [`solidity`](./solidity/) | `solc`, `solc-select`, `foundry`, `nodejs`, `pnpm`, `slither-analyzer` | ✓ | ✓ coverage, bench |
 | [`sql`](./sql/) | `postgresql`, `sqlite`, `pgcli`, `usql`, `sqls`, `sqlfluff`, `sqruff`, ... |  |  |
-| [`typst`](./typst/) | `typst`, `tinymist`, `typstyle`, `vale`, `pandoc-cli` |  |  |
+| [`typst`](./typst/) | `typst`, `tinymist`, `typstyle`, `vale`, `pandoc-cli` | ✓ |  |
 
 ### Starting point
 
-| Template | In the shell | `arch` | `tests` |
-| :--- | :--- | :---: | :--- |
+| Template | In the shell | `layers` | `tests` |
+| :--- | :--- | :--- | :--- |
 | [`empty`](./empty/) | `treefmt`, `dprint`, `taplo`, `yamlfmt`, `yamllint`, `markdownlint-cli2`, `actionlint` |  |  |
 | [`project`](./project/) | For several languages at once: you list them in `flake.nix`. Comes with an `architecture.toml`. |  |  |
 
@@ -344,7 +355,7 @@ vim.o.exrc = true
 
 Answer `:trust` the first time. You get LSP through the built-in
 `vim.lsp.config` (Neovim 0.11+, no plugins), format on save, and
-`:DevLint`, `:DevFmt`, `:DevScan`, `:DevArch` and `:DevTests`.
+`:DevLint`, `:DevFmt`, `:DevScan`, `:DevLayers` and `:DevTests`.
 
 **Anything else.** Start it from a directory where direnv is active and it
 inherits the whole toolchain through `PATH`.
@@ -370,7 +381,7 @@ nix develop           # or direnv allow
 check                 # evaluate every template, on every system
 build                 # build every template's shell
 format                # nixfmt every .nix file
-nix flake check       # the tests of arch and the MCP server, shellcheck on every command
+nix flake check       # the tests of layers and the MCP server, shellcheck on every command
 ```
 
 | Path | What it is |
@@ -378,7 +389,7 @@ nix flake check       # the tests of arch and the MCP server, shellcheck on ever
 | `lib/languages/` | One file per language: its tools and its part of each command. |
 | `lib/default.nix` | `mkProject`, which puts languages together. |
 | `lib/helpers.sh` | The shell helpers the commands share (`run`, `when`, `run_on`, ...). |
-| `lib/arch/` | `arch`, in Python with no dependencies, and its tests. |
+| `lib/layers/` | `layers`, in Python with no dependencies, and its tests. |
 | `mcp/` | The MCP server, same. |
 | `<name>/` | A template: a flake that names its language, plus editor files. |
 

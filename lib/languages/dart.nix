@@ -26,7 +26,7 @@
     when pubspec.lock dart pub outdated
   '';
 
-  arch = [
+  layers = [
     ''
       when_has pubspec.yaml dependency_validator dart run dependency_validator
     ''

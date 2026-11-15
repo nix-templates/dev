@@ -2,7 +2,7 @@
 #
 # A project takes this repository as a flake input and calls `mkProject` with
 # its own pkgs and the languages it is written in. The tools and the commands
-# `lint`, `fmt`, `scan`, `arch` and `tests` then come from the one definition
+# `lint`, `fmt`, `scan`, `layers` and `tests` then come from the one definition
 # here, so `nix flake update` brings every improvement to every project.
 { lib }:
 let
@@ -18,18 +18,17 @@ let
         ) (builtins.readDir ./languages)
       );
 
-  # The rules in a repository's architecture.toml. With no arguments it prints
-  # the machine's hardware name, as the `arch` of coreutils does.
-  arch =
+  # The program that checks a repository against its architecture.toml.
+  layers =
     pkgs:
     pkgs.writeShellApplication {
-      name = "arch";
+      name = "layers";
       runtimeInputs = [
         pkgs.python3
         pkgs.git
       ];
       text = ''
-        PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=${./arch} exec python3 -m arch "$@"
+        PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=${./layers} exec python3 -m layers "$@"
       '';
     };
 
@@ -80,7 +79,7 @@ let
 
       wants = flag: lib.any (module: module.${flag} or false) own;
       text = name: list: lib.concatMapStrings (module: module.${name} or "") list;
-      # `arch` and `tests` are lists of blocks. Languages that share a build
+      # `layers` and `tests` are lists of blocks. Languages that share a build
       # tool share blocks, and a shared block runs once.
       blocks = get: lib.concatStrings (lib.unique (lib.concatMap get own));
       modes = lib.unique (
@@ -88,7 +87,7 @@ let
       );
       testBlocks = mode: blocks (module: (module.tests or { }).${mode} or [ ]);
 
-      rules = "${arch pkgs}/bin/arch";
+      rules = "${layers pkgs}/bin/layers";
       tools = lib.unique (
         lib.concatMap (module: module.tools or [ ]) modules
         ++ lib.optional (wants "semgrep") pkgs.semgrep
@@ -144,24 +143,28 @@ let
           exit "$status"
         '';
 
-        # `arch --check` is the rules of architecture.toml, then each language's
-        # own architecture tools where the project has their config. Everything
-        # else, and machine-readable output, is the rules program alone.
-        arch = helpers + ''
-          check=
+        # `layers` is the rules of architecture.toml, then each language's own
+        # architecture tools where the project has their config. Its other
+        # modes, and machine-readable output, are the rules program alone.
+        layers = helpers + ''
           for argument in "$@"; do
             case "$argument" in
-              --check) check=1 ;;
-              json | --format=json) exec ${rules} "$@" ;;
+              --accept | --prune | --explain | --languages | --version | --help | -h | json | --format=json)
+                exec ${rules} "$@"
+                ;;
             esac
           done
-          if [ -z "$check" ]; then
-            exec ${rules} "$@"
-          fi
 
-          echo ":: arch $*"
-          ${rules} "$@" || status=1
-          ${blocks (module: module.arch or [ ])}
+          echo ":: layers''${*:+ $*}"
+          rules=0
+          ${rules} "$@" || rules=1
+          ${blocks (module: module.layers or [ ])}
+          if [ "$status" -ne 0 ]; then
+            echo "layers: FAIL: an architecture tool above did not pass"
+          fi
+          if [ "$rules" -ne 0 ]; then
+            status=1
+          fi
           exit "$status"
         '';
 
@@ -213,7 +216,7 @@ let
         if lib.any (module: module.needsCC or false) modules then pkgs.mkShell else pkgs.mkShellNoCC;
     in
     {
-      # `lint`, `fmt`, `scan`, `arch` and `tests`, each a package.
+      # `lint`, `fmt`, `scan`, `layers` and `tests`, each a package.
       inherit commands;
 
       # The tools alone, and the tools with the commands: for a shell of your own.
@@ -238,7 +241,7 @@ let
       checks = lib.optionalAttrs (src != null) {
         # Naming the file makes a missing architecture.toml a failure. A flake
         # only sees files git knows about, so a new one must be `git add`ed.
-        arch = pkgs.runCommand "arch-check" { } ''
+        layers = pkgs.runCommand "layers-check" { } ''
           ${rules} --check --root ${src} --config ${src}/architecture.toml
           touch $out
         '';
@@ -270,7 +273,7 @@ let
         lint = loaded.lint or "";
         fmt = loaded.fmt or "";
         scan = loaded.scan or "";
-        arch = loaded.arch or [ ];
+        layers = loaded.layers or [ ];
         tests = loaded.tests or { };
         semgrep = loaded.semgrep or false;
         trivy = loaded.trivy or false;
@@ -281,7 +284,7 @@ let
   self = {
     inherit
       languages
-      arch
+      layers
       mkProject
       catalogue
       ;

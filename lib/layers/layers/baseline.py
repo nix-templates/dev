@@ -21,7 +21,7 @@ def parse(text: str) -> set[Key]:
         data = json.loads(text)
         return {(item["rule"], item["file"], item["target"]) for item in data["violations"]}
     except (ValueError, KeyError, TypeError) as error:
-        raise BaselineError(f"the baseline is not in the format arch writes: {error}") from error
+        raise BaselineError(f"the baseline is not in the format `layers --accept` writes: {error}") from error
 
 
 def load(path: str) -> set[Key]:

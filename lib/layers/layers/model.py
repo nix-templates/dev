@@ -1,4 +1,4 @@
-"""The few records every part of arch passes around."""
+"""The few records every part of the program passes around."""
 
 from dataclasses import dataclass, field
 
@@ -44,3 +44,4 @@ class Scan:
     refs: list[Ref] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     unreadable: list[tuple[str, str]] = field(default_factory=list)  # files that could not be parsed, with why
+    language: dict[str, str] = field(default_factory=dict)  # the language a file was read as, where its name does not say

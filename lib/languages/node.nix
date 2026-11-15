@@ -49,7 +49,7 @@ in
     when package-lock.json npm audit --audit-level=high
   '';
 
-  arch = [
+  layers = [
     ''
       depcruise_sources() {
         if [ -d src ]; then

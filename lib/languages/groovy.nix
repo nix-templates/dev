@@ -28,7 +28,7 @@
     when_any '*.groovy' npm-groovy-lint --format .
   '';
 
-  arch = [
+  layers = [
     ''
       when_has pom.xml maven-enforcer-plugin mvn -B -q enforcer:enforce
     ''

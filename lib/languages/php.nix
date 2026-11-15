@@ -40,7 +40,7 @@
     when composer.lock composer audit
   '';
 
-  arch = [
+  layers = [
     ''
       if [ -e deptrac.yaml ] && [ -x vendor/bin/deptrac ]; then
         run vendor/bin/deptrac analyse

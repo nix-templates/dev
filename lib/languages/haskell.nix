@@ -37,7 +37,7 @@
     run_on '*.cabal' cabal-fmt --inplace
   '';
 
-  arch = [
+  layers = [
     ''
       when weeder.toml weeder
     ''

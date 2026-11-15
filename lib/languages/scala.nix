@@ -35,7 +35,7 @@
     when .scalafmt.conf scalafmt
   '';
 
-  arch = [
+  layers = [
     ''
       when_has project/plugins.sbt sbt-explicit-dependencies sbt undeclaredCompileDependenciesTest unusedCompileDependenciesTest
     ''

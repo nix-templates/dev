@@ -47,7 +47,7 @@ in
     when mix.exs mix format
   '';
 
-  arch = [
+  layers = [
     ''
       when mix.exs mix xref graph --format cycles --label compile-connected --fail-above 0
     ''

@@ -1,4 +1,4 @@
-"""What arch prints. The text is written for whoever has to fix it, person or agent."""
+"""What the check prints. The text is written for whoever has to fix it, person or agent."""
 
 import json
 
@@ -16,7 +16,7 @@ def text(new: list[Violation], known: int, fixed: list[Key], grown: list[Key], c
         out.append("")
         out.append(f"{len(fixed)} baseline entries no longer occur:")
         out.extend(f"    {rule}: {file} -> {target}" for rule, file, target in fixed)
-        out.append("    Run `arch --prune` and commit the shorter baseline.")
+        out.append("    Run `layers --prune` and commit the shorter baseline.")
     if grown:
         out.append("")
         out.append(f"{len(grown)} entries were added to the baseline; it may only get shorter:")
@@ -30,9 +30,9 @@ def text(new: list[Violation], known: int, fixed: list[Key], grown: list[Key], c
             reasons.append(f"{len(fixed)} baseline entries to remove")
         if grown:
             reasons.append(f"{len(grown)} entries added to the baseline")
-        out.append(f"arch: FAIL: {', '.join(reasons)} ({summary})")
+        out.append(f"layers: FAIL: {', '.join(reasons)} ({summary})")
     else:
-        out.append(f"arch: ok ({summary})")
+        out.append(f"layers: ok ({summary})")
     return "\n".join(out)
 
 

@@ -57,9 +57,9 @@
       "problemMatcher": []
     },
     {
-      "label": "arch",
+      "label": "layers",
       "type": "shell",
-      "command": "arch --check",
+      "command": "layers",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -67,7 +67,7 @@
       },
       "problemMatcher": [
         {
-          "owner": "dev-arch",
+          "owner": "dev-layers",
           "fileLocation": [
             "autoDetect",
             "${workspaceFolder}"

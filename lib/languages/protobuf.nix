@@ -30,7 +30,7 @@
     when buf.yaml buf breaking --against .git#branch=main
   '';
 
-  arch = [
+  layers = [
     ''
       # Breaking changes against the main branch, by the rules under `breaking:` in buf.yaml.
       buf_breaking() {

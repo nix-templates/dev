@@ -34,7 +34,7 @@
     when Gemfile.lock bundle-audit check --update
   '';
 
-  arch = [
+  layers = [
     ''
       when packwerk.yml bundle exec packwerk check
     ''

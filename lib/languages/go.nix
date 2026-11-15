@@ -47,7 +47,7 @@
     when go.mod govulncheck ./...
   '';
 
-  arch = [
+  layers = [
     ''
       when .go-arch-lint.yml go-arch-lint check
     ''
