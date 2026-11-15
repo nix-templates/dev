@@ -90,19 +90,22 @@ vim.api.nvim_create_autocmd("BufWritePost", {
   end,
 })
 
--- :DevLint / :DevFmt / :DevScan run the same `lint`, `fmt` and `scan` scripts
--- the devShell exposes. Lint results land in the quickfix list.
-local function dev_run(script, to_quickfix)
+-- :DevLint / :DevFmt / :DevScan / :DevArch / :DevTests run the same `lint`,
+-- `fmt`, `scan`, `arch --check` and `tests` the devShell exposes. Lint and
+-- architecture results land in the quickfix list.
+local function dev_run(script, to_quickfix, args)
   if vim.fn.executable(script) ~= 1 then
     vim.notify("[dev] '" .. script .. "' not found. Is the devShell loaded?", vim.log.levels.ERROR)
     return
   end
-  vim.notify("[dev] running " .. script .. " ...")
-  vim.system({ script }, { text = true }, vim.schedule_wrap(function(res)
+  local command = vim.list_extend({ script }, args or {})
+  local label = table.concat(command, " ")
+  vim.notify("[dev] running " .. label .. " ...")
+  vim.system(command, { text = true }, vim.schedule_wrap(function(res)
     local output = (res.stdout or "") .. (res.stderr or "")
     if to_quickfix then
       vim.fn.setqflist({}, " ", {
-        title = script,
+        title = label,
         lines = vim.split(output, "\n", { trimempty = true }),
         efm = "%f:%l:%c: %m,%f:%l:%c %m,%f:%l: %m,%f(%l): %m",
       })
@@ -112,7 +115,7 @@ local function dev_run(script, to_quickfix)
       vim.bo.buftype, vim.bo.bufhidden, vim.bo.swapfile = "nofile", "wipe", false
       vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.split(output, "\n"))
     end
-    vim.notify("[dev] " .. script .. " exited with " .. res.code)
+    vim.notify("[dev] " .. label .. " exited with " .. res.code)
   end))
 end
 
@@ -124,4 +127,10 @@ vim.api.nvim_create_user_command("DevFmt", function() dev_run("fmt", false) end,
 })
 vim.api.nvim_create_user_command("DevScan", function() dev_run("scan", false) end, {
   desc = "Run this environment's SAST, dependency and secret scanners",
+})
+vim.api.nvim_create_user_command("DevArch", function() dev_run("arch", true, { "--check" }) end, {
+  desc = "Check the architecture rules into the quickfix list",
+})
+vim.api.nvim_create_user_command("DevTests", function() dev_run("tests", false) end, {
+  desc = "Run the project's tests",
 })

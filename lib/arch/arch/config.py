@@ -70,7 +70,7 @@ def parse(text: str) -> Config:
 
     _only(data, _TOP, "architecture.toml")
     if data.get("version", 1) != 1:
-        raise ConfigError(f"version {data['version']!r} is not supported; this archcheck reads version 1")
+        raise ConfigError(f"version {data['version']!r} is not supported; this arch reads version 1")
 
     raw_layers = data.get("layer", [])
     if not isinstance(raw_layers, list) or not raw_layers:

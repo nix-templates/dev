@@ -1,8 +1,10 @@
-# QML (Qt Quick). qmllint needs the project's QML import paths to resolve
-# modules; without them it still catches syntax errors.
+# QML (Qt Quick).
 { pkgs, ... }:
 {
-  # qmllint, qmlformat and the qmlls language server
+  description = "QML development environment: qmllint, qmlformat and the qmlls language server";
+
+  # qmllint, qmlformat and qmlls. qmllint needs the project's QML import paths
+  # to resolve modules; without them it still catches syntax errors.
   tools = [ pkgs.qt6.qtdeclarative ];
 
   lint = ''
@@ -11,16 +13,5 @@
 
   fmt = ''
     run_on '*.qml' qmlformat --inplace
-  '';
-
-  # qmlformat has no check mode, so compare what it would write with the file.
-  fmtCheck = ''
-    qml_formatted() {
-      qmlformat "$1" | diff -q - "$1" > /dev/null || {
-        echo "$1 is not formatted"
-        return 1
-      }
-    }
-    for_each '*.qml' qml_formatted
   '';
 }

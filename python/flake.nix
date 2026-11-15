@@ -1,7 +1,17 @@
 {
   description = "A Nix-flake-based Python development environment: basedpyright, ruff, mypy and bandit";
 
-  inputs.nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1"; # unstable Nixpkgs
+  inputs = {
+    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1"; # unstable Nixpkgs
+
+    # The tools and checks of this environment are kept in one place, for every
+    # project that uses them: lib/languages/python.nix in nix-templates/dev.
+    # `nix flake update dev` brings in newer ones.
+    dev = {
+      url = "github:nix-templates/dev";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
 
   outputs =
     { self, ... }@inputs:
@@ -19,196 +29,28 @@
           system:
           f {
             inherit system;
-            pkgs = import inputs.nixpkgs {
-              inherit system;
-            };
+            pkgs = import inputs.nixpkgs { inherit system; };
           }
         );
+
+      # What this project is written in. Add a name to get that language's tools
+      # in the same shell, and its checks in `lint`, `fmt`, `scan`, `arch` and
+      # `tests`. The names are the templates of nix-templates/dev.
+      project =
+        pkgs:
+        inputs.dev.lib.mkProject {
+          inherit pkgs;
+          languages = [ "python" ];
+
+          # A .venv next to the project, made and activated on entering the shell.
+          options.pythonVenv = true;
+        };
     in
     {
       devShells = forEachSupportedSystem (
-        { pkgs, system }:
-        let
-          # Change this one line to move the whole environment to another Python.
-          python = pkgs.python313;
-
-          # Everything this environment puts on your PATH: compilers, language
-          # servers, linters, formatters and security scanners. Editors pick all
-          # of it up automatically once direnv has loaded the shell.
-          tools = with pkgs; [
-            # Toolchain: interpreter, virtualenv hook and the uv package manager
-            python
-            python.pkgs.venvShellHook
-            python.pkgs.pip
-            uv
-
-            # Language servers (ruff also ships one, for lint diagnostics)
-            basedpyright
-
-            # Linters, type checkers and dead-code detection
-            ruff
-            mypy
-            python.pkgs.vulture
-
-            # Security: SAST for Python and dependency/secret scanning
-            bandit
-            semgrep
-            trivy
-
-            # Repo hygiene, spelling and secret scanning
-            gitleaks
-            typos
-            editorconfig-checker
-          ];
-
-          # A tiny shell library shared by the three scripts below. `run` keeps
-          # going after a failure so that one pass surfaces every problem, and
-          # the `when*` / `*_on` wrappers skip a tool when the project has no
-          # matching files.
-          helpers = ''
-            # Shared helpers. `run` keeps going after a failure so you see every problem in
-            # one pass; `run_on` skips a tool entirely when the project has no such files.
-            status=0
-
-            run() {
-              echo ":: $*"
-              "$@" || status=1
-            }
-
-            collect() {
-              find . \( -name .git -o -name .direnv -o -name .venv -o -name node_modules -o -name target -o -name result -o -name build -o -name dist -o -name .build -o -name _build -o -name vendor -o -name .terraform -o -name .stack-work \) -prune -o -type f -name "$1" -print
-            }
-
-            run_on() {
-              local pattern="$1"
-              shift
-              local files=()
-              mapfile -t files < <(collect "$pattern")
-              if [ "''${#files[@]}" -eq 0 ]; then
-                echo ":: skipping $1 (no $pattern files)"
-                return
-              fi
-              run "$@" "''${files[@]}"
-            }
-
-            for_each() {
-              local pattern="$1"
-              shift
-              local files=()
-              mapfile -t files < <(collect "$pattern")
-              if [ "''${#files[@]}" -eq 0 ]; then
-                echo ":: skipping $1 (no $pattern files)"
-                return
-              fi
-              local file
-              for file in "''${files[@]}"; do
-                run "$@" "$file"
-              done
-            }
-
-            if_have() {
-              local bin="$1"
-              shift
-              if command -v "$bin" > /dev/null 2>&1; then
-                run "$@"
-              else
-                echo ":: skipping $1 ($bin is not on PATH)"
-              fi
-            }
-
-            when() {
-              local guard="$1"
-              shift
-              if [ -e "$guard" ]; then
-                run "$@"
-              else
-                echo ":: skipping $1 (no $guard here)"
-              fi
-            }
-
-            when_any() {
-              local pattern="$1"
-              shift
-              if [ -n "$(collect "$pattern" | head -n 1)" ]; then
-                run "$@"
-              else
-                echo ":: skipping $1 (no $pattern files)"
-              fi
-            }
-          '';
-
-          # `lint`, `fmt` and `scan` are the single source of truth for this
-          # environment's checks: the terminal, the VS Code tasks in
-          # .vscode/tasks.json and Neovim's :DevLint / :DevFmt / :DevScan
-          # commands all run exactly these.
-          mkScript =
-            name: text:
-            pkgs.writeShellApplication {
-              inherit name;
-              text = helpers + text;
-              runtimeInputs = tools;
-              # `helpers` is a shared library, so each script legitimately leaves
-              # some of its functions unused.
-              excludeShellChecks = [ "SC2329" ];
-            };
-
-          lint = mkScript "lint" ''
-            # Run every linter and static analyser for the Python environment.
-
-            run ruff check .
-            when pyproject.toml mypy .
-            run vulture . --min-confidence 80 --exclude '.venv,.direnv,build,dist'
-            run typos --format brief .
-            run editorconfig-checker -format gcc -exclude '(^|/)(\.direnv|\.venv|\.git|node_modules|vendor|result|dist|build|target)/'
-            exit "$status"
-          '';
-
-          fmt = mkScript "fmt" ''
-            # Format every file this Python environment knows how to format.
-
-            run ruff check --select I --fix .
-            run ruff format .
-            exit "$status"
-          '';
-
-          scan = mkScript "scan" ''
-            # Security scan: SAST, dependency and secret checks for Python.
-
-            run bandit --quiet --recursive . --exclude ./.venv,./.direnv
-            run semgrep scan --config auto --error --quiet .
-            run trivy fs --scanners vuln,secret --no-progress --skip-dirs .direnv --skip-dirs .venv .
-            run gitleaks dir . --no-banner --redact
-            exit "$status"
-          '';
-        in
+        { pkgs, ... }:
         {
-          default = pkgs.mkShellNoCC {
-            venvDir = ".venv";
-
-            packages = tools ++ [
-              lint
-              fmt
-              scan
-              self.formatter.${system}
-            ];
-
-            postShellHook = ''
-              venvVersionWarn() {
-                local venvVersion
-                venvVersion="$("$venvDir/bin/python" -c 'import platform; print(platform.python_version())')"
-
-                [[ "$venvVersion" == "${python.version}" ]] && return
-
-                cat <<EOF
-              Warning: Python version mismatch: [$venvVersion (venv)] != [${python.version}]
-              Delete '$venvDir' and reload to rebuild for it to be rebuilt for ${python.version}
-              EOF
-              }
-
-              venvVersionWarn
-            '';
-
-          };
+          default = (project pkgs).devShell;
         }
       );
 

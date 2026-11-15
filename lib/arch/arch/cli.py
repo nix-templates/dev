@@ -1,7 +1,13 @@
-"""The archcheck command."""
+"""The arch command.
+
+With no arguments it prints the machine's hardware name, exactly as the `arch`
+of GNU coreutils does, so a script that calls `arch` still gets what it expects
+when this one comes first on PATH. Everything this program adds is behind a flag.
+"""
 
 import argparse
 import os
+import platform
 import sys
 
 from . import __version__, baseline, cpp, javascript, python, report, rust
@@ -41,22 +47,29 @@ def _explain(config: Config, scan: Scan) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if not argv:
+        print(platform.machine())
+        return 0
+
     parser = argparse.ArgumentParser(
-        prog="archcheck",
+        prog="arch",
         description="Check the dependency and purity rules in architecture.toml. "
-        "Exits 0 when they hold, 1 when they do not, 2 when it could not run.",
+        "With --check it exits 0 when they hold, 1 when they do not and 2 when it could not run. "
+        "With no arguments it prints the machine's hardware name, as coreutils' arch does.",
     )
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--check", action="store_true", help="check the rules")
+    mode.add_argument("--accept", action="store_true", help="write every current violation to the baseline (for adopting the rules)")
+    mode.add_argument("--prune", action="store_true", help="remove baseline entries that no longer occur, then check")
+    mode.add_argument("--explain", action="store_true", help="list the layers and the files in each")
+    mode.add_argument("--version", action="version", version=f"arch {__version__}")
     parser.add_argument("--root", default=".", help="the repository to check (default: the current directory)")
     parser.add_argument("--config", help=f"the rules (default: {CONFIG} in the root)")
     parser.add_argument("--baseline", help=f"the known violations (default: {BASELINE} in the root)")
     parser.add_argument("--no-baseline", action="store_true", help="report every violation, known or not")
     parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.add_argument("--since", metavar="REVISION", help="also fail when the baseline has entries that REVISION's baseline lacks")
-    mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--accept", action="store_true", help="write every current violation to the baseline (for adopting the rules)")
-    mode.add_argument("--prune", action="store_true", help="remove baseline entries that no longer occur")
-    mode.add_argument("--explain", action="store_true", help="list the layers and the files in each")
-    parser.add_argument("--version", action="version", version=f"archcheck {__version__}")
     args = parser.parse_args(argv)
 
     root = args.root
@@ -64,9 +77,9 @@ def main(argv: list[str] | None = None) -> int:
     baseline_path = args.baseline or os.path.join(root, BASELINE)
     if not os.path.exists(config_path):
         if args.config:
-            print(f"archcheck: {config_path} does not exist", file=sys.stderr)
+            print(f"arch: {config_path} does not exist", file=sys.stderr)
             return 2
-        print(f":: skipping archcheck (no {CONFIG} here)")
+        print(f":: skipping arch (no {CONFIG} here)")
         return 0
 
     try:
@@ -81,11 +94,11 @@ def main(argv: list[str] | None = None) -> int:
                 root, args.since, os.path.relpath(config_path, root), os.path.relpath(baseline_path, root)
             )
     except (ConfigError, baseline.BaselineError) as error:
-        print(f"archcheck: {error}", file=sys.stderr)
+        print(f"arch: {error}", file=sys.stderr)
         return 2
 
     for warning in scan.warnings:
-        print(f"archcheck: warning: {warning}", file=sys.stderr)
+        print(f"arch: warning: {warning}", file=sys.stderr)
 
     if args.explain:
         print(_explain(config, scan))
@@ -94,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
     current = {violation.key for violation in violations}
     if args.accept:
         baseline.save(baseline_path, current)
-        print(f"archcheck: wrote {len(current)} violations to {baseline_path}")
+        print(f"arch: wrote {len(current)} violations to {baseline_path}")
         return 0
 
     new = [violation for violation in violations if violation.key not in known_keys]
@@ -102,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     fixed = sorted(known_keys - current)
     if args.prune:
         baseline.save(baseline_path, known_keys & current)
-        print(f"archcheck: removed {len(fixed)} entries from {baseline_path}")
+        print(f"arch: removed {len(fixed)} entries from {baseline_path}")
         fixed = []
         known_keys &= current
     grown = sorted(known_keys - previous) if previous is not None else []

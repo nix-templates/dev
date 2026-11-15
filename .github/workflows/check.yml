@@ -21,7 +21,7 @@ jobs:
       # so what it saves is the nixpkgs fetch and the evaluation of every template.
       - uses: nix-community/cache-nix-action@v7
         with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/flake.nix', 'lib/**') }}
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/flake.nix', 'lib/**', 'mcp/**') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           # GitHub allows 10G of cache per repository, so leave room to spare.
           gc-max-store-size-linux: 5G
@@ -37,6 +37,6 @@ jobs:
       - name: Evaluate every template
         run: nix develop --command check
 
-      # archcheck's tests, and shellcheck on the library's composed scripts.
+      # The tests of arch and of the MCP server, and shellcheck on every command.
       - name: Check the library
         run: nix flake check

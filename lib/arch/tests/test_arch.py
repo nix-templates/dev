@@ -1,22 +1,23 @@
-"""Tests for archcheck. Run with: PYTHONPATH=. python -m unittest discover -s tests"""
+"""Tests for arch --check. Run with: PYTHONPATH=. python -m unittest discover -s tests"""
 
 import contextlib
 import io
 import json
 import os
+import platform
 import subprocess
 import tempfile
 import textwrap
 import unittest
 
-from archcheck import baseline, cli, rust
-from archcheck.config import ConfigError, parse
-from archcheck.effects import covers
-from archcheck.walk import glob_match
+from arch import baseline, cli, rust
+from arch.config import ConfigError, parse
+from arch.effects import covers
+from arch.walk import glob_match
 
 
 def tree(files: dict[str, str]) -> str:
-    root = tempfile.mkdtemp(prefix="archcheck-test-")
+    root = tempfile.mkdtemp(prefix="arch-test-")
     for path, text in files.items():
         full = os.path.join(root, path)
         os.makedirs(os.path.dirname(full), exist_ok=True)
@@ -25,11 +26,23 @@ def tree(files: dict[str, str]) -> str:
     return root
 
 
-def run(root: str, *args: str) -> tuple[int, str]:
+MODES = {"--check", "--accept", "--prune", "--explain"}
+
+
+def call(*argv: str) -> tuple[int, str]:
     out = io.StringIO()
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
-        code = cli.main(["--root", root, *args])
+        try:
+            code = cli.main(list(argv))
+        except SystemExit as stop:
+            code = stop.code
     return code, out.getvalue()
+
+
+def run(root: str, *args: str) -> tuple[int, str]:
+    """`arch --check` on root, or the mode named in args."""
+    mode = [] if MODES & set(args) else ["--check"]
+    return call(*mode, "--root", root, *args)
 
 
 def found(root: str) -> set[tuple[str, str, str]]:
@@ -42,6 +55,11 @@ class Globs(unittest.TestCase):
         self.assertTrue(glob_match("src/shell", "src/shell/a/b.rs"))
         self.assertTrue(glob_match("src/shell/**", "src/shell/a/b.rs"))
         self.assertFalse(glob_match("src/shell", "src/shell_extra/a.rs"))
+
+    def test_dot_is_the_whole_repository(self):
+        self.assertTrue(glob_match(".", "src/a.rs"))
+        self.assertTrue(glob_match("./src", "src/a.rs"))
+        self.assertFalse(glob_match("./src", "lib/a.rs"))
 
     def test_star_stays_inside_one_segment(self):
         self.assertTrue(glob_match("crates/*-atspi/**", "crates/access-atspi/src/lib.rs"))
@@ -450,10 +468,17 @@ class Baseline(unittest.TestCase):
 
 
 class CommandLine(unittest.TestCase):
+    def test_without_arguments_it_is_coreutils_arch(self):
+        self.assertEqual(call(), (0, platform.machine() + "\n"))
+
+    def test_options_without_a_mode_are_refused(self):
+        self.assertEqual(call("--root", tree(Python.FILES))[0], 2)
+        self.assertEqual(call("--check", "--accept")[0], 2)
+
     def test_no_rules_is_a_skip_not_a_failure(self):
         code, out = run(tree({"a.py": ""}))
         self.assertEqual(code, 0)
-        self.assertIn("skipping archcheck", out)
+        self.assertIn("skipping arch", out)
 
     def test_a_broken_config_exits_2(self):
         self.assertEqual(run(tree({"architecture.toml": "version = 9\n"}))[0], 2)

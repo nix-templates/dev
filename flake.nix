@@ -90,7 +90,7 @@
       lib = import ./lib { inherit lib; };
 
       checks = forEachSupportedSystem (
-        { pkgs, ... }:
+        { pkgs, system }:
         let
           everything = self.lib.mkProject {
             inherit pkgs;
@@ -98,9 +98,9 @@
           };
         in
         {
-          # archcheck's own tests.
-          archcheck =
-            pkgs.runCommand "archcheck-tests"
+          # The tests of `arch`.
+          arch =
+            pkgs.runCommand "arch-tests"
               {
                 nativeBuildInputs = [
                   pkgs.python3
@@ -108,14 +108,43 @@
                 ];
               }
               ''
-                cd ${./lib/archcheck}
+                cd ${./lib/arch}
                 export HOME="$TMPDIR"
                 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m unittest discover -s tests
                 touch $out
               '';
 
-          # Every language's lint, fmt and scan, put together in one project, pass
-          # shellcheck. Building them without their tools keeps this quick.
+          # The MCP server's tests, then the built server asked over stdin for
+          # every language the library has.
+          mcp =
+            pkgs.runCommand "mcp-tests"
+              {
+                nativeBuildInputs = [
+                  pkgs.python3
+                  self.packages.${system}.mcp
+                ];
+              }
+              ''
+                cd ${./mcp}
+                PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.:${./lib/arch} python3 -m unittest test_server
+                printf '%s\n' \
+                  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
+                  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+                  '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_languages","arguments":{}}}' \
+                  | nix-templates-dev-mcp > "$TMPDIR/replies"
+                python3 -c '
+                import json, sys
+                first, second = [json.loads(line) for line in open(sys.argv[1])]
+                assert first["result"]["serverInfo"]["name"] == "nix-templates-dev", first
+                names = [entry["name"] for entry in json.loads(second["result"]["content"][0]["text"])["languages"]]
+                assert names == sorted(sys.argv[2].split()), names
+                print(len(names), "languages over MCP")
+                ' "$TMPDIR/replies" "${toString (builtins.attrNames self.lib.languages)}"
+                touch $out
+              '';
+
+          # The commands of a project with every language in it pass shellcheck.
+          # Building them without their tools keeps this quick.
           scripts = pkgs.linkFarmFromDrvs "library-scripts" (
             lib.mapAttrsToList (
               name: text:
@@ -136,7 +165,18 @@
           default = self.packages.${system}.dvt;
 
           # Dependency and purity rules from a repository's architecture.toml.
-          archcheck = self.lib.archcheck pkgs;
+          arch = self.lib.arch pkgs;
+
+          # An MCP server: lets an agent see what the library has and write the
+          # flake for a project that uses it. `nix run .#mcp`
+          mcp = pkgs.writeShellApplication {
+            name = "nix-templates-dev-mcp";
+            runtimeInputs = [ pkgs.python3 ];
+            text = ''
+              export DEV_CATALOGUE=${pkgs.writeText "catalogue.json" (builtins.toJSON (self.lib.catalogue pkgs))}
+              PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=${./mcp}:${./lib/arch} exec python3 ${./mcp}/server.py
+            '';
+          };
 
           # dvt <template> initialises a template in the current directory.
           dvt = pkgs.writeShellApplication {

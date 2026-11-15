@@ -31,9 +31,8 @@
 
       # Everything this project is written in. Each name adds that language's
       # compilers, language servers, linters, formatters and scanners to the
-      # shell, and its checks to `lint`, `fmt` and `scan`.
-      #
-      # Known: c-cpp, nix, python, qml, rust, shell.
+      # shell, and its checks to `lint`, `fmt`, `scan`, `arch` and `tests`.
+      # The names are the templates of nix-templates/dev: rust, python, go, ...
       project =
         pkgs:
         inputs.dev.lib.mkProject {
@@ -46,7 +45,7 @@
         };
     in
     {
-      # `lint`, `fmt`, `scan` and `archcheck` are on PATH in this shell.
+      # `lint`, `fmt`, `scan`, `arch` and `tests` are on PATH in this shell.
       devShells = forEachSupportedSystem (
         { pkgs, ... }:
         {
@@ -54,7 +53,7 @@
         }
       );
 
-      # `nix flake check` runs archcheck on architecture.toml.
+      # `nix flake check` checks the rules in architecture.toml.
       checks = forEachSupportedSystem ({ pkgs, ... }: (project pkgs).checks);
 
       formatter = forEachSupportedSystem ({ pkgs, ... }: pkgs.nixfmt);

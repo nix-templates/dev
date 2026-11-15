@@ -1,4 +1,4 @@
-"""The few records every part of archcheck passes around."""
+"""The few records every part of arch passes around."""
 
 from dataclasses import dataclass, field
 

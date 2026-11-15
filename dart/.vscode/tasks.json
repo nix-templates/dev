@@ -55,6 +55,45 @@
         "clear": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "arch",
+      "type": "shell",
+      "command": "arch --check",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [
+        {
+          "owner": "dev-arch",
+          "fileLocation": [
+            "autoDetect",
+            "${workspaceFolder}"
+          ],
+          "pattern": {
+            "regexp": "^(.+?):(\\d+):\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "message": 3
+          }
+        }
+      ]
+    },
+    {
+      "label": "tests",
+      "type": "shell",
+      "command": "tests",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test"
+      }
     }
   ]
 }

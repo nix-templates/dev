@@ -47,9 +47,13 @@ def glob_match(pattern: str, path: str) -> bool:
     """True when path, or a directory above it, matches pattern.
 
     "src/shell" and "src/shell/**" both match everything below src/shell;
-    "*" stays inside one path segment and "**" crosses segments.
+    "*" stays inside one path segment and "**" crosses segments. "." is the
+    whole repository.
     """
-    regex = _regex(pattern.strip("/"))
+    pattern = pattern.removeprefix("./").strip("/")
+    if pattern in ("", "."):
+        return True
+    regex = _regex(pattern)
     if regex.fullmatch(path):
         return True
     parent = path

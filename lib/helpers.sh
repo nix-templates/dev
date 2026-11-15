@@ -67,3 +67,55 @@ when_any() {
     echo ":: skipping $1 (no $pattern files)"
   fi
 }
+
+# has TEXT FILE...: true when one of the files exists and contains TEXT.
+has() {
+  local text="$1"
+  shift
+  grep -qsF -- "$text" "$@"
+}
+
+# when_has FILE TEXT command...: run the command when FILE contains TEXT.
+when_has() {
+  local file="$1" text="$2"
+  shift 2
+  if has "$text" "$file"; then
+    run "$@"
+  else
+    echo ":: skipping $1 ($file does not mention $text)"
+  fi
+}
+
+# found PATTERN...: true when the project has a file matching one of the patterns.
+found() {
+  local pattern
+  for pattern in "$@"; do
+    if [ -n "$(collect "$pattern" | head -n 1)" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# The project's JavaScript package manager, told by its lockfile.
+js_pm() {
+  if [ -e pnpm-lock.yaml ]; then
+    echo pnpm
+  elif [ -e yarn.lock ]; then
+    echo yarn
+  elif [ -e bun.lock ] || [ -e bun.lockb ]; then
+    echo bun
+  else
+    echo npm
+  fi
+}
+
+# js_exec TOOL args...: run a tool the project installed for itself.
+js_exec() {
+  case "$(js_pm)" in
+    pnpm) pnpm exec "$@" ;;
+    yarn) yarn exec "$@" ;;
+    bun) bunx "$@" ;;
+    *) npx --no-install "$@" ;;
+  esac
+}
