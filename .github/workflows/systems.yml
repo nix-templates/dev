@@ -1,0 +1,133 @@
+name: systems
+
+# The templates on real machines: is the dev shell made there, and do the five
+# commands run in a project fresh from the template? On macOS it also looks
+# whether `security` with arguments is still the keychain tool.
+#
+# A pull request and a push to main try a handful of templates on every
+# system. Once a week, and when started by hand, every template is tried on
+# Linux and macOS. The run's summary has one row for each.
+#
+# Windows has no Nix of its own. There a template runs under WSL, where it sees
+# x86_64 Linux, which the Linux jobs cover in full. So the Windows job tries
+# the handful only: it shows that the way in works.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      templates:
+        description: "Templates to try, separated by spaces. Empty: every template."
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: systems-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # What a pull request tries: one shell with few tools, the three biggest
+  # ecosystems, Nix itself, and the template with architecture rules.
+  HANDFUL: shell python rust node nix project
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    outputs:
+      templates: ${{ steps.list.outputs.templates }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Choose the templates
+        id: list
+        env:
+          EVENT: ${{ github.event_name }}
+          ASKED: ${{ inputs.templates }}
+        run: |
+          every=$(for flake in */flake.nix; do dirname "$flake"; done)
+          case "$EVENT" in
+            schedule) chosen=$every ;;
+            workflow_dispatch) chosen=${ASKED:-$every} ;;
+            *) chosen=$HANDFUL ;;
+          esac
+          for template in $chosen; do
+            if [ ! -f "$template/flake.nix" ]; then
+              echo "there is no template $template" >&2
+              exit 1
+            fi
+          done
+          # shellcheck disable=SC2086 # one word for each template
+          echo "templates=$(printf '%s\n' $chosen | jq --raw-input --slurp --compact-output 'split("\n") | map(select(. != ""))')" >> "$GITHUB_OUTPUT"
+
+  try:
+    needs: list
+    strategy:
+      fail-fast: false
+      matrix:
+        template: ${{ fromJSON(needs.list.outputs.templates) }}
+        system:
+          - name: Linux x86_64
+            runner: ubuntu-latest
+          - name: Linux aarch64
+            runner: ubuntu-24.04-arm
+          - name: macOS aarch64
+            runner: macos-latest
+    name: ${{ matrix.template }} on ${{ matrix.system.name }}
+    runs-on: ${{ matrix.system.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
+
+      - name: Try the template
+        env:
+          TEMPLATE: ${{ matrix.template }}
+          SYSTEM: ${{ matrix.system.name }}
+        run: bash .github/systems/try-template.sh "$TEMPLATE" "$SYSTEM"
+
+  windows:
+    name: the handful on Windows, under WSL
+    runs-on: windows-latest
+    steps:
+      # The scripts run inside Linux: they must keep their line endings.
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: Vampire/setup-wsl@4c48163d9f981914dd8caa0fc335fe19cca5bff4 # v7.2.0
+        with:
+          distribution: Ubuntu-24.04
+          additional-packages: curl git xz-utils ca-certificates
+
+      - name: Install Nix inside WSL
+        shell: wsl-bash {0}
+        run: |
+          # No init system in here, so no daemon: root uses the store itself.
+          curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location https://install.determinate.systems/nix \
+            | sh -s -- install linux --no-confirm --init none
+
+      - name: Try the handful
+        shell: wsl-bash {0}
+        env:
+          WSLENV: HANDFUL:GITHUB_STEP_SUMMARY/p
+        run: |
+          set +u
+          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+          set -u
+          # The checkout is on the Windows disk. A copy on the Linux one is quicker, and its files are root's.
+          cp --recursive . "$HOME/dev"
+          cd "$HOME/dev"
+          failed=0
+          for template in $HANDFUL; do
+            bash .github/systems/try-template.sh "$template" "Windows, WSL" || failed=1
+          done
+          exit "$failed"
