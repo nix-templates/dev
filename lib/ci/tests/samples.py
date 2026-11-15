@@ -10,6 +10,65 @@ own tools have files to run on.
 import os
 import sys
 
+# The samples that are held to being clean (CLEAN, below) have a test in them,
+# so that `tests` has one to run. They are written the way their own
+# formatters write them.
+NIX = {
+    "default.nix": "{ }\n",
+    "tests/default.nix": "{\n  testAnswer = {\n    expr = 1 + 0;\n    expected = 1;\n  };\n}\n",
+}
+NODE = {
+    "index.js": "export function answer() {\n  return 1;\n}\n",
+    "index.test.js": (
+        'import assert from "node:assert";\n'
+        'import test from "node:test";\n'
+        'import { answer } from "./index.js";\n'
+        "\n"
+        'test("the answer is 1", () => {\n'
+        "  assert.strictEqual(answer(), 1);\n"
+        "});\n"
+    ),
+    "package.json": '{\n  "name": "sample",\n  "private": true,\n  "type": "module",\n  "scripts": {\n    "test": "node --test"\n  }\n}\n',
+}
+PYTHON = {
+    "app.py": "def answer():\n    return 1\n",
+    # Without `assert`: bandit reports every one of them.
+    "tests/test_app.py": (
+        "from app import answer\n"
+        "\n"
+        "\n"
+        "def test_answer():\n"
+        "    if answer() != 1:\n"
+        '        raise AssertionError("the answer is not 1")\n'
+    ),
+}
+RUST = {
+    "Cargo.toml": '[package]\nname = "sample"\nversion = "0.1.0"\nedition = "2021"\n',
+    "src/main.rs": (
+        "fn answer() -> u32 {\n"
+        "    1\n"
+        "}\n"
+        "\n"
+        "fn main() {\n"
+        '    println!("{}", answer());\n'
+        "}\n"
+        "\n"
+        "#[cfg(test)]\n"
+        "mod tests {\n"
+        "    use super::answer;\n"
+        "\n"
+        "    #[test]\n"
+        "    fn the_answer_is_one() {\n"
+        "        assert_eq!(answer(), 1);\n"
+        "    }\n"
+        "}\n"
+    ),
+}
+SHELL = {
+    "run.sh": "#!/usr/bin/env bash\necho 1\n",
+    "tests/run.bats": '#!/usr/bin/env bats\n\n@test "run.sh says 1" {\n  run bash run.sh\n  [ "$output" = 1 ]\n}\n',
+}
+
 # One checkout per language of the library, and what must be found in it.
 # Where two names come back, the files really are both.
 SAMPLES = {
@@ -49,8 +108,8 @@ SAMPLES = {
     "markdown": ({"README.md": "# Sample\n"}, {"markdown"}),
     "nickel": ({"config.ncl": "{ a = 1 }\n"}, {"nickel"}),
     "nim": ({"main.nim": "echo 1\n"}, {"nim"}),
-    "nix": ({"default.nix": "{ }\n"}, {"nix"}),
-    "node": ({"index.js": "export {};\n"}, {"node"}),
+    "nix": (NIX, {"nix"}),
+    "node": (NODE, {"node"}),
     "ocaml": ({"main.ml": "let () = ()\n"}, {"ocaml"}),
     "odin": ({"main.odin": "package main\n"}, {"odin"}),
     "opa": ({"policy.rego": "package policy\n"}, {"opa"}),
@@ -61,14 +120,14 @@ SAMPLES = {
     "protobuf": ({"api.proto": 'syntax = "proto3";\n'}, {"protobuf"}),
     "pulumi": ({"Pulumi.yaml": "name: sample\n", "index.ts": "export {}\n"}, {"pulumi", "node"}),
     "purescript": ({"Main.purs": "module Main where\n"}, {"purescript"}),
-    "python": ({"app.py": "print(1)\n"}, {"python"}),
+    "python": (PYTHON, {"python"}),
     "qml": ({"Main.qml": "import QtQuick\nItem { }\n"}, {"qml"}),
     "r": ({"analysis.R": "print(1)\n"}, {"r"}),
     "racket": ({"main.rkt": "#lang racket\n"}, {"racket"}),
     "ruby": ({"app.rb": "puts 1\n"}, {"ruby"}),
-    "rust": ({"Cargo.toml": '[package]\nname = "sample"\nversion = "0.1.0"\nedition = "2021"\n', "src/main.rs": "fn main() {}\n"}, {"rust"}),
+    "rust": (RUST, {"rust"}),
     "scala": ({"Main.scala": "object Main\n"}, {"scala"}),
-    "shell": ({"run.sh": "#!/usr/bin/env bash\necho 1\n"}, {"shell"}),
+    "shell": (SHELL, {"shell"}),
     "solidity": ({"Token.sol": "contract Token { }\n"}, {"solidity"}),
     "sql": ({"schema.sql": "select 1;\n"}, {"sql"}),
     "swi-prolog": ({"facts.pl": ":- module(facts, []).\nlikes(a, b).\n"}, {"swi-prolog"}),
@@ -88,8 +147,8 @@ NEVER = {"empty", "hashi", "presenterm"}
 TEMPLATES = {"project": ("nix", "shell")}
 
 # The templates whose sample is clean: in a project fresh from the template,
-# with the sample in it, each of the five commands ends with 0. The `systems`
-# workflow holds these to that on every system.
+# with the sample in it, each of the five commands ends with 0, and `tests`
+# has a test to run. The `systems` workflow holds these to that on every system.
 CLEAN = ("shell", "python", "rust", "node", "nix", "project")
 
 

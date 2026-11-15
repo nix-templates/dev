@@ -7,7 +7,8 @@
 # as well, so its output is looked through for the lines that give that away.
 #
 # With EXPECT_CLEAN=true the sample is one that is known to be clean, and then
-# every command has to end with 0: a 1 there is a tool that failed.
+# every command has to end with 0: a 1 there is a tool that failed. Such a
+# sample has a test in it, so `tests` has to run one as well.
 #
 # On macOS `security` is also the keychain tool, which programs call by that
 # name. With arguments ours has to be that tool still.
@@ -73,6 +74,10 @@ for command in quality "style --check" security architecture tests; do
   nothing=$(sed -n "s/^:: checked nothing: $name\\( --[a-z]*\\)\\{0,1\\} for //p" "$log" | paste -sd, -)
   if grep -q "^:: checked nothing: $name ran no tool" "$log"; then
     outcome="$outcome, no tool ran"
+    if [ "$name" = tests ] && [ "${EXPECT_CLEAN:-}" = true ]; then
+      echo "FAIL: tests ran no tool, and this sample has a test"
+      failed=1
+    fi
   elif [ -n "$nothing" ]; then
     outcome="$outcome, nothing for $nothing"
   fi

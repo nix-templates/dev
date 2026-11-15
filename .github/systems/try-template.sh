@@ -32,6 +32,9 @@ nix flake init --template "path:$here#$template"
 python3 "$here/lib/ci/tests/samples.py" "$template" .
 git add --all
 clean=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import samples; print("true" if sys.argv[2] in samples.CLEAN else "false")' "$here/lib/ci/tests" "$template")
+if [ "$clean" = true ]; then
+  echo "the sample of $template is clean: every command has to end with 0, and tests has to run a test"
+fi
 
 shell=made
 code=0
