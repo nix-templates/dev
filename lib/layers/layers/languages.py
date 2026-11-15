@@ -1097,6 +1097,7 @@ LANGUAGES: tuple[Language, ...] = (
             "Psr\\Log",
             "Monolog",
         ),
+        shebang=r"\bphp\b",
     ),
     Language(
         "ruby",
@@ -1111,6 +1112,7 @@ LANGUAGES: tuple[Language, ...] = (
             (r"(?<![\w$])\$[a-z_]\w*", "global"),
         ),
         impure=RUBY,
+        shebang=r"\bruby\b",
     ),
     Language(
         "elixir",
@@ -1130,6 +1132,7 @@ LANGUAGES: tuple[Language, ...] = (
             (r"\bEnum\s*\.\s*(?:random|shuffle|take_random)\b", "randomness"),
         ),
         impure=ELIXIR,
+        shebang=r"\belixir\b",
     ),
     Language(
         "erlang",
@@ -1255,6 +1258,7 @@ LANGUAGES: tuple[Language, ...] = (
             "java.nio.file",
             "java.sql",
         ),
+        shebang=r"\bbb\b|\bclojure\b",
     ),
     Language(
         "lua",
@@ -1280,6 +1284,7 @@ LANGUAGES: tuple[Language, ...] = (
             (r"\bvim\s*\.\s*(?:fn|api|loop|uv|cmd|system|notify|schedule)\b", "editor"),
         ),
         impure=("socket", "lfs", "posix", "luv", "uv", "ssl", "lsqlite3", "lanes", "http"),
+        shebang=r"\blua(?:jit)?\b",
     ),
     Language(
         "perl",
@@ -1323,6 +1328,7 @@ LANGUAGES: tuple[Language, ...] = (
         ),
         accepts=lambda path, text: not _is_prolog(path, text),
         prepare=_pod,
+        shebang=r"\bperl\b",
     ),
     Language(
         "r",
@@ -1346,6 +1352,7 @@ LANGUAGES: tuple[Language, ...] = (
             (r"<<-|\bassign\s*\(", "global"),
         ),
         impure=("httr", "httr2", "curl", "RCurl", "DBI", "RSQLite", "RPostgres", "readr", "readxl", "fs", "processx", "callr", "future", "parallel", "shiny", "plumber", "logger"),
+        shebang=r"\bRscript\b",
     ),
     Language(
         "julia",
@@ -1363,6 +1370,7 @@ LANGUAGES: tuple[Language, ...] = (
             (r"^\s*global\s", "global"),
         ),
         impure=("Sockets", "Distributed", "Downloads", "HTTP", "Random", "Serialization", "DelimitedFiles", "Mmap", "Libdl", "Logging", "Pkg", "FileWatching", "SharedArrays", "SQLite", "LibPQ"),
+        shebang=r"\bjulia\b",
     ),
     Language(
         "nim",
@@ -1533,6 +1541,7 @@ LANGUAGES: tuple[Language, ...] = (
             (r"\((?:thread|place|future)\b", "thread"),
         ),
         impure=("racket/file", "racket/port", "racket/system", "racket/tcp", "racket/udp", "racket/random", "racket/async-channel", "racket/place", "racket/future", "racket/gui", "net", "db", "ffi", "web-server"),
+        shebang=r"\bracket\b",
     ),
     Language(
         "fortran",
@@ -1583,6 +1592,7 @@ LANGUAGES: tuple[Language, ...] = (
             _sourced((r"(?:^|[;{(])[ \t]*\.[ \t]+(?=\S)",), (".ps1", ".psm1"), False),
             _sourced((r"(?i)\b(?:Import-Module|using\s+module)[ \t]+(?:-Name[ \t]+)?(?=\S)",), (".psm1", ".ps1", ".psd1"), True),
         ),
+        shebang=r"\bpwsh\b",
     ),
     Language(
         "protobuf",

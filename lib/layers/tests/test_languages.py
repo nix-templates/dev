@@ -1132,6 +1132,22 @@ class TestFiles(unittest.TestCase):
         self.assertEqual(found(tree(files)), CASES["go"][1] | {layer("core/price_test.go", "adapters/store.go")})
 
 
+class Scripts(unittest.TestCase):
+    def test_a_script_without_an_extension_is_read_as_its_first_line_says(self):
+        files = {
+            "architecture.toml": rules('"bin/**"', '"lib/**"'),
+            "lib/store.py": "x = 1\n",
+            "lib/store.rb": "X = 1\n",
+            "bin/report": "#!/usr/bin/env python3\nimport subprocess\nfrom lib import store\n",
+            "bin/sync": '#!/usr/bin/env ruby\nrequire_relative "../lib/store"\n',
+            "bin/notes": "import os\n",
+        }
+        self.assertEqual(
+            found(tree(files)),
+            {layer("bin/report", "lib/store.py"), purity("bin/report", "subprocess"), layer("bin/sync", "lib/store.rb")},
+        )
+
+
 class Blanking(unittest.TestCase):
     def test_comments_and_string_contents_become_spaces_and_positions_stay(self):
         text = 'a = "x // y" // gone\n/* b\n c */ d = \'q\'\n'

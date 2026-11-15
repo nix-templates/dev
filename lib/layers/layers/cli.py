@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import re
 import sys
 
 from . import __version__, baseline, cpp, generic, javascript, python, report, rust
@@ -11,6 +12,7 @@ from .model import Scan
 from .rules import evaluate
 from .walk import walk
 
+PYTHON_SCRIPT = re.compile(r"\bpython[\d.]*\b")
 CONFIG = "architecture.toml"
 BASELINE = "architecture-baseline.json"
 
@@ -18,11 +20,13 @@ BASELINE = "architecture-baseline.json"
 def scan_repository(root: str, config: Config) -> Scan:
     files = walk(root, config.exclude)
     scan = Scan()
+    scripts = generic.first_lines(root, files)
+    python_scripts = [path for path, first in scripts.items() if PYTHON_SCRIPT.search(first)]
     rust.extract(root, files, config.include_tests, scan)
-    python.extract(root, files, config.python_roots + config.roots, config.include_tests, scan)
+    python.extract(root, files, config.python_roots + config.roots, config.include_tests, scan, python_scripts)
     javascript.extract(root, files, config.js_aliases, config.include_tests, scan)
     cpp.extract(root, files, config.cpp_include_dirs + config.roots, config.include_tests, scan)
-    generic.extract(root, files, LANGUAGES, config, scan)
+    generic.extract(root, files, LANGUAGES, config, scan, scripts)
     return scan
 
 

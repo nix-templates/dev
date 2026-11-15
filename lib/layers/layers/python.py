@@ -133,7 +133,15 @@ def _refs(path: str, tree: ast.AST, package: str, index: dict[str, str], cell: i
     return refs
 
 
-def extract(root: str, files: list[str], configured_roots: list[str], include_tests: bool, scan: Scan) -> None:
+def extract(
+    root: str,
+    files: list[str],
+    configured_roots: list[str],
+    include_tests: bool,
+    scan: Scan,
+    scripts: list[str] | None = None,
+) -> None:
+    """scripts are files with no extension whose first line names Python."""
     sources = [path for path in files if path.endswith(".py")]
     roots = _roots(sources, configured_roots)
     index: dict[str, str] = {}
@@ -147,7 +155,9 @@ def extract(root: str, files: list[str], configured_roots: list[str], include_te
             name_of.setdefault(path, (name, posixpath.basename(path) == "__init__.py"))
 
     refs: list[Ref] = []
-    for path in sources + [path for path in files if path.endswith(".ipynb")]:
+    for path in scripts or []:
+        scan.language[path] = "python"
+    for path in sources + sorted(scripts or []) + [path for path in files if path.endswith(".ipynb")]:
         if not include_tests and is_test(path):
             continue
         text = read(root, path)

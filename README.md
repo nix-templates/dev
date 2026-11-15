@@ -131,7 +131,8 @@ exact: macros, names built at run time and build-system path mappings are
 invisible to it. When it guesses your import roots wrong, set them with
 `[sources] roots`. A file it cannot parse fails the check. It never passes
 unread. In a git checkout it reads what git tracks or would add, so whatever
-`.gitignore` leaves out stays out.
+`.gitignore` leaves out stays out. A script with no file extension is read as
+the language its `#!` line names.
 
 Some languages have a real architecture tool of their own. `layers` runs it
 after the rules, when you have its config: go-arch-lint, `cargo deny check

@@ -10,6 +10,7 @@ macros and build-system path mappings are not followed.
 """
 
 import bisect
+import os
 import posixpath
 import re
 from collections.abc import Callable, Iterable
@@ -534,9 +535,16 @@ def close_of(text: str, start: int) -> int:
     return len(text)
 
 
-def extract(root: str, files: list[str], languages: Iterable[Language], config: Config, scan: Scan) -> None:
+def extract(
+    root: str,
+    files: list[str],
+    languages: Iterable[Language],
+    config: Config,
+    scan: Scan,
+    scripts: dict[str, str] | None = None,
+) -> None:
+    """Read every language in languages. scripts is first_lines(root, files), when the caller has it."""
     repo = Repo(root, files, config, scan)
-    scripts: dict[str, str] | None = None
     by_extension: dict[str, list[str]] = {}
     for path in files:
         name = posixpath.basename(path)
@@ -546,7 +554,7 @@ def extract(root: str, files: list[str], languages: Iterable[Language], config: 
         mine = [path for extension in language.extensions for path in by_extension.get(extension, [])]
         if language.shebang:
             if scripts is None:
-                scripts = _first_lines(root, files)
+                scripts = first_lines(root, files)
             wanted = re.compile(language.shebang)
             mine += [path for path, first in scripts.items() if wanted.search(first)]
         if language.accepts:
@@ -570,10 +578,11 @@ def extract(root: str, files: list[str], languages: Iterable[Language], config: 
                     repo.effect(source.path, source.line(match.start()), name, match.group(0).strip())
 
 
-def _first_lines(root: str, files: list[str]) -> dict[str, str]:
-    """The first line of every file that has no extension and starts with #!."""
-    import os
+def first_lines(root: str, files: list[str]) -> dict[str, str]:
+    """The first line of every file that has no extension and starts with #!.
 
+    A script is read as the language its first line names.
+    """
     found = {}
     for path in files:
         if "." in posixpath.basename(path):
