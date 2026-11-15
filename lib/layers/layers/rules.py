@@ -29,6 +29,21 @@ def _layer_violation(ref: Ref, source: Layer, target: Layer) -> Violation:
     )
 
 
+def _tests_violation(ref: Ref, source: Layer) -> Violation:
+    return Violation(
+        rule="layer",
+        file=ref.file,
+        line=ref.line,
+        target=ref.target,
+        message=f"'{source.name}' may not use test code: {ref.path} is {ref.target}",
+        fix=_with_hint(
+            f"Code that ships does not depend on its tests. Move what both need out of the tests, "
+            f"into a layer '{source.name}' may use. Do not add this to the baseline.",
+            source,
+        ),
+    )
+
+
 def _purity_violation(ref: Ref, layer: Layer, what: str) -> Violation:
     return Violation(
         rule="purity",
@@ -60,13 +75,17 @@ def _external_violation(ref: Ref, layer: Layer, entry: str) -> Violation:
     )
 
 
-def _check(ref: Ref, config: Config, languages: dict[str, str]) -> Violation | None:
+def _check(ref: Ref, config: Config, scan: Scan) -> Violation | None:
     source = config.layer_of(ref.file)
     if source is None:
         return None
+    languages = scan.language
     if ref.kind == "internal":
         target = config.layer_of(ref.target)
-        if target is None or target is source or target.name in source.may_use:
+        if target is None:
+            # Test files are in no layer unless the rules give them one, and nothing may use them.
+            return _tests_violation(ref, source) if ref.target in scan.tests else None
+        if target is source or target.name in source.may_use:
             return None
         return _layer_violation(ref, source, target)
     if ref.kind == "effect":
@@ -91,7 +110,7 @@ def evaluate(config: Config, scan: Scan) -> list[Violation]:
     """Every violation once per (rule, file, target), with the first line and a count."""
     found: dict[tuple[str, str, str], Violation] = {}
     for ref in sorted(scan.refs, key=lambda r: (r.file, r.line)):
-        violation = _check(ref, config, scan.language)
+        violation = _check(ref, config, scan)
         if violation is None:
             continue
         earlier = found.get(violation.key)

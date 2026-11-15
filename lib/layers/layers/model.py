@@ -45,3 +45,4 @@ class Scan:
     warnings: list[str] = field(default_factory=list)
     unreadable: list[tuple[str, str]] = field(default_factory=list)  # files that could not be parsed, with why
     language: dict[str, str] = field(default_factory=dict)  # the language a file was read as, where its name does not say
+    tests: set[str] = field(default_factory=set)  # test files, which are left out and which nothing may use

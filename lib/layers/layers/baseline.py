@@ -34,11 +34,11 @@ def load(path: str) -> set[Key]:
 def dump(keys: set[Key]) -> str:
     """One violation per line, sorted, so a diff shows exactly what changed."""
     lines = [
-        "  " + json.dumps({"rule": rule, "file": file, "target": target}, ensure_ascii=False)
+        "    " + json.dumps({"rule": rule, "file": file, "target": target}, ensure_ascii=False)
         for rule, file, target in sorted(keys, key=lambda k: (k[1], k[0], k[2]))
     ]
     body = ",\n".join(lines)
-    return '{\n "version": 1,\n "violations": [\n' + body + ("\n" if lines else "") + " ]\n}\n"
+    return '{\n  "version": 1,\n  "violations": [\n' + body + ("\n" if lines else "") + "  ]\n}\n"
 
 
 def save(path: str, keys: set[Key]) -> None:

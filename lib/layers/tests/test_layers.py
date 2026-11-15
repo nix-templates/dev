@@ -316,6 +316,37 @@ class Python(unittest.TestCase):
         files["architecture.toml"] += '\n            [purity]\n            allow = ["logging"]\n            forbid = ["numpy"]\n'
         self.assertEqual(found(tree(files)), {("purity", "app/core/plan.py", "numpy")})
 
+    def test_nothing_may_use_test_code(self):
+        files = dict(self.FILES)
+        files["app/core/rules.py"] = "from tests.test_plan import fixture\ndef limit(): return 3\n"
+        files["tests/__init__.py"] = ""
+        self.assertEqual(found(tree(files)), {("layer", "app/core/rules.py", "tests/test_plan.py")})
+        # A layer for the tests puts them under the ordinary rules.
+        files["architecture.toml"] = textwrap.dedent(files["architecture.toml"]).replace(
+            'pure = true', 'pure = true\nmay_use = ["checks"]'
+        ) + '[[layer]]\nname = "checks"\npaths = ["tests"]\n'
+        self.assertEqual(found(tree(files)), set())
+
+    def test_scripts_in_one_folder_find_each_other_by_bare_name(self):
+        files = {
+            "architecture.toml": """
+                [[layer]]
+                name = "benchmarks"
+                paths = ["speech-bench/tts.py"]
+                [[layer]]
+                name = "commands"
+                paths = ["speech-bench"]
+                may_use = ["benchmarks"]
+                """,
+            "speech-bench/bench.py": "import tts\n",
+            "speech-bench/tts.py": "from bench import LANGUAGES\nimport json\n",
+            # In a package a bare name is not the neighbour: that takes a relative import.
+            "pkg/__init__.py": "",
+            "pkg/tts.py": "import bench\n",
+            "pkg/bench.py": "x = 1\n",
+        }
+        self.assertEqual(found(tree(files)), {("layer", "speech-bench/tts.py", "speech-bench/bench.py")})
+
     def test_a_source_root_that_is_not_the_repository_root(self):
         root = tree(
             {
@@ -443,6 +474,8 @@ class Baseline(unittest.TestCase):
         self.assertEqual(baseline.parse(text), keys)
         self.assertEqual([line.strip()[:20] for line in text.splitlines()[3:5]], ['{"rule": "layer", "f', '{"rule": "purity", "'])
         self.assertEqual(baseline.parse(baseline.dump(set())), set())
+        # Two spaces a level, as an .editorconfig usually asks of JSON.
+        self.assertTrue(all((len(line) - len(line.lstrip())) % 2 == 0 for line in text.splitlines()))
 
     def test_since_refuses_a_baseline_that_grew(self):
         def git(*args: str) -> None:

@@ -101,7 +101,25 @@ def _cells(text: str) -> list[tuple[int, str]] | None:
     return cells
 
 
-def _refs(path: str, tree: ast.AST, package: str, index: dict[str, str], cell: int) -> list[Ref]:
+def _beside(path: str, dotted: str, known: frozenset[str]) -> str | None:
+    """A module next to a script.
+
+    A file that is not in a package is run from its own directory, so Python
+    finds its neighbours by bare name before anything else.
+    """
+    directory = posixpath.dirname(path)
+    if posixpath.join(directory, "__init__.py") in known:
+        return None
+    parts = dotted.split(".")
+    for length in range(len(parts), 0, -1):
+        base = posixpath.join(directory, *parts[:length])
+        for candidate in (base + ".py", posixpath.join(base, "__init__.py")):
+            if candidate in known:
+                return candidate
+    return None
+
+
+def _refs(path: str, tree: ast.AST, package: str, index: dict[str, str], cell: int, known: frozenset[str]) -> list[Ref]:
     """What one syntax tree uses. In a notebook the cell's number stands in for the line."""
     refs: list[Ref] = []
 
@@ -111,7 +129,7 @@ def _refs(path: str, tree: ast.AST, package: str, index: dict[str, str], cell: i
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                refs.append(_ref(path, at(node), alias.name, index))
+                refs.append(_ref(path, at(node), alias.name, index, known))
         elif isinstance(node, ast.ImportFrom):
             base = node.module or ""
             if node.level:
@@ -120,7 +138,7 @@ def _refs(path: str, tree: ast.AST, package: str, index: dict[str, str], cell: i
                 base = ".".join(parent + ([base] if base else []))
             for alias in node.names:
                 wanted = f"{base}.{alias.name}" if base and alias.name != "*" else base or alias.name
-                refs.append(_ref(path, at(node), wanted, index))
+                refs.append(_ref(path, at(node), wanted, index, None if node.level else known))
         elif isinstance(node, ast.Global):
             refs.append(Ref(path, at(node), "effect", "global", "global " + ", ".join(node.names)))
         elif isinstance(node, ast.Call):
@@ -155,10 +173,12 @@ def extract(
             name_of.setdefault(path, (name, posixpath.basename(path) == "__init__.py"))
 
     refs: list[Ref] = []
+    known = frozenset(sources)
     for path in scripts or []:
         scan.language[path] = "python"
     for path in sources + sorted(scripts or []) + [path for path in files if path.endswith(".ipynb")]:
         if not include_tests and is_test(path):
+            scan.tests.add(path)
             continue
         text = read(root, path)
         cells: list[tuple[int, str]] | None = [(0, text)]
@@ -180,12 +200,12 @@ def extract(
             except (SyntaxError, ValueError) as error:
                 scan.unreadable.append((path, f"cell {cell}: {error}" if cell else str(error)))
                 break
-            refs.extend(_refs(path, tree, package, index, cell))
+            refs.extend(_refs(path, tree, package, index, cell, known))
     scan.refs.extend(ref for ref in refs if ref.target != ref.file)
 
 
-def _ref(path: str, line: int, dotted: str, index: dict[str, str]) -> Ref:
-    target = _longest(index, dotted)
+def _ref(path: str, line: int, dotted: str, index: dict[str, str], known: frozenset[str] | None) -> Ref:
+    target = (_beside(path, dotted, known) if known else None) or _longest(index, dotted)
     if target:
         return Ref(path, line, "internal", target, dotted)
     return Ref(path, line, "external", dotted.split(".")[0], dotted)

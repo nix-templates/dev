@@ -65,7 +65,12 @@ in
   '';
 
   scan = ''
-    run bandit --quiet --recursive . --exclude ./.venv,./.direnv
+    # bandit reads a .bandit file by itself, and [tool.bandit] only when told where it is.
+    if has tool.bandit pyproject.toml; then
+      run bandit --quiet --recursive . --exclude ./.venv,./.direnv -c pyproject.toml
+    else
+      run bandit --quiet --recursive . --exclude ./.venv,./.direnv
+    fi
   '';
 
   tests = {

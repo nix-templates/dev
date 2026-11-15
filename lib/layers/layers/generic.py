@@ -566,6 +566,7 @@ def extract(
             text = repo.text(path)
             everything.append(Source(path, language.prepare(text) if language.prepare else text, language.syntax))
         checked = [source for source in everything if config.include_tests or not is_test(source.path)]
+        scan.tests.update(source.path for source in everything if source not in checked)
         for source in checked:
             scan.files.append(source.path)
             scan.language[source.path] = language.name

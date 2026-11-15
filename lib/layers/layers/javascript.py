@@ -100,6 +100,7 @@ def extract(root: str, files: list[str], aliases: dict[str, str], include_tests:
     known = set(sources)
     for path in sources:
         if not include_tests and is_test(path):
+            scan.tests.add(path)
             continue
         scan.files.append(path)
         code = strip_comments(read(root, path))

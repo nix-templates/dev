@@ -83,6 +83,9 @@ Two rules, and that is all of it:
   nothing outside the function changes. So no files, network, clock,
   environment, randomness, threads or shared state in there.
 
+Test files sit outside the layers. They are not checked, and code in a layer
+may not use them.
+
 A failure tells you where, why, and what to do about it:
 
 ```text

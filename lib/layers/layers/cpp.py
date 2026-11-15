@@ -23,6 +23,7 @@ def extract(root: str, files: list[str], include_dirs: list[str], include_tests:
     search = [d.strip("/") for d in include_dirs] + [""]
     for path in sources:
         if not include_tests and is_test(path):
+            scan.tests.add(path)
             continue
         scan.files.append(path)
         text = read(root, path)

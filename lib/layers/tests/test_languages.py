@@ -1132,6 +1132,16 @@ class TestFiles(unittest.TestCase):
         self.assertEqual(found(tree(files)), CASES["go"][1] | {layer("core/price_test.go", "adapters/store.go")})
 
 
+class NixDirectories(unittest.TestCase):
+    def test_a_path_to_a_directory_uses_what_is_in_it(self):
+        files = {
+            "architecture.toml": rules('"packages/**"', '"sources/**"', pure=False),
+            "packages/app.nix": "{ stdenv }:\nstdenv.mkDerivation {\n  src = ../sources/app;\n  all = ./.;\n  up = ../.;\n}\n",
+            "sources/app/main.c": "int main(void) { return 0; }\n",
+        }
+        self.assertEqual(found(tree(files)), {layer("packages/app.nix", "sources/app/main.c")})
+
+
 class Scripts(unittest.TestCase):
     def test_a_script_without_an_extension_is_read_as_its_first_line_says(self):
         files = {

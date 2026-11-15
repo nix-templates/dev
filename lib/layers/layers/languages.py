@@ -419,7 +419,8 @@ def _qml(repo: Repo, language: Language, everything: list[Source], checked: list
 # --- Nix and Dhall: a path written in the code is the import -------------------
 
 
-def _path_literals(pattern: str, endings: tuple[str, ...], index: tuple[str, ...]) -> Reader:
+def _path_literals(pattern: str, endings: tuple[str, ...], index: tuple[str, ...], directories: bool = False) -> Reader:
+    """directories: a path to a directory is a use of everything in it."""
     literal = re.compile(pattern)
 
     def reader(repo: Repo, language: Language, everything: list[Source], checked: list[Source]) -> None:
@@ -429,10 +430,15 @@ def _path_literals(pattern: str, endings: tuple[str, ...], index: tuple[str, ...
                 candidate = posixpath.normpath(posixpath.join(here, match.group(1)))
                 if candidate.startswith(".."):
                     continue
+                candidate = "" if candidate == "." else candidate
+                line = source.line(match.start(1))
                 options = [candidate] + [candidate + ending for ending in endings] + [posixpath.join(candidate, name) for name in index]
                 target = next((path for path in options if path in repo.known), None)
                 if target:
-                    repo.internal(source.path, source.line(match.start(1)), [target], match.group(1))
+                    repo.internal(source.path, line, [target], match.group(1))
+                elif directories and candidate in repo.dirs and not (here + "/").startswith(candidate + "/" if candidate else ""):
+                    # `./.` and the like name the tree the file itself is in: that says nothing about layers.
+                    repo.internal(source.path, line, repo.below(candidate), match.group(1))
 
     return reader
 
@@ -1569,7 +1575,7 @@ LANGUAGES: tuple[Language, ...] = (
         "nix",
         (".nix",),
         Syntax(line=("#",), block=(("/*", "*/"), ("''", "''")), quotes='"', multiline='"'),
-        (_path_literals(r"(?<![\w./+\-$}\"'<])(\.\.?(?:/[\w.+\-]+)+)", (), ("default.nix",)),),
+        (_path_literals(r"(?<![\w./+\-$}\"'<])(\.\.?(?:/[\w.+\-]+)+)", (), ("default.nix",), directories=True),),
         effects=(
             (r"\bbuiltins\s*\.\s*getEnv\b", "builtins.getEnv"),
             (r"\bbuiltins\s*\.\s*currentTime\b", "builtins.currentTime"),
