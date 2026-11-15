@@ -262,8 +262,8 @@
             inherit pkgs;
             toolbox = self;
             nixpkgs = inputs.nixpkgs;
-            # Nix gives a flake without a lock file no `rev`, so the hash of the
-            # source stands in for it.
+            # A checkout with changes in it has no `rev`. Then what Nix calls it,
+            # or the hash of the source, stands in.
             revision = self.rev or self.dirtyRev or self.narHash or "an unknown revision";
             nixpkgsRevision = inputs.nixpkgs.rev or lib.version;
           };

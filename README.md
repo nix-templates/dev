@@ -211,7 +211,7 @@ starting `architecture.toml`.
 One command runs any of the five on a checkout:
 
 ```shell
-nix run --no-write-lock-file github:nix-templates/dev#ci -- lint
+nix run github:nix-templates/dev#ci -- lint
 ```
 
 A project with a flake of its own, where `lint` is in the default dev shell,
@@ -239,31 +239,32 @@ check:
     matrix:
       - COMMAND: [fmt, scan, lint, layers, tests]
   script:
-    - nix run --no-write-lock-file github:nix-templates/dev#ci -- $COMMAND
+    - nix run github:nix-templates/dev#ci -- $COMMAND
 ```
 
 A GitHub Actions step:
 
 ```yaml
 - uses: DeterminateSystems/nix-installer-action@main
-- run: nix run --no-write-lock-file github:nix-templates/dev#ci -- lint
+- run: nix run github:nix-templates/dev#ci -- lint
 ```
 
 ### Pin it
 
-This repository has no lock file and follows unstable nixpkgs, so the line
-above can bring newer tools tomorrow. A project with its own flake does not
-care: its tools come from its own lock. For any other, name both revisions:
+The line above takes whatever `main` is today. A revision of this repository
+is one set of tools, because its `flake.lock` names the nixpkgs they come
+from. So in CI, name the revision:
 
 ```shell
-nix run \
-  --override-input nixpkgs github:NixOS/nixpkgs/<revision> \
-  github:nix-templates/dev/<revision>#ci -- lint
+nix run github:nix-templates/dev/<revision>#ci -- lint
 ```
 
-Take the nixpkgs revision from `nixos-unstable`. The tool lists here follow
-it, and a release branch can lack a tool, in which case no dev shell can be
-made and `ci` exits 2.
+A project with its own flake does not care: its tools come from its own lock.
+
+Want the tools from another nixpkgs? Add
+`--override-input nixpkgs github:NixOS/nixpkgs/<revision>`, with a revision of
+`nixos-unstable`. The tool lists here follow it, and a release branch can lack
+a tool, in which case no dev shell can be made and `ci` exits 2.
 
 The first line of a run says what it used:
 
@@ -487,7 +488,12 @@ check                 # evaluate every template, on every system
 build                 # build every template's shell
 format                # nixfmt every .nix file
 nix flake check       # the tests of layers, ci and the MCP server, shellcheck on every command
+nix flake update      # a newer nixpkgs for ci, layers and the MCP server
 ```
+
+`flake.lock` names the nixpkgs that `ci`, `layers` and the MCP server run
+with. A project with a flake of its own follows its own nixpkgs and never
+sees it, and the templates stay without a lock file.
 
 | Path | What it is |
 | :--- | :--- |
