@@ -274,7 +274,8 @@ ci: lint in a dev shell made for nix, shell by nix-templates/dev 4c1d329e9187 wi
 Asking Nix for a dev shell takes seconds, so `ci` asks once and keeps the
 shell's script in `~/.cache/nix-templates-dev`. The other four commands of a
 pipeline then start in a fraction of a second, as long as the jobs share that
-directory. `XDG_CACHE_HOME` moves it.
+directory. `XDG_CACHE_HOME` moves it. The kept script is run as it is, so
+share the directory only between jobs that may run each other's code.
 
 ### Green means checked
 

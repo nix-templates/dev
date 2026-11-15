@@ -423,6 +423,35 @@ class CheckedNothing(unittest.TestCase):
         self.assertNotIn("for go", result.out)
         self.assertEqual(result.said[2:], ["ci: checked nothing (language): tests ran nothing for python"])
 
+    def test_a_tool_that_found_nothing_to_check_did_not_run_and_did_not_fail(self):
+        # pytest ends with 5 when it collected no test.
+        body = """
+            echo ":: tests: run"
+            part python
+            run_some 5 sh -c 'echo "no tests ran"; exit 5'
+            part shell
+            run true
+            checked tests
+            exit "$status"
+            """
+        root, nix = plain(tests=body)
+        result = ci(root, "tests", nix=nix)
+        self.assertEqual(result.code, 0, result.err)
+        self.assertIn(":: skipping sh -c echo \"no tests ran\"; exit 5 (it found nothing to check)\n", result.out)
+        self.assertEqual(result.said[2:], ["ci: checked nothing (language): tests ran nothing for python"])
+
+    def test_when_that_was_the_only_tool_the_command_ran_none(self):
+        root, nix = plain(tests='echo ":: tests: run"\npart python\nrun_some 5 sh -c "exit 5"\nchecked tests\nexit "$status"\n')
+        result = ci(root, "tests", nix=nix)
+        self.assertEqual(result.code, 0, result.err)
+        self.assertEqual(result.said[2:], ["ci: checked nothing (no-tool): tests ran no tool", "ci: checked nothing (language): tests ran nothing for python"])
+
+    def test_such_a_tool_still_fails_and_still_counts_with_any_other_status(self):
+        for status, code, lines in ((1, 1, 2), (0, 0, 2)):
+            root, nix = plain(tests=f'echo ":: tests: run"\npart python\nrun_some 5 sh -c "exit {status}"\nchecked tests\nexit "$status"\n')
+            result = ci(root, "tests", nix=nix)
+            self.assertEqual((result.code, len(result.said)), (code, lines), result.err)
+
     def test_what_runs_for_every_project_is_no_languages_part(self):
         root, nix = plain(lint='part shell\nwhen no-such-file true\npart_end\nrun true\nchecked lint\nexit "$status"\n')
         result = ci(root, "lint", nix=nix)
@@ -485,7 +514,9 @@ class Reading(unittest.TestCase):
         seen = watch.Seen()
         for line in (":: tests: run", ":: layers --since main", ":: skipping bats (no *.bats files)", ":: checked nothing: tests for go", "1..1", ":: bats a.bats", ":: layers-tool x"):
             seen.line(line)
-        self.assertEqual((seen.tools, seen.languages, seen.read, seen.placed), (2, ["go"], None, None))
+        self.assertEqual((seen.tools, seen.none, seen.languages, seen.read, seen.placed), (2, False, ["go"], None, None))
+        seen.line(":: checked nothing: tests ran no tool")
+        self.assertEqual((seen.tools, seen.none), (2, True))
 
     def test_the_summary_of_layers_tells_how_many_files_are_in_a_layer(self):
         for line, numbers in (

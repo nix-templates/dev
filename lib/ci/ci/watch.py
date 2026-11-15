@@ -16,6 +16,7 @@ MADE_HERE = 'echo ":: $*"'
 
 TOOL = re.compile(r"^:: (?!skipping |tests: |layers(?: |$)|checked nothing: )")
 FOR_LANGUAGE = re.compile(r"^:: checked nothing: (?P<command>.+) for (?P<language>.+)$")
+NO_TOOL = re.compile(r"^:: checked nothing: .+ ran no tool$")
 SUMMARY = re.compile(r"^layers: (?:ok|FAIL: .*) \((?P<read>\d+) files checked, (?P<placed>\d+) of them in a layer")
 
 # The ways a command passes without having checked anything, by the name
@@ -28,6 +29,9 @@ class Seen:
     """What the lines of one command's output added up to."""
 
     tools: int = 0
+    # The command said itself that it ran no tool. It knows better than a count of
+    # its lines: a tool that found nothing to check has a line and did not run.
+    none: bool = False
     languages: list[str] = field(default_factory=list)
     # What `layers` read, and how much of it is in a layer.
     read: int | None = None
@@ -36,6 +40,9 @@ class Seen:
     def line(self, text: str) -> None:
         if TOOL.match(text):
             self.tools += 1
+            return
+        if NO_TOOL.match(text):
+            self.none = True
             return
         nothing = FOR_LANGUAGE.match(text)
         if nothing:
@@ -56,7 +63,7 @@ def unchecked(command: str, seen: Seen, made_here: bool) -> list[tuple[str, str]
         if seen.read and seen.placed == 0:
             cases.append(("no-layer-files", f"layers read {seen.read} files and architecture.toml puts none of them in a layer"))
         return cases
-    if seen.tools == 0:
+    if seen.tools == 0 or seen.none:
         cases.append(("no-tool", f"{command} ran no tool"))
     cases.extend(("language", f"{command} ran nothing for {language}") for language in seen.languages)
     return cases

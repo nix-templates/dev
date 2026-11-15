@@ -111,14 +111,15 @@ in
     run = [
       ''
         if [ -d tests ] || [ -d test ] || [ -e pytest.ini ] || has tool.pytest pyproject.toml; then
-          run python -m pytest -q
+          # pytest ends with 5 when it collected no test: a tests folder can be another language's.
+          run_some 5 python -m pytest -q
         fi
       ''
     ];
     coverage = [
       ''
         if [ -d tests ] || [ -d test ] || [ -e pytest.ini ] || has tool.pytest pyproject.toml; then
-          run python -m pytest --cov --cov-report=term-missing
+          run_some 5 python -m pytest --cov --cov-report=term-missing
         fi
       ''
     ];

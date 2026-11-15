@@ -11,6 +11,24 @@ run() {
   "$@" || status=1
 }
 
+# run_some NOTHING command...: `run` for a tool that ends with status NOTHING
+# when it found nothing to check, as pytest does in a project without tests.
+# That is no failure, and the tool does not count as having run.
+run_some() {
+  local nothing="$1" code=0
+  shift
+  echo ":: $*"
+  "$@" || code=$?
+  if [ "$code" -eq "$nothing" ]; then
+    echo ":: skipping $* (it found nothing to check)"
+    return
+  fi
+  ran=$((ran + 1))
+  if [ "$code" -ne 0 ]; then
+    status=1
+  fi
+}
+
 # A command is made of parts, one for each language of the project. `part`,
 # `part_end` and `checked` keep count, so that a command which ran nothing for
 # a language says so: nothing passes unseen.
