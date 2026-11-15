@@ -3,6 +3,12 @@
 {
   description = "GitHub Actions environment: actionlint, zizmor, act and the GitHub CLI";
 
+  # Workflows.
+  marks = [
+    ".github/workflows/*.yml"
+    ".github/workflows/*.yaml"
+  ];
+
   tools = with pkgs; [
     # Toolchain: run workflows locally and talk to the API
     act

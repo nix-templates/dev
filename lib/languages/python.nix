@@ -74,15 +74,16 @@ in
     '';
   };
 
+  # ruff finds *.py by itself. A script with no extension has to be named.
   lint = ''
-    run ruff check .
+    with_scripts 'python[0-9.]*' ruff check .
     when pyproject.toml mypy .
     run vulture . --min-confidence 80 --exclude '.venv,.direnv,build,dist'
   '';
 
   fmt = ''
-    run ruff check --select I --fix .
-    run ruff format .
+    with_scripts 'python[0-9.]*' ruff check --select I --fix .
+    with_scripts 'python[0-9.]*' ruff format .
   '';
 
   scan = ''
@@ -110,14 +111,15 @@ in
     run = [
       ''
         if [ -d tests ] || [ -d test ] || [ -e pytest.ini ] || has tool.pytest pyproject.toml; then
-          run python -m pytest -q
+          # pytest ends with 5 when it collected no test: a tests folder can be another language's.
+          run_some 5 python -m pytest -q
         fi
       ''
     ];
     coverage = [
       ''
         if [ -d tests ] || [ -d test ] || [ -e pytest.ini ] || has tool.pytest pyproject.toml; then
-          run python -m pytest --cov --cov-report=term-missing
+          run_some 5 python -m pytest --cov --cov-report=term-missing
         fi
       ''
     ];

@@ -92,19 +92,20 @@ def _git_files(root: str) -> list[str] | None:
     return [path for path in result.stdout.decode("utf-8", "surrogateescape").split("\0") if path]
 
 
-def walk(root: str, exclude: list[str]) -> list[str]:
+def walk(root: str, exclude: list[str], hidden: bool = False) -> list[str]:
     """Every file below root as a sorted, repository-relative posix path.
 
     In a git work tree that is what git tracks or would add, so what
     .gitignore leaves out is left out here. Build output, vendored code and
-    hidden directories are skipped either way.
+    hidden directories are skipped either way. With hidden, the hidden
+    directories git lists are kept: that is where .github/workflows is.
     """
     listed = _git_files(root)
     if listed is not None:
         found = []
         for path in listed:
             parts = path.split("/")
-            if any(part.startswith(".") or part in SKIP_DIRS for part in parts[:-1]):
+            if any((part.startswith(".") and not hidden) or part in SKIP_DIRS for part in parts[:-1]):
                 continue
             if any_match(exclude, path) or not os.path.isfile(os.path.join(root, path)):
                 continue

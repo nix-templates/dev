@@ -7,6 +7,11 @@
 {
   description = "Pulumi environment with the Python, Go, Node and JVM SDKs plus IaC scanners";
 
+  # A Pulumi project has Pulumi.yaml.
+  marks = [
+    "Pulumi.yaml"
+  ];
+
   tools = with pkgs; [
     # Pulumi, plus its watch/analyzer/language/resource plugins
     pulumi-bin

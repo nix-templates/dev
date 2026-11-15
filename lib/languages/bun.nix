@@ -3,6 +3,17 @@
 {
   description = "Bun development environment: tsserver, Biome, oxlint and Prettier";
 
+  # A Bun project has Bun's lockfile or its config, and is then not also read as Node.js or TypeScript.
+  marks = [
+    "bun.lock"
+    "bun.lockb"
+    "bunfig.toml"
+  ];
+  insteadOf = [
+    "node"
+    "typescript"
+  ];
+
   tools = with pkgs; [
     # Toolchain: Bun, plus Node for tools that still expect it
     bun

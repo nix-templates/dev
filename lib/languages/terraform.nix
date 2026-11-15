@@ -43,7 +43,7 @@
   scan = ''
     when_any '*.tf' tfsec --soft-fail=false .
     when_any '*.tf' checkov --quiet --compact --directory .
-    run trivy config --no-progress --skip-dirs .direnv .
+    run trivy config --exit-code 1 --skip-dirs .direnv .
   '';
 
   tests = {

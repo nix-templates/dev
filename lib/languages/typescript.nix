@@ -3,6 +3,14 @@
 {
   description = "TypeScript development environment: tsserver, Biome, ESLint and strict type checking";
 
+  # A TypeScript project has a tsconfig.json, and is then not also read as
+  # Node.js. Without one there is nothing for `tsc` to check, and node covers
+  # the rest.
+  marks = [ "tsconfig.json" ];
+  insteadOf = [
+    "node"
+  ];
+
   tools = with pkgs; [
     # Toolchain
     nodejs

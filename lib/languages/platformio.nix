@@ -36,6 +36,14 @@ in
 {
   description = "Embedded environment: PlatformIO, clangd, clang-tidy, cppcheck and flawfinder";
 
+  # A PlatformIO project has platformio.ini, and is then not also read as plain C and C++.
+  marks = [
+    "platformio.ini"
+  ];
+  insteadOf = [
+    "c-cpp"
+  ];
+
   tools = tools ++ platformTools;
 
   semgrep = true;

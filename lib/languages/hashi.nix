@@ -7,6 +7,10 @@
 {
   description = "HashiCorp environment: Terraform, Vault, Nomad, Consul, Packer and their linters";
 
+  # Never found by itself: Terraform files are read as the terraform language, which uses OpenTofu.
+  # The HashiCorp binaries are unfree, so a project asks for them by name.
+  marks = [ ];
+
   tools = with pkgs; [
     # The HashiCorp stack
     terraform

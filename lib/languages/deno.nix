@@ -3,6 +3,17 @@
 {
   description = "Deno development environment with Deno's built-in LSP, linter and formatter";
 
+  # A Deno project has deno.json, and is then not also read as Node.js, TypeScript or Bun.
+  marks = [
+    "deno.json"
+    "deno.jsonc"
+  ];
+  insteadOf = [
+    "node"
+    "typescript"
+    "bun"
+  ];
+
   tools = with pkgs; [
     # Toolchain: Deno bundles its own LSP, linter, formatter and test runner
     deno

@@ -11,7 +11,7 @@ from .config import Config, ConfigError, parse
 from .languages import LANGUAGES
 from .model import Scan
 from .rules import evaluate
-from .walk import walk
+from .walk import read, walk
 
 PYTHON_SCRIPT = re.compile(r"\bpython[\d.]*\b")
 CONFIG = "architecture.toml"
@@ -42,6 +42,31 @@ OWN = (
 
 def languages() -> list[tuple[str, tuple[str, ...]]]:
     return sorted(list(OWN) + [(language.name, language.extensions) for language in LANGUAGES])
+
+
+def read_by(root: str, files: list[str]) -> dict[str, list[str]]:
+    """The languages of languages() that have files among these, each with its files.
+
+    It tells which reader takes which file, without reading what the files use.
+    """
+    scripts = generic.first_lines(root, files)
+    by_name: dict[str, list[str]] = {}
+    for path in files:
+        by_name.setdefault(path.rsplit("/", 1)[-1], []).append(path)
+
+    def named(*names: str) -> list[str]:
+        return [path for name in names for path in by_name.get(name, [])]
+
+    found: dict[str, list[str]] = {}
+    for name, endings in OWN:
+        suffixes = tuple(ending for ending in endings if ending.startswith("."))
+        found[name] = [path for path in files if path.endswith(suffixes)] + named(*(set(endings) - set(suffixes)))
+    found["python"] += [path for path, first in scripts.items() if PYTHON_SCRIPT.search(first)]
+    found["javascript"] = [path for path in found["javascript"] if not javascript.translation(path, read(root, path))]
+    extensions = generic.by_extension(files)
+    for language in LANGUAGES:
+        found[language.name] = generic.files_of(language, extensions, named, scripts, lambda path: read(root, path))
+    return {name: sorted(set(mine)) for name, mine in found.items() if mine}
 
 
 def _explain(config: Config, scan: Scan, as_json: bool = False) -> str:

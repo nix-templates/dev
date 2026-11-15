@@ -25,11 +25,13 @@
   lint = ''
     run_on '*.pl' perlcritic --severity 3
     run_on '*.pm' perlcritic --severity 3
+    on_scripts perl perlcritic --severity 3
   '';
 
   fmt = ''
     run_on '*.pl' perltidy --backup-and-modify-in-place --backup-file-extension=/
     run_on '*.pm' perltidy --backup-and-modify-in-place --backup-file-extension=/
+    on_scripts perl perltidy --backup-and-modify-in-place --backup-file-extension=/
   '';
 
   tests = {

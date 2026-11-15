@@ -143,6 +143,95 @@
                 touch $out
               '';
 
+          # The tests of `ci`. They find every language of the library in a
+          # sample checkout, so they get the marks of all of them.
+          ci =
+            pkgs.runCommand "ci-tests"
+              {
+                nativeBuildInputs = [
+                  pkgs.python3
+                  pkgs.git
+                ];
+              }
+              ''
+                mkdir source
+                cp -r ${./lib} source/lib
+                cp -r ${./mcp} source/mcp
+                cd source/lib/ci
+                export HOME="$TMPDIR"
+                export DEV_CI_MARKS=${pkgs.writeText "marks.json" (builtins.toJSON (self.lib.marks pkgs))}
+                PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.:../layers:../../mcp python3 -m unittest discover -s tests
+                touch $out
+              '';
+
+          # The built `ci` on a small checkout, with the commands `mkProject`
+          # writes for two languages made for this test. Only nix is a stand-in:
+          # a build cannot ask Nix for a dev shell.
+          ci-run =
+            let
+              example = self.lib.mkProject {
+                inherit pkgs;
+                languages = [
+                  ./lib/ci/tests/languages/tested.nix
+                  ./lib/ci/tests/languages/untested.nix
+                ];
+              };
+            in
+            pkgs.runCommand "ci-run"
+              {
+                nativeBuildInputs = [
+                  self.packages.${system}.ci
+                  pkgs.git
+                ];
+              }
+              ''
+                export HOME="$TMPDIR"
+                export CI_TEST_PATH=${lib.makeBinPath example.packages}
+                bash ${./lib/ci/tests/run.sh}
+                touch $out
+              '';
+
+          # trivy exits 0 on a finding unless it is told --exit-code 1, and it
+          # stops on a flag it does not know. Either way `scan` would say nothing
+          # about the code. Every trivy line of every language is held to both,
+          # by asking trivy itself for help with exactly those flags.
+          scan-fails =
+            pkgs.runCommand "scan-fails"
+              {
+                nativeBuildInputs = [ pkgs.trivy ];
+                scan = everything.texts.scan;
+                passAsFile = [ "scan" ];
+              }
+              ''
+                export HOME="$TMPDIR"
+                grep -E '^[[:space:]]*run trivy ' "$scanPath" | sed -E 's/^[[:space:]]*run //' | sort -u > lines
+                test -s lines
+                while IFS= read -r line; do
+                  case "$line" in
+                    *" --exit-code 1 "*) ;;
+                    *) echo "never fails scan: $line"; exit 1 ;;
+                  esac
+                  if ! $line --help > /dev/null 2>&1; then
+                    echo "trivy does not take these flags: $line"
+                    exit 1
+                  fi
+                done < lines
+                echo "$(wc -l < lines) trivy lines fail on a finding"
+                touch $out
+              '';
+
+          # A Rust project's shell has a C compiler: without `cc`, cargo cannot
+          # link a build script, so clippy and the tests stop at the first one.
+          # This is evaluated, nothing of Rust is built.
+          rust-links =
+            assert lib.assertMsg
+              (self.lib.mkProject {
+                inherit pkgs;
+                languages = [ "rust" ];
+              }).devShell.stdenv.hasCC
+              "the dev shell of a Rust project has no C compiler";
+            pkgs.runCommand "rust-links" { } "touch $out";
+
           # The commands of a project with every language in it pass shellcheck.
           # Building them without their tools keeps this quick.
           scripts = pkgs.linkFarmFromDrvs "library-scripts" (
@@ -166,6 +255,18 @@
 
           # Dependency and purity rules from a repository's architecture.toml.
           layers = self.lib.layers pkgs;
+
+          # What a CI job calls: one of the five commands on a checkout, with or
+          # without a flake of its own. `nix run .#ci -- lint`
+          ci = self.lib.ci {
+            inherit pkgs;
+            toolbox = self;
+            nixpkgs = inputs.nixpkgs;
+            # A checkout with changes in it has no `rev`. Then what Nix calls it,
+            # or the hash of the source, stands in.
+            revision = self.rev or self.dirtyRev or self.narHash or "an unknown revision";
+            nixpkgsRevision = inputs.nixpkgs.rev or lib.version;
+          };
 
           # An MCP server: lets an agent see what the library has and write the
           # flake for a project that uses it. `nix run .#mcp`

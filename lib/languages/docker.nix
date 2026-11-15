@@ -3,6 +3,18 @@
 {
   description = "Container environment: dockerfile-language-server, Hadolint, Trivy and Dive";
 
+  # Dockerfiles and Compose files.
+  marks = [
+    "Dockerfile"
+    "Dockerfile.*"
+    "*.dockerfile"
+    "Containerfile"
+    "compose.yaml"
+    "compose.yml"
+    "docker-compose.yaml"
+    "docker-compose.yml"
+  ];
+
   tools = with pkgs; [
     # Container tooling and rootless runtimes
     docker-compose
@@ -42,7 +54,7 @@
   '';
 
   scan = ''
-    run trivy config --no-progress --skip-dirs .direnv .
-    run trivy fs --scanners vuln,secret --no-progress .
+    run trivy config --exit-code 1 --skip-dirs .direnv .
+    run trivy fs --scanners vuln,secret --no-progress --exit-code 1 .
   '';
 }

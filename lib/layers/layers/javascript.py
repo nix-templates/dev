@@ -95,6 +95,11 @@ def package_of(specifier: str) -> str:
     return "/".join(parts[:2]) if specifier.startswith("@") and len(parts) > 1 else parts[0]
 
 
+def translation(path: str, text: str) -> bool:
+    """A Qt translation file: it ends in .ts as well, and is XML."""
+    return path.endswith(".ts") and text.lstrip().startswith(("<?xml", "<!DOCTYPE TS"))
+
+
 def extract(root: str, files: list[str], aliases: dict[str, str], include_tests: bool, scan: Scan) -> None:
     sources = [p for p in files if p.endswith(EXTENSIONS) and not p.endswith(".d.ts")]
     known = set(sources)
@@ -103,8 +108,8 @@ def extract(root: str, files: list[str], aliases: dict[str, str], include_tests:
             scan.tests.add(path)
             continue
         text = read(root, path)
-        if path.endswith(".ts") and text.lstrip().startswith(("<?xml", "<!DOCTYPE TS")):
-            continue  # a Qt translation file, not TypeScript
+        if translation(path, text):
+            continue
         scan.files.append(path)
         code = strip_comments(text)
         directory = posixpath.dirname(path)

@@ -3,6 +3,11 @@
 {
   description = "Documentation environment: Marksman, markdownlint, Vale, Harper and lychee";
 
+  # Markdown files.
+  marks = [
+    "*.md"
+  ];
+
   tools = with pkgs; [
     # Language servers: Marksman for structure, Harper for prose
     marksman

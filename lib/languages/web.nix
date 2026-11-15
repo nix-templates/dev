@@ -3,6 +3,13 @@
 {
   description = "Web front-end environment: HTML/CSS/Tailwind language servers, ESLint, Stylelint and Prettier";
 
+  # Pages and stylesheets. JavaScript alone is Node.js or TypeScript.
+  marks = [
+    "*.html"
+    "*.css"
+    "*.scss"
+  ];
+
   tools = with pkgs; [
     # Toolchain
     nodejs

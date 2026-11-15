@@ -60,6 +60,9 @@ in
   semgrep = true;
   trivy = true;
 
+  # cargo links build scripts, tests and binaries with `cc`.
+  needsCC = true;
+
   # cargo-llvm-cov needs the llvm tools of the compiler's own LLVM. A pinned
   # toolchain brings them as its `llvm-tools` component.
   env = lib.optionalAttrs (pinned == null) {

@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The monthly lock update starts it on its own branch.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,7 +23,7 @@ jobs:
       # so what it saves is the nixpkgs fetch and the evaluation of every template.
       - uses: nix-community/cache-nix-action@v7
         with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/flake.nix', 'lib/**', 'mcp/**') }}
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/flake.nix', 'flake.lock', 'lib/**', 'mcp/**') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           # GitHub allows 10G of cache per repository, so leave room to spare.
           gc-max-store-size-linux: 5G

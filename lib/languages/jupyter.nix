@@ -44,6 +44,11 @@ in
 {
   description = "Jupyter development environment: JupyterLab, ruff, mypy and nbstripout";
 
+  # Notebooks.
+  marks = [
+    "*.ipynb"
+  ];
+
   tools = tools ++ lib.optional venv python.pkgs.venvShellHook;
 
   semgrep = true;
