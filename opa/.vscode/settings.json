@@ -5,9 +5,7 @@
   "files.insertFinalNewline": true,
   "files.eol": "\n",
   "editor.formatOnSave": true,
-  "editor.rulers": [
-    100
-  ],
+  "editor.rulers": [100],
   "search.exclude": {
     "**/.direnv": true,
     "**/result": true,
@@ -20,9 +18,7 @@
     "**/result/**": true
   },
   "nix.formatterPath": "nixfmt",
-  "opa.languageServers": [
-    "regal"
-  ],
+  "opa.languageServers": ["regal"],
   "opa.dependency_paths.opa": "opa",
   "[rego]": {
     "editor.defaultFormatter": "tsandall.opa"

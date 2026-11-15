@@ -19,7 +19,7 @@
   };
 
   outputs =
-    { self, ... }@inputs:
+    inputs:
 
     let
       supportedSystems = [
@@ -71,7 +71,9 @@
       devShells = forEachSupportedSystem (
         { pkgs, system }:
         {
-          default = pkgs.mkShellNoCC {
+          # A shell with a C compiler: cargo links build scripts, tests and
+          # binaries with `cc`.
+          default = pkgs.mkShell {
             inherit (project pkgs system) packages;
 
             env = (project pkgs system).env // {

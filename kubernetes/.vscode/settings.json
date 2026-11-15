@@ -5,9 +5,7 @@
   "files.insertFinalNewline": true,
   "files.eol": "\n",
   "editor.formatOnSave": true,
-  "editor.rulers": [
-    100
-  ],
+  "editor.rulers": [100],
   "search.exclude": {
     "**/.direnv": true,
     "**/result": true,
@@ -21,11 +19,7 @@
   },
   "nix.formatterPath": "nixfmt",
   "yaml.schemas": {
-    "kubernetes": [
-      "*.k8s.yaml",
-      "k8s/**/*.yaml",
-      "manifests/**/*.yaml"
-    ]
+    "kubernetes": ["*.k8s.yaml", "k8s/**/*.yaml", "manifests/**/*.yaml"]
   },
   "yaml.format.enable": true,
   "yaml.validate": true,

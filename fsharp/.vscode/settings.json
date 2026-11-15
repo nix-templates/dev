@@ -5,9 +5,7 @@
   "files.insertFinalNewline": true,
   "files.eol": "\n",
   "editor.formatOnSave": true,
-  "editor.rulers": [
-    100
-  ],
+  "editor.rulers": [100],
   "search.exclude": {
     "**/.direnv": true,
     "**/result": true,
@@ -20,9 +18,7 @@
     "**/result/**": true
   },
   "nix.formatterPath": "nixfmt",
-  "FSharp.fsac.silencedLogs": [
-    "seq"
-  ],
+  "FSharp.fsac.silencedLogs": ["seq"],
   "FSharp.enableTreeView": true,
   "[fsharp]": {
     "editor.defaultFormatter": "Ionide.Ionide-fsharp"

@@ -501,6 +501,12 @@ with. A project with a flake of its own follows its own nixpkgs and never
 sees it, and the templates stay without a lock file. On the first of each
 month a workflow opens a pull request with a newer lock.
 
+The `systems` workflow tries templates on real machines: x86_64 and aarch64
+Linux, macOS, and Windows under WSL. It makes a project from the template,
+enters its dev shell and runs the five commands. A pull request gets a
+handful of templates, and every Monday all of them run. The run's summary
+has a row for each.
+
 | Path | What it is |
 | :--- | :--- |
 | `lib/languages/` | One file per language: its tools and its part of each command. |
@@ -519,6 +525,7 @@ what is published.
 language's files. If it has no reader, or shares its files with another
 language, name the files that give it away in `marks`, and the languages it
 replaces in `insteadOf`. [`deno.nix`](./lib/languages/deno.nix) shows both.
-Then add a sample to `lib/ci/tests/test_detect.py`.
+Then add a sample to `lib/ci/tests/samples.py`. The `systems` workflow uses the
+same sample to give the language's tools something to run on.
 
 [direnv-ext]: https://marketplace.visualstudio.com/items?itemName=mkhl.direnv

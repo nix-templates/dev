@@ -2,83 +2,10 @@
 
 import unittest
 
+from samples import NEVER, SAMPLES
 from support import MARKS, REAL_MARKS, checkout
 
 from ci import detect
-
-# One checkout per language of the library, and what must be found in it.
-# Where two names come back, the files really are both.
-SAMPLES = {
-    "ansible": ({"ansible.cfg": "[defaults]\n", "site.yml": "- hosts: all\n"}, {"ansible"}),
-    "assembly": ({"boot.asm": "mov eax, 1\n"}, {"assembly"}),
-    "bun": ({"bun.lock": "{}\n", "index.ts": "export {}\n"}, {"bun"}),
-    "c-cpp": ({"main.c": "int main(void) { return 0; }\n", "CMakeLists.txt": "project(sample)\n"}, {"c-cpp"}),
-    "clojure": ({"core.clj": "(ns core)\n"}, {"clojure"}),
-    "crystal": ({"app.cr": 'puts "hello"\n'}, {"crystal"}),
-    "csharp": ({"Program.cs": "class Program { }\n"}, {"csharp"}),
-    "cue": ({"schema.cue": "package schema\n"}, {"cue"}),
-    "dart": ({"main.dart": "void main() {}\n"}, {"dart"}),
-    "deno": ({"deno.json": "{}\n", "main.ts": "export {}\n"}, {"deno"}),
-    "dhall": ({"config.dhall": "{ a = 1 }\n"}, {"dhall"}),
-    "docker": ({"Dockerfile": "FROM scratch\n"}, {"docker"}),
-    "elixir": ({"app.ex": "defmodule App do\nend\n"}, {"elixir"}),
-    "elm": ({"Main.elm": "module Main exposing (main)\n"}, {"elm"}),
-    "erlang": ({"app.erl": "-module(app).\n"}, {"erlang"}),
-    "fortran": ({"main.f90": "program main\nend program main\n"}, {"fortran"}),
-    "fsharp": ({"Program.fs": "module Program\n"}, {"fsharp"}),
-    "github-actions": ({".github/workflows/check.yml": "on: push\n"}, {"github-actions"}),
-    "gleam": ({"app.gleam": "pub fn main() {}\n"}, {"gleam"}),
-    "go": ({"main.go": "package main\n"}, {"go"}),
-    "graphql": ({"schema.graphql": "type Query { a: Int }\n"}, {"graphql"}),
-    "groovy": ({"build.groovy": "println 'hello'\n"}, {"groovy"}),
-    "haskell": ({"Main.hs": "module Main where\n"}, {"haskell"}),
-    "haxe": ({"Main.hx": "class Main { }\n"}, {"haxe"}),
-    "hdl": ({"top.vhd": "entity top is\nend entity;\n", "adder.sv": "module adder;\nendmodule\n"}, {"hdl"}),
-    "java": ({"Main.java": "class Main { }\n"}, {"java"}),
-    "julia": ({"main.jl": "println(1)\n"}, {"julia"}),
-    "jupyter": ({"notebook.ipynb": '{"cells": []}\n'}, {"jupyter", "python"}),
-    "kotlin": ({"Main.kt": "fun main() {}\n"}, {"kotlin"}),
-    "kubernetes": ({"Chart.yaml": "name: sample\n"}, {"kubernetes"}),
-    "latex": ({"paper.tex": "\\documentclass{article}\n"}, {"latex"}),
-    "lean4": ({"Main.lean": "def main : IO Unit := pure ()\n"}, {"lean4"}),
-    "lua": ({"init.lua": "print(1)\n"}, {"lua"}),
-    "markdown": ({"README.md": "# Sample\n"}, {"markdown"}),
-    "nickel": ({"config.ncl": "{ a = 1 }\n"}, {"nickel"}),
-    "nim": ({"main.nim": "echo 1\n"}, {"nim"}),
-    "nix": ({"default.nix": "{ }\n"}, {"nix"}),
-    "node": ({"index.js": "export {}\n"}, {"node"}),
-    "ocaml": ({"main.ml": "let () = ()\n"}, {"ocaml"}),
-    "odin": ({"main.odin": "package main\n"}, {"odin"}),
-    "opa": ({"policy.rego": "package policy\n"}, {"opa"}),
-    "perl": ({"script.pl": "use strict;\nprint 1;\n"}, {"perl"}),
-    "php": ({"index.php": "<?php echo 1;\n"}, {"php"}),
-    "platformio": ({"platformio.ini": "[env:native]\n", "src/main.cpp": "int main() { return 0; }\n"}, {"platformio"}),
-    "powershell": ({"build.ps1": "Write-Output 1\n"}, {"powershell"}),
-    "protobuf": ({"api.proto": 'syntax = "proto3";\n'}, {"protobuf"}),
-    "pulumi": ({"Pulumi.yaml": "name: sample\n", "index.ts": "export {}\n"}, {"pulumi", "node"}),
-    "purescript": ({"Main.purs": "module Main where\n"}, {"purescript"}),
-    "python": ({"app.py": "print(1)\n"}, {"python"}),
-    "qml": ({"Main.qml": "import QtQuick\nItem { }\n"}, {"qml"}),
-    "r": ({"analysis.R": "print(1)\n"}, {"r"}),
-    "racket": ({"main.rkt": "#lang racket\n"}, {"racket"}),
-    "ruby": ({"app.rb": "puts 1\n"}, {"ruby"}),
-    "rust": ({"Cargo.toml": '[package]\nname = "sample"\n', "src/main.rs": "fn main() {}\n"}, {"rust"}),
-    "scala": ({"Main.scala": "object Main\n"}, {"scala"}),
-    "shell": ({"run.sh": "echo 1\n"}, {"shell"}),
-    "solidity": ({"Token.sol": "contract Token { }\n"}, {"solidity"}),
-    "sql": ({"schema.sql": "select 1;\n"}, {"sql"}),
-    "swi-prolog": ({"facts.pl": ":- module(facts, []).\nlikes(a, b).\n"}, {"swi-prolog"}),
-    "swift": ({"main.swift": "print(1)\n"}, {"swift"}),
-    "terraform": ({"main.tf": 'resource "null_resource" "a" {}\n'}, {"terraform"}),
-    "typescript": ({"tsconfig.json": "{}\n", "index.ts": "export {}\n"}, {"typescript"}),
-    "typst": ({"paper.typ": "= Title\n"}, {"typst"}),
-    "vlang": ({"main.v": "module main\n\nfn main() {}\n"}, {"vlang"}),
-    "web": ({"index.html": "<!doctype html>\n", "style.css": "body { }\n"}, {"web"}),
-    "zig": ({"main.zig": "pub fn main() void {}\n"}, {"zig"}),
-}
-
-# What no file gives away: a project names these in a flake of its own.
-NEVER = {"empty", "hashi", "presenterm"}
 
 
 def found(files: dict[str, str], marks: dict = MARKS) -> list[str]:

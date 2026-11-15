@@ -167,6 +167,9 @@ def generate_flake(catalogue: dict, arguments: dict) -> dict:
         else ""
     )
 
+    # `self` only when the flake uses it: deadnix reports an argument that is never used.
+    outputs_arguments = "{ self, ... }@inputs" if checks else "inputs"
+
     flake = f"""{{
   description = {json.dumps(description)};
 
@@ -181,7 +184,7 @@ def generate_flake(catalogue: dict, arguments: dict) -> dict:
   }};
 
   outputs =
-    {{ self, ... }}@inputs:
+    {outputs_arguments}:
 
     let
       supportedSystems = {nix_list([json.dumps(s) for s in systems], 6)};

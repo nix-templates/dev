@@ -5,9 +5,7 @@
   "files.insertFinalNewline": true,
   "files.eol": "\n",
   "editor.formatOnSave": true,
-  "editor.rulers": [
-    100
-  ],
+  "editor.rulers": [100],
   "search.exclude": {
     "**/.direnv": true,
     "**/result": true,
@@ -22,10 +20,7 @@
   "nix.formatterPath": "nixfmt",
   "C_Cpp.intelliSenseEngine": "disabled",
   "platformio-ide.useBuiltinPIOCore": false,
-  "clangd.arguments": [
-    "--background-index",
-    "--clang-tidy"
-  ],
+  "clangd.arguments": ["--background-index", "--clang-tidy"],
   "[cpp]": {
     "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
   }

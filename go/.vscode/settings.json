@@ -5,9 +5,7 @@
   "files.insertFinalNewline": true,
   "files.eol": "\n",
   "editor.formatOnSave": true,
-  "editor.rulers": [
-    100
-  ],
+  "editor.rulers": [100],
   "search.exclude": {
     "**/.direnv": true,
     "**/result": true,
@@ -22,9 +20,7 @@
   "nix.formatterPath": "nixfmt",
   "go.useLanguageServer": true,
   "go.lintTool": "golangci-lint",
-  "go.lintFlags": [
-    "--fast-only"
-  ],
+  "go.lintFlags": ["--fast-only"],
   "go.formatTool": "custom",
   "go.alternateTools": {
     "customFormatter": "gofumpt"
