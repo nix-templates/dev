@@ -33,8 +33,17 @@
             let
               forEachTemplate = exec: ''
                 for dir in */; do
+                  # lib/ holds the library, not a template.
+                  [ -f "''${dir}flake.nix" ] || continue
                   (
                     cd "''${dir}"
+
+                    # A template that takes this repository as an input is checked
+                    # against this checkout, not against what is published.
+                    override=()
+                    if grep -q 'github:nix-templates/dev' flake.nix; then
+                      override=(--override-input dev "path:$(dirname "$PWD")")
+                    fi
 
                     ${exec}
                   )
@@ -53,13 +62,13 @@
                 (script "build" [ pkgs.nix ] (forEachTemplate ''
                   echo "building ''${dir}"
                   SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
-                  nix build --no-link ".#devShells.''${SYSTEM}.default"
+                  nix build --no-link "''${override[@]}" ".#devShells.''${SYSTEM}.default"
                 ''))
 
                 # Evaluate every template without building anything.
                 (script "check" [ pkgs.nix ] (forEachTemplate ''
                   echo "checking ''${dir}"
-                  nix flake check --all-systems --no-build
+                  nix flake check --all-systems --no-build "''${override[@]}"
                 ''))
 
                 (script "format" [ pkgs.nixfmt ] ''
@@ -76,12 +85,58 @@
         }
       );
 
+      # The library behind the templates: `mkProject` gives a project the tools and
+      # checks of the languages it names. See lib/default.nix.
+      lib = import ./lib { inherit lib; };
+
+      checks = forEachSupportedSystem (
+        { pkgs, ... }:
+        let
+          everything = self.lib.mkProject {
+            inherit pkgs;
+            languages = builtins.attrNames self.lib.languages;
+          };
+        in
+        {
+          # archcheck's own tests.
+          archcheck =
+            pkgs.runCommand "archcheck-tests"
+              {
+                nativeBuildInputs = [
+                  pkgs.python3
+                  pkgs.git
+                ];
+              }
+              ''
+                cd ${./lib/archcheck}
+                export HOME="$TMPDIR"
+                PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. python3 -m unittest discover -s tests
+                touch $out
+              '';
+
+          # Every language's lint, fmt and scan, put together in one project, pass
+          # shellcheck. Building them without their tools keeps this quick.
+          scripts = pkgs.linkFarmFromDrvs "library-scripts" (
+            lib.mapAttrsToList (
+              name: text:
+              pkgs.writeShellApplication {
+                inherit name text;
+                excludeShellChecks = [ "SC2329" ];
+              }
+            ) everything.texts
+          );
+        }
+      );
+
       formatter = forEachSupportedSystem ({ pkgs, ... }: pkgs.nixfmt);
 
       packages = forEachSupportedSystem (
         { pkgs, system }:
         {
           default = self.packages.${system}.dvt;
+
+          # Dependency and purity rules from a repository's architecture.toml.
+          archcheck = self.lib.archcheck pkgs;
 
           # dvt <template> initialises a template in the current directory.
           dvt = pkgs.writeShellApplication {
@@ -343,6 +398,11 @@
         presenterm = {
           path = ./presenterm;
           description = "Presenterm development environment with linters, formatters, LSP and security scanning";
+        };
+
+        project = {
+          path = ./project;
+          description = "A project that takes its tools and checks from this repository as a library: several languages in one shell, and architecture rules";
         };
 
         protobuf = {

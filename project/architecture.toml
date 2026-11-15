@@ -1,0 +1,33 @@
+# The architecture rules for this repository, checked by `archcheck`.
+#
+# A layer is a set of paths. A file may use files in its own layer and in the
+# layers its layer lists under may_use, and nothing else. The first layer whose
+# paths match a file is that file's layer, so put the narrow ones first.
+#
+#   archcheck             check the rules
+#   archcheck --explain   show which files are in which layer
+#   archcheck --accept    adopt the rules in existing code: write today's
+#                         violations to architecture-baseline.json. After that
+#                         only new violations fail, and the list may only shrink.
+version = 1
+
+# The functional core: the same input gives the same output, and nothing
+# outside the function changes. No files, network, clock, environment,
+# randomness or shared state here.
+[[layer]]
+name = "core"
+paths = ["src/core"]
+pure = true
+
+# The imperative shell around it: everything that talks to the outside world,
+# each behind an interface that the core defines.
+[[layer]]
+name = "adapters"
+paths = ["src/adapters"]
+may_use = ["core"]
+
+# The one place that picks the adapters and wires them to the core.
+[[layer]]
+name = "app"
+paths = ["src"]
+may_use = ["core", "adapters"]

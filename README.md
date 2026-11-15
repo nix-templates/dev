@@ -5,6 +5,15 @@ contains the language server, linters, formatters and security scanners that
 language's community actually uses, wired into direnv, VS Code and Neovim so
 they work the moment you open the project.
 
+There are two ways to use it:
+
+- **Copy a template.** `nix flake init` writes one language's environment into
+  your project. It is yours from then on; see [Getting started](#getting-started).
+- **Take it as a library.** Your flake names this repository as an input and
+  lists its languages. One shell covers all of them, `nix flake update` brings
+  in every later improvement, and `archcheck` enforces your architecture rules.
+  See [Use it as a library](#use-it-as-a-library).
+
 ## What you get
 
 Each template ships six files:
@@ -73,6 +82,176 @@ around.
 
 **Anything else.** Launch it from a directory where direnv is active and it
 inherits the whole toolchain through `PATH`.
+
+## Use it as a library
+
+A template is a copy, so what improves here later does not reach a project that
+already has one. A project that should keep up names this repository as a flake
+input and says which languages it is written in:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    dev.url = "github:nix-templates/dev";
+    dev.inputs.nixpkgs.follows = "nixpkgs";
+  };
+
+  outputs =
+    { self, nixpkgs, dev }:
+    let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      project = dev.lib.mkProject {
+        inherit pkgs;
+        languages = [ "rust" "python" "nix" "shell" ];
+        src = self;
+      };
+    in
+    {
+      devShells.x86_64-linux.default = project.devShell;
+      checks.x86_64-linux = project.checks;
+    };
+}
+```
+
+`nix flake update dev` then brings in newer tools and rules. The
+[`project`](./project/) template is this flake for every supported system, with
+a starting `architecture.toml`:
+
+```shell
+nix flake init -t github:nix-templates/dev#project
+```
+
+The shell has the tools of every language you listed, and four commands:
+
+```shell
+lint          # every linter of every listed language, then archcheck
+fmt           # every formatter, in place
+fmt --check   # the same formatters, reporting only: for CI
+scan          # SAST, dependency and secret scanning
+archcheck     # the rules in architecture.toml
+```
+
+The tools come from the `pkgs` you pass in, so they match the versions your
+project builds with. That matters most for Rust: clippy's lints change with
+every release, so pass your pinned toolchain as `rustToolchain`.
+
+| `mkProject` argument | What it is |
+| :--- | :--- |
+| `pkgs` | Your package set. Required. |
+| `languages` | Names from the table below, in the order their checks should run. A module of your own works too: `{ pkgs, lib, options }: { tools; lint; fmt; fmtCheck; scan; }`, every part optional. |
+| `src` | Your source tree, `self` in a flake. Turns on `checks`. |
+| `rustToolchain` | One derivation with `cargo`, `rustc`, `clippy` and `rustfmt`. Default: the four from `pkgs`. |
+| `python` | The Python interpreter. Default: `pkgs.python3`. |
+| `extraTools` | More packages for the shell and the commands' `PATH`. |
+
+| It returns | What it is |
+| :--- | :--- |
+| `devShell` | A shell with all tools and commands. |
+| `packages`, `tools`, `env` | The same pieces, for a shell you build yourself: `pkgs.mkShell { inherit (project) packages env; }`. |
+| `commands` | `lint`, `fmt`, `scan` and `archcheck` as packages, for CI jobs and `nix run`. |
+| `checks` | `archcheck` as a flake check. It runs inside the Nix sandbox, so `nix flake check` covers it and unchanged sources are not checked twice. It fails without an `architecture.toml`, so leave `src` out until you have one. `lint` and `scan` need the network and stay commands. |
+
+| Language | Tooling |
+| :--- | :--- |
+| `c-cpp` | `clang-tools`, `cppcheck`, `include-what-you-use`, `codespell`, `flawfinder`, `cmake`, `ninja`, `meson`, ... |
+| `nix` | `nixd`, `statix`, `deadnix`, `nixfmt`, `vulnix`, ... |
+| `python` | `uv`, `basedpyright`, `ruff`, `mypy`, `vulture`, `bandit` |
+| `qml` | `qmllint`, `qmlformat`, `qmlls` |
+| `rust` | your toolchain, `rust-analyzer`, `cargo-nextest`, `cargo-deny`, `cargo-machete`, `cargo-audit`, `taplo`, ... |
+| `shell` | `bash`, `bats`, `bash-language-server`, `shellcheck`, `shfmt` |
+
+Every project also gets `typos`, `editorconfig-checker`, `gitleaks` and `trivy`,
+and `semgrep` when one of its languages has rules for it.
+
+The library knows these six languages so far. The other templates still carry
+their own copy of their tools and scripts.
+
+## Architecture rules with archcheck
+
+`archcheck` reads `architecture.toml` at the root of a repository and fails
+when code breaks the rules in it. Two kinds of rule:
+
+- **Dependency rules.** The code is divided into layers. A file may use its own
+  layer and the layers its layer names, and nothing else.
+- **Purity rules.** A layer marked `pure` is a functional core: the same input
+  gives the same output, and nothing outside the function changes. It may not
+  touch files, the network, processes, the clock, the environment, randomness,
+  threads or shared mutable state. That work belongs in the layers around it.
+
+```toml
+version = 1
+
+[[layer]]
+name = "core"
+paths = ["src/core"]
+pure = true
+
+[[layer]]
+name = "adapters"
+paths = ["src/adapters"]
+may_use = ["core"]
+forbid_external = ["tokio"]   # this layer may not depend on these packages
+hint = "Adapters talk to one outside system each."
+
+[[layer]]
+name = "app"
+paths = ["src"]
+may_use = ["core", "adapters"]
+```
+
+The first layer whose `paths` match a file is that file's layer, so the narrow
+ones go first. `*` stays inside one path segment and `**` crosses them.
+
+A failure names the file and line, the rule, and what to do instead:
+
+```text
+core/plan.py:2: layer: 'core' may not use 'adapters': adapters.disk is adapters/disk.py
+    fix: 'core' may use no other layer. Move what both need into a layer 'core' may use,
+    or define the interface in 'core' and implement it in 'adapters'. Do not add this to
+    the baseline.
+```
+
+| Other settings | What it does |
+| :--- | :--- |
+| `strict = true` | A source file in no layer is a failure, so new code must be given a place. |
+| `exclude = ["generated"]` | Paths to leave out. Hidden directories and build output are left out already. |
+| `include_tests = true` | Check test code too. By default tests may use anything. |
+| `[purity] allow = ["logging"]` | Let pure layers use this after all. |
+| `[purity] forbid = ["numpy"]` | Keep this out of pure layers as well. |
+| `[python] roots = ["python"]` | Directories that hold top-level packages, when they are not found by themselves. |
+| `[cpp] include_dirs = ["include"]` | Where quoted includes are looked up, besides next to the file. |
+| `[javascript.aliases] "@/" = "src/"` | Import prefixes that stand for a directory. |
+
+### Adopting it in existing code
+
+Existing code rarely follows new rules at once. The baseline holds the
+violations that were there on the day the rules arrived:
+
+```shell
+archcheck --explain   # which files are in which layer
+archcheck --accept    # write today's violations to architecture-baseline.json
+```
+
+From then on a violation in the baseline passes and a new one fails. The
+baseline may only get shorter: an entry that no longer occurs fails too, until
+`archcheck --prune` takes it out, so the change that fixes a violation also
+shortens the list. In CI, `archcheck --since origin/main` also fails when the
+baseline has entries that `origin/main`'s baseline lacks.
+
+### How it reads each language
+
+| Language | What it reads | What it does not see |
+| :--- | :--- | :--- |
+| Rust | Crate dependencies from every `Cargo.toml`, exactly. Inside a crate, `use` declarations and qualified paths, with modules found by the standard file layout. | `#[path]` modules, names brought in by glob imports or macros. |
+| Python | Imports from the syntax tree, relative ones included, plus calls such as `open()`, `print()` and `datetime.now()`, and `global`. | Imports made at run time with `importlib`. |
+| JavaScript, TypeScript | `import`, `export ... from`, `require()` and `import()`, plus uses of `fetch`, `Date.now()`, `Math.random()`, `console`, the DOM and timers. | Paths mapped in `tsconfig.json`; map them under `[javascript.aliases]`. |
+| C, C++ | `#include` lines. | Anything behind the preprocessor. |
+
+It reads the text, not the compiler's view, so treat it as the rule that keeps
+the structure in place, next to the language's own tools: `clippy.toml` with
+`disallowed-methods`, `cargo-deny`, `import-linter`, `eslint-plugin-functional`.
+A file it cannot parse fails the check instead of passing unread.
 
 ## Templates
 
@@ -183,6 +362,7 @@ inherits the whole toolchain through `PATH`.
 | Template | Tooling |
 | :--- | :--- |
 | [`empty`](./empty/) | `treefmt`, `dprint`, `taplo`, `yamlfmt`, `yamllint`, `markdownlint-cli2`, `actionlint`, `semgrep`, ... |
+| [`project`](./project/) | The library, for a project in several languages: you list them in `flake.nix`. Comes with `architecture.toml` and no editor files. |
 
 ## Notes on individual templates
 
@@ -205,7 +385,24 @@ nix develop           # or direnv allow
 check                 # nix flake check, every template
 build                 # build every template's devShell
 format                # nixfmt every .nix file
+nix flake check       # the library: archcheck's tests, and shellcheck on its scripts
 ```
+
+The library is in [`lib/`](./lib/):
+
+| Path | What it is |
+| :--- | :--- |
+| `lib/default.nix` | `mkProject`, and the list of languages |
+| `lib/languages/` | One file per language: its tools and its part of `lint`, `fmt` and `scan` |
+| `lib/helpers.sh` | The shell helpers those parts use (`run`, `run_on`, `when`, ...) |
+| `lib/archcheck/` | `archcheck`, in Python with no dependencies, and its tests |
+
+To add a language to the library, add its file under `lib/languages/` and its
+name in `lib/default.nix`. `nix flake check` then checks its scripts together
+with all the others.
+
+A template that takes this repository as an input, as `project` does, is checked
+by `check` and `build` against your checkout, not against what is published.
 
 [direnv-ext]: https://marketplace.visualstudio.com/items?itemName=mkhl.direnv
 [direnv-vim]: https://github.com/direnv/direnv.vim
