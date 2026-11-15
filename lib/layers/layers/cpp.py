@@ -21,6 +21,9 @@ def extract(root: str, files: list[str], include_dirs: list[str], include_tests:
     sources = [p for p in files if p.endswith(EXTENSIONS)]
     known = set(sources)
     search = [d.strip("/") for d in include_dirs] + [""]
+    by_name: dict[str, list[str]] = {}
+    for path in sources:
+        by_name.setdefault(posixpath.basename(path), []).append(path)
     for path in sources:
         if not include_tests and is_test(path):
             scan.tests.add(path)
@@ -38,6 +41,13 @@ def extract(root: str, files: list[str], include_dirs: list[str], include_tests:
                     if candidate in known:
                         found = candidate
                         break
+                if found is None:
+                    # The build system adds include directories this program does not know.
+                    # A header that exists exactly once in the repository is that one.
+                    name = posixpath.normpath(header)
+                    same = [p for p in by_name.get(posixpath.basename(name), []) if p == name or p.endswith("/" + name)]
+                    if len(same) == 1:
+                        found = same[0]
             if found:
                 if found != path:
                     scan.refs.append(Ref(path, line, "internal", found, header))

@@ -114,13 +114,13 @@ the baseline.
 
 ### What it reads
 
-54 languages. `layers --languages` lists them with their file types.
+55 languages. `layers --languages` lists them with their file types.
 
 | How a file names what it uses | Languages |
 | :--- | :--- |
 | A reader of its own | Rust (crate dependencies from every `Cargo.toml`, then `use` paths), Python (the syntax tree, notebooks included), JavaScript and TypeScript, C and C++ |
 | A declared package or module | Java, Kotlin, Groovy, Scala, C#, F#, PHP, Haxe, Perl, Elixir, Erlang, Haskell, PureScript, Elm, Clojure, Fortran, Rego, VHDL |
-| A path to a file or directory | Go, CUE, Dart, Lua, Nim, Crystal, Zig, V, Odin, Gleam, Lean, Racket, Julia, R, Nix, Dhall, Nickel, shell, PowerShell, Protobuf, GraphQL, Solidity, Terraform, QML, Typst, LaTeX, Prolog, Verilog, assembly |
+| A path to a file or directory | Go, CUE, Dart, Lua, Nim, Crystal, Zig, V, Odin, Gleam, Lean, Racket, Julia, R, Nix, Dhall, Nickel, shell, PowerShell, Protobuf, GraphQL, Solidity, Terraform, QML, CMake, Typst, LaTeX, Prolog, Verilog, assembly |
 | A convention | Swift (a target is a directory under `Sources/`), OCaml (a file is a module, a dune library is a directory), Ruby (`require`, and constants the way Zeitwerk maps them to files) |
 
 What counts as impure differs per language: `java.io` and
@@ -147,7 +147,8 @@ and `buf breaking`.
 More settings: `strict = true` fails on files in no layer, `exclude` skips
 paths, `forbid_external` keeps packages out of a layer, `hint` adds your own
 advice to a layer's failures, and `[purity] allow` and `forbid` adjust what
-counts as pure.
+counts as pure. `apart = true` on a layer keeps the entries under its `paths`
+apart, which is how you say that apps or plugins do not use each other.
 
 ## In your own flake
 

@@ -383,16 +383,34 @@ def _ruby(repo: Repo, language: Language, everything: list[Source], checked: lis
 
 
 def _qml(repo: Repo, language: Language, everything: list[Source], checked: list[Source]) -> None:
-    modules = {}
-    for path in repo.named("qmldir"):
-        found = re.search(r"^\s*module\s+([\w.]+)", repo.text(path), re.M)
-        if found:
-            modules[found.group(1)] = posixpath.dirname(path)
     statement = re.compile(r"^\s*import\s+(?:(?P<q>\")|(?P<spec>[A-Za-z_][\w.]*))", re.M)
     kinds = (".qml", ".js", ".mjs")
 
     def components(directory: str) -> list[str]:
         return [path for path in repo.inside(directory) if path.endswith(kinds)]
+
+    # A module is what qt_add_qml_module builds, or else what a qmldir declares.
+    # A qmldir among the tests is a stand-in and declares nothing.
+    modules: dict[str, list[str]] = {}
+    for path in repo.named("CMakeLists.txt"):
+        text = repo.text(path)
+        base = posixpath.dirname(path)
+        for call in re.finditer(r"\bqt6?_add_qml_module\s*\(", text):
+            body = text[call.end() : close_of(text, call.end() - 1)]
+            uri = re.search(r"\bURI\s+\"?([\w.]+)", body)
+            if not uri:
+                continue
+            listed = []
+            files = re.search(r"\bQML_FILES\b(.*?)(?=\b[A-Z][A-Z_]{2,}\b|\Z)", body, re.S)
+            for token in files.group(1).split() if files else ():
+                candidate = posixpath.normpath(posixpath.join(base, token.strip('"')))
+                if candidate in repo.known:
+                    listed.append(candidate)
+            modules.setdefault(uri.group(1), listed or components(base))
+    for path in repo.named("qmldir"):
+        found = re.search(r"^\s*module\s+([\w.]+)", repo.text(path), re.M)
+        if found and not is_test(path):
+            modules.setdefault(found.group(1), components(posixpath.dirname(path)))
 
     for source in checked:
         here = posixpath.dirname(source.path)
@@ -408,15 +426,44 @@ def _qml(repo: Repo, language: Language, everything: list[Source], checked: list
                     repo.internal(source.path, line, components(target), spec)
                 continue
             uri = match.group("spec")
-            directory = modules.get(uri)
-            if directory is None:
+            targets = modules.get(uri)
+            if targets is None:
                 tail = uri.replace(".", "/")
-                hits = [d for d in repo.dirs if (d == tail or d.endswith("/" + tail)) and components(d)]
-                directory = hits[0] if len(hits) == 1 else None
-            if directory is not None:
-                repo.internal(source.path, line, components(directory), uri)
+                hits = [d for d in repo.dirs if (d == tail or d.endswith("/" + tail)) and components(d) and not is_test(d + "/x")]
+                targets = components(hits[0]) if len(hits) == 1 else None
+            if targets is not None:
+                repo.internal(source.path, line, targets, uri)
             else:
                 repo.external(source.path, line, uri.split(".")[0], uri)
+
+
+# --- CMake: a build file uses the files it names --------------------------------
+
+_CMAKE_PATH = re.compile(r"(\$\{(?:CMAKE|PROJECT)_SOURCE_DIR\}/)?((?:\.\.?/)*[\w.+\-]+(?:/[\w.+\-]+)*)")
+
+
+def _cmake(repo: Repo, language: Language, everything: list[Source], checked: list[Source]) -> None:
+    """Sources, QML files and subdirectories a CMake file names, where they are files of the repository."""
+    for source in checked:
+        here = posixpath.dirname(source.path)
+        code = source.restore(0, len(source.bare))
+        seen: set[str] = set()
+        for match in _CMAKE_PATH.finditer(code):
+            name = match.group(2)
+            # A bare word is only ever a subdirectory with a build file of its own.
+            plain = "/" not in name and "." not in name and not match.group(1)
+            for base in ("", here) if match.group(1) else (here,):
+                candidate = posixpath.normpath(posixpath.join(base, name))
+                if candidate.startswith(".."):
+                    continue
+                if candidate in repo.dirs and posixpath.join(candidate, "CMakeLists.txt") in repo.known:
+                    candidate = posixpath.join(candidate, "CMakeLists.txt")
+                elif plain:
+                    continue
+                if candidate in repo.known and candidate != source.path and candidate not in seen:
+                    seen.add(candidate)
+                    repo.internal(source.path, source.line(match.start()), [candidate], name)
+                    break
 
 
 # --- Nix and Dhall: a path written in the code is the import -------------------
@@ -1786,6 +1833,13 @@ LANGUAGES: tuple[Language, ...] = (
         (".tf", ".tofu", ".hcl"),
         Syntax(line=("#", "//"), quotes='"'),
         (_terraform,),
+    ),
+    Language(
+        "cmake",
+        (".cmake",),
+        Syntax(line=("#",), block=(("#[[", "]]"),), quotes='"', multiline='"'),
+        (_cmake,),
+        names=("CMakeLists.txt",),
     ),
     Language(
         "qml",

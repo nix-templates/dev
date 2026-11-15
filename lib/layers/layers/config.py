@@ -16,8 +16,13 @@ class Layer:
     paths: list[str]
     may_use: list[str] = field(default_factory=list)
     pure: bool = False
+    apart: bool = False
     forbid_external: list[str] = field(default_factory=list)
     hint: str = ""
+
+    def part_of(self, path: str) -> str | None:
+        """The entry in paths that a file falls under: with apart, each entry stands on its own."""
+        return next((pattern for pattern in self.paths if glob_match(pattern, path)), None)
 
 
 @dataclass
@@ -42,7 +47,7 @@ class Config:
 
 
 _TOP = {"version", "strict", "include_tests", "exclude", "layer", "purity", "sources", "python", "cpp", "javascript"}
-_LAYER = {"name", "paths", "may_use", "pure", "forbid_external", "hint"}
+_LAYER = {"name", "paths", "may_use", "pure", "apart", "forbid_external", "hint"}
 
 
 def _only(table: dict, allowed: set[str], where: str) -> None:
@@ -99,6 +104,7 @@ def parse(text: str) -> Config:
                 paths=paths,
                 may_use=_strings(raw.get("may_use", []), f"{where}: may_use"),
                 pure=_flag(raw.get("pure", False), f"{where}: pure"),
+                apart=_flag(raw.get("apart", False), f"{where}: apart"),
                 forbid_external=_strings(raw.get("forbid_external", []), f"{where}: forbid_external"),
                 hint=hint,
             )

@@ -65,7 +65,8 @@ def _explain(config: Config, scan: Scan, as_json: bool = False) -> str:
         )
     for layer in config.layers:
         uses = ", ".join(layer.may_use) or "nothing"
-        out.append(f"{layer.name} ({'pure, ' if layer.pure else ''}may use: {uses}): {len(by_layer[layer.name])} files")
+        kind = ("pure, " if layer.pure else "") + ("parts apart, " if layer.apart else "")
+        out.append(f"{layer.name} ({kind}may use: {uses}): {len(by_layer[layer.name])} files")
         out.extend(f"    {path}" for path in by_layer[layer.name])
     out.append(f"in no layer: {len(unassigned)} files")
     out.extend(f"    {path}" for path in unassigned)

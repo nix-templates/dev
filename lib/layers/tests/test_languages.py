@@ -1033,6 +1033,22 @@ CASES: dict[str, tuple[dict[str, str], set[tuple[str, str, str]]]] = {
         },
         {layer("rtl/core/price.vhd", "rtl/adapters/store_pkg.vhd"), external("rtl/core/price.vhd", "ieee")},
     ),
+    "cmake": (
+        {
+            "architecture.toml": rules('"core/**"', '"adapters/**"', pure=False),
+            "core/CMakeLists.txt": """
+                add_executable(core main.cpp ../adapters/store.cpp)  # ../adapters/ghost.cpp
+                add_subdirectory(${CMAKE_SOURCE_DIR}/adapters)
+            """,
+            "core/main.cpp": "int main() { return 0; }\n",
+            "adapters/CMakeLists.txt": """
+                add_library(store store.cpp "../core/main.cpp")
+            """,
+            "adapters/store.cpp": "int store() { return 0; }\n",
+            "adapters/ghost.cpp": "int ghost() { return 0; }\n",
+        },
+        {layer("core/CMakeLists.txt", "adapters/store.cpp"), layer("core/CMakeLists.txt", "adapters/CMakeLists.txt")},
+    ),
     "assembly": (
         {
             "architecture.toml": rules('"core/**"', '"adapters/**"', pure=False),
@@ -1143,6 +1159,87 @@ class TestFiles(unittest.TestCase):
         self.assertEqual(found(tree(files)), CASES["go"][1])
         files["architecture.toml"] = "include_tests = true\n" + files["architecture.toml"]
         self.assertEqual(found(tree(files)), CASES["go"][1] | {layer("core/price_test.go", "adapters/store.go")})
+
+
+class QtProjects(unittest.TestCase):
+    def test_a_qml_module_is_what_cmake_builds_not_what_a_test_fixture_declares(self):
+        files = {
+            "architecture.toml": rules('"taskbar/**"', '"settings/**", "scripts/**"', pure=False),
+            "taskbar/CMakeLists.txt": """
+                qt_add_qml_module(taskbar
+                  URI Shop.Taskbar
+                  QML_FILES qml/Strip.qml ../settings/qml/Label.qml
+                  SOURCES src/main.cpp
+                )
+            """,
+            "taskbar/qml/Strip.qml": "import QtQuick\nItem { }\n",
+            "taskbar/src/main.cpp": "int main() { return 0; }\n",
+            "settings/qml/Label.qml": "import QtQuick\nimport Shop.Taskbar\nItem { }\n",
+            # A stand-in for the module, for one test.
+            "scripts/tests/overflow/qmldir": "module Shop.Taskbar\nGlass 1.0 Glass.qml\n",
+            "scripts/tests/overflow/Glass.qml": "import QtQuick\nItem { }\n",
+        }
+        # settings may use taskbar; the build file of taskbar takes a file from settings.
+        self.assertEqual(found(tree(files)), {layer("taskbar/CMakeLists.txt", "settings/qml/Label.qml")})
+
+    def test_a_header_that_exists_once_is_found_without_an_include_path(self):
+        files = {
+            "architecture.toml": rules('"calculator/**"', '"taskbar/**"', pure=False),
+            "calculator/src/main.cpp": '#include "theme.h"\n#include "util.h"\n#include <vector>\n',
+            "taskbar/src/theme.h": "#pragma once\n",
+            # Two files of one name: neither is picked.
+            "taskbar/src/util.h": "#pragma once\n",
+            "taskbar/lib/util.h": "#pragma once\n",
+        }
+        self.assertEqual(found(tree(files)), {layer("calculator/src/main.cpp", "taskbar/src/theme.h")})
+
+    def test_a_qt_translation_file_is_not_typescript(self):
+        files = {
+            "architecture.toml": "strict = true\n" + rules('"core/**"', '"adapters/**"', pure=False),
+            "notes/i18n/notes_nl.ts": '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE TS>\n<TS version="2.1"></TS>\n',
+        }
+        self.assertEqual(found(tree(files)), set())
+
+
+class Apart(unittest.TestCase):
+    FILES = {
+        "architecture.toml": """
+            [[layer]]
+            name = "ui"
+            paths = ["ui"]
+
+            [[layer]]
+            name = "apps"
+            paths = ["files", "viewer", "plugins/*"]
+            may_use = ["ui"]
+            apart = true
+        """,
+        "ui/theme.py": "x = 1\n",
+        "files/__init__.py": "",
+        "files/trash.py": "from ui import theme\nfrom files import list\n",
+        "files/list.py": "x = 1\n",
+        "viewer/__init__.py": "",
+        "viewer/main.py": "from ui import theme\nfrom files import trash\n",
+        "plugins/a/one.py": "from plugins.b import two\n",
+        "plugins/b/two.py": "x = 1\n",
+        "ui/__init__.py": "",
+        "plugins/__init__.py": "",
+        "plugins/a/__init__.py": "",
+        "plugins/b/__init__.py": "",
+    }
+
+    def test_each_entry_in_paths_stands_on_its_own(self):
+        root = tree(self.FILES)
+        # One pattern is one part: plugins/* is a single part, so a and b may use each other.
+        self.assertEqual(found(root), {("layer", "viewer/main.py", "files/trash.py")})
+        code, out = run(root, "--no-baseline")
+        self.assertIn("'apps' keeps its parts apart: 'viewer' may not use 'files'", out)
+        self.assertIn("apps (parts apart, may use: ui)", run(root, "--explain")[1])
+
+    def test_without_apart_a_layer_may_use_itself(self):
+        files = dict(self.FILES)
+        files["architecture.toml"] = textwrap.dedent(files["architecture.toml"]).replace("apart = true\n", "")
+        self.assertEqual(found(tree(files)), set())
 
 
 class NixStrings(unittest.TestCase):

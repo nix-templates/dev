@@ -102,8 +102,11 @@ def extract(root: str, files: list[str], aliases: dict[str, str], include_tests:
         if not include_tests and is_test(path):
             scan.tests.add(path)
             continue
+        text = read(root, path)
+        if path.endswith(".ts") and text.lstrip().startswith(("<?xml", "<!DOCTYPE TS")):
+            continue  # a Qt translation file, not TypeScript
         scan.files.append(path)
-        code = strip_comments(read(root, path))
+        code = strip_comments(text)
         directory = posixpath.dirname(path)
         for match in _SPECIFIER.finditer(code):
             specifier = match.group(2)

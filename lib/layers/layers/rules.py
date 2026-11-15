@@ -29,6 +29,21 @@ def _layer_violation(ref: Ref, source: Layer, target: Layer) -> Violation:
     )
 
 
+def _apart_violation(ref: Ref, layer: Layer, own: str, other: str) -> Violation:
+    return Violation(
+        rule="layer",
+        file=ref.file,
+        line=ref.line,
+        target=ref.target,
+        message=f"'{layer.name}' keeps its parts apart: '{own}' may not use '{other}' ({ref.path} is {ref.target})",
+        fix=_with_hint(
+            f"Each entry under paths of '{layer.name}' stands on its own. Move what both need into a layer "
+            f"'{layer.name}' may use ({_may_use(layer)}). Do not add this to the baseline.",
+            layer,
+        ),
+    )
+
+
 def _tests_violation(ref: Ref, source: Layer) -> Violation:
     return Violation(
         rule="layer",
@@ -85,7 +100,13 @@ def _check(ref: Ref, config: Config, scan: Scan) -> Violation | None:
         if target is None:
             # Test files are in no layer unless the rules give them one, and nothing may use them.
             return _tests_violation(ref, source) if ref.target in scan.tests else None
-        if target is source or target.name in source.may_use:
+        if target is source:
+            if source.apart:
+                own, other = source.part_of(ref.file), source.part_of(ref.target)
+                if own != other:
+                    return _apart_violation(ref, source, own or "?", other or "?")
+            return None
+        if target.name in source.may_use:
             return None
         return _layer_violation(ref, source, target)
     if ref.kind == "effect":

@@ -39,7 +39,7 @@ READ_AS = {
     "node": ["javascript"],
     "typescript": ["javascript"],
     "web": ["javascript"],
-    "c-cpp": ["cpp"],
+    "c-cpp": ["cpp", "cmake"],
     "platformio": ["cpp"],
     "hashi": ["terraform"],
     "hdl": ["verilog", "vhdl"],
@@ -243,7 +243,9 @@ In paths, * stays inside one path segment and ** crosses segments; a directory n
 pure = true marks a functional core: the same input gives the same output and nothing outside the function changes. \
 Such a layer may not touch files, the network, processes, the clock, the environment, randomness, threads or shared mutable state.
 
-forbid_external lists packages a layer may not depend on. hint is added to that layer's failure messages.
+forbid_external lists packages a layer may not depend on. hint is added to that layer's failure messages. \
+apart = true keeps the entries under paths apart: files under one entry may not use files under another, \
+which is how to say that apps or plugins do not use each other.
 
 `layers` checks these rules. It reads the sources of these languages itself: {languages}. \
 It reads them as text, so it is close, not exact: names built at run time and build-system path mappings are not followed. \
@@ -290,7 +292,9 @@ def architecture_rules(_catalogue: dict, arguments: dict) -> dict:
                 out.append(f"{key} = [" + ", ".join(toml_string(str(item)) for item in layer[key]) + "]")
         if layer.get("pure"):
             out.append("pure = true")
-        unknown = sorted(set(layer) - {"name", "hint", "paths", "may_use", "forbid_external", "pure"})
+        if layer.get("apart"):
+            out.append("apart = true")
+        unknown = sorted(set(layer) - {"name", "hint", "paths", "may_use", "forbid_external", "pure", "apart"})
         if unknown:
             raise ToolError(f"layer {layer.get('name', '?')}: unknown key {', '.join(unknown)}")
     for table, key, argument in (("sources", "roots", "roots"), ("purity", "allow", "purity_allow"), ("purity", "forbid", "purity_forbid")):
@@ -356,6 +360,7 @@ TOOLS = {
                             "paths": STRINGS,
                             "may_use": {**STRINGS, "description": "Names of the layers this one may use."},
                             "pure": {"type": "boolean", "description": "A functional core: no I/O, clock, environment, randomness or shared state."},
+                            "apart": {"type": "boolean", "description": "Each entry in paths stands on its own: files under one may not use files under another."},
                             "forbid_external": {**STRINGS, "description": "Packages this layer may not depend on."},
                             "hint": {"type": "string", "description": "Added to this layer's failure messages."},
                         },

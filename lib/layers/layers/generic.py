@@ -266,6 +266,8 @@ class Language:
     accepts: Callable[[str, str], bool] | None = None
     # Files with no extension count when their first line matches this.
     shebang: str | None = None
+    # Files that are this language by their whole name, such as CMakeLists.txt.
+    names: tuple[str, ...] = ()
     # Turns text the scanner would misread into spaces, keeping every position.
     prepare: Callable[[str], str] | None = None
     # A scanner of the language's own, for when comments and strings do not fit a Syntax.
@@ -554,6 +556,8 @@ def extract(
             by_extension.setdefault("." + name.rsplit(".", 1)[1], []).append(path)
     for language in languages:
         mine = [path for extension in language.extensions for path in by_extension.get(extension, [])]
+        if language.names:
+            mine += repo.named(*language.names)
         if language.shebang:
             if scripts is None:
                 scripts = first_lines(root, files)
