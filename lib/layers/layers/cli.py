@@ -6,7 +6,7 @@ import os
 import re
 import sys
 
-from . import __version__, baseline, cpp, generic, javascript, python, report, rust
+from . import __version__, baseline, cpp, generic, javascript, python, ratchet, report, rust
 from .config import Config, ConfigError, parse
 from .languages import LANGUAGES
 from .model import Scan
@@ -93,7 +93,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--baseline", help=f"the known violations (default: {BASELINE} in the root)")
     parser.add_argument("--no-baseline", action="store_true", help="report every violation, known or not")
     parser.add_argument("--format", choices=("text", "json"), default="text")
-    parser.add_argument("--since", metavar="REVISION", help="also fail when the baseline has entries that REVISION's baseline lacks")
+    parser.add_argument(
+        "--since",
+        metavar="REVISION",
+        help="also fail when the baseline has entries that REVISION's baseline lacks, or the rules allow more than they did there",
+    )
+    parser.add_argument("--allow-weaker", action="store_true", help="with --since: let rules that got weaker pass, for the change where that was agreed")
     args = parser.parse_args(argv)
 
     if args.languages:
@@ -118,10 +123,17 @@ def main(argv: list[str] | None = None) -> int:
         violations = evaluate(config, scan)
         known_keys = set() if args.no_baseline else baseline.load(baseline_path)
         previous = None
+        weaker: list[str] = []
         if args.since:
             previous = baseline.at_revision(
                 root, args.since, os.path.relpath(config_path, root), os.path.relpath(baseline_path, root)
             )
+            before = baseline.file_at(root, args.since, os.path.relpath(config_path, root))
+            if before is None:
+                # Say so: a run that compared nothing must not look like one that found nothing.
+                scan.warnings.append(f"{args.since} has no {CONFIG}, so --since had nothing to compare with")
+            elif not args.allow_weaker:
+                weaker = ratchet.weaker(parse(before), config, scan.files)
     except (ConfigError, baseline.BaselineError) as error:
         print(f"layers: {error}", file=sys.stderr)
         return 2
@@ -150,8 +162,8 @@ def main(argv: list[str] | None = None) -> int:
     grown = sorted(known_keys - previous) if previous is not None else []
 
     if args.format == "json":
-        print(report.as_json(new, known, fixed, grown, scan.warnings))
+        print(report.as_json(new, known, fixed, grown, scan.warnings, weaker))
     else:
         placed = sum(1 for path in scan.files if config.layer_of(path) is not None)
-        print(report.text(new, len(known), fixed, grown, len(scan.files), placed))
-    return 1 if (new or fixed or grown) else 0
+        print(report.text(new, len(known), fixed, grown, len(scan.files), placed, weaker))
+    return 1 if (new or fixed or grown or weaker) else 0

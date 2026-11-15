@@ -527,6 +527,142 @@ class Baseline(unittest.TestCase):
         self.assertEqual(run(self.root, "--since", "no-such-revision")[0], 2)
 
 
+class Ratchet(unittest.TestCase):
+    """With --since, rules may only get stricter."""
+
+    def setUp(self):
+        self.root = tree(Python.FILES)
+        self.git("init", "-q", "-b", "main")
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "rules")
+
+    def git(self, *args: str) -> None:
+        subprocess.run(
+            ["git", "-C", self.root, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false", *args],
+            check=True,
+            capture_output=True,
+        )
+
+    def rules(self, change) -> None:
+        path = os.path.join(self.root, cli.CONFIG)
+        with open(path, encoding="utf-8") as handle:
+            text = handle.read()
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(change(text))
+
+    def test_unchanged_and_stricter_rules_pass(self):
+        self.assertEqual(run(self.root, "--since", "HEAD")[0], 0)
+        self.rules(lambda text: "strict = false\n" + text + '[[layer]]\nname = "tests"\npaths = ["tests"]\n')
+        self.assertEqual(run(self.root, "--since", "HEAD")[0], 0)
+
+    def test_each_way_of_loosening_is_refused(self):
+        cases = {
+            "layer 'core' is no longer pure": lambda t: t.replace("pure = true\n", ""),
+            "layer 'core' may now use 'adapters'": lambda t: t.replace("pure = true\n", 'pure = true\nmay_use = ["adapters"]\n'),
+            "exclude gained 'app/core/rules.py'": lambda t: 'exclude = ["app/core/rules.py"]\n' + t,
+            "[purity] allow gained 'os'": lambda t: t + '[purity]\nallow = ["os"]\n',
+            # The file with the effect is handed to a layer that asks less of it.
+            "app/core/plan.py left the pure layer 'core' for 'adapters'": lambda t: t.replace(
+                'paths = ["app/core"]', 'paths = ["app/core/rules.py", "app/core/__init__.py"]'
+            ).replace('paths = ["app/adapters"]', 'paths = ["app/adapters", "app/core/plan.py"]'),
+            "app/core/plan.py was in 'core' and is in no layer now": lambda t: t.replace(
+                'paths = ["app/core"]', 'paths = ["app/core/rules.py", "app/core/__init__.py"]'
+            ),
+        }
+        for message, change in cases.items():
+            with self.subTest(message=message):
+                self.git("checkout", "-q", "--", cli.CONFIG)
+                self.rules(change)
+                code, out = run(self.root, "--since", "HEAD")
+                self.assertEqual(code, 1, out)
+                self.assertIn(message, out)
+                self.assertIn("they may only get stricter", out)
+                self.assertEqual(run(self.root, "--since", "HEAD", "--allow-weaker")[0], 0)
+                self.assertEqual(run(self.root)[0], 0)
+
+
+class RatchetSettings(unittest.TestCase):
+    """The loosenings that need rules richer than the Python fixture's."""
+
+    RULES = textwrap.dedent(
+        """
+        strict = true
+        include_tests = true
+
+        [[layer]]
+        name = "core"
+        paths = ["core"]
+        forbid_external = ["requests"]
+
+        [[layer]]
+        name = "apps"
+        paths = ["one", "two"]
+        may_use = ["core"]
+        apart = true
+
+        [purity]
+        forbid = ["acme"]
+
+        [sources]
+        roots = ["code"]
+
+        [python]
+        roots = ["lib"]
+
+        [cpp]
+        include_dirs = ["include"]
+
+        [javascript]
+        aliases = { "@/" = "src" }
+        """
+    )
+
+    def setUp(self):
+        self.root = tree({"architecture.toml": self.RULES, "core/a.py": "x = 1\n", "one/b.py": "x = 1\n", "two/c.py": "x = 1\n"})
+        self.git("init", "-q", "-b", "main")
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "rules")
+
+    def git(self, *args: str) -> None:
+        subprocess.run(
+            ["git", "-C", self.root, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false", *args],
+            check=True,
+            capture_output=True,
+        )
+
+    def test_each_setting_that_may_not_loosen(self):
+        cases = {
+            "strict was turned off": ("strict = true\n", ""),
+            "include_tests was turned off": ("include_tests = true\n", ""),
+            "layer 'core' no longer forbids 'requests'": ('forbid_external = ["requests"]\n', ""),
+            "layer 'apps' no longer keeps its parts apart": ("apart = true\n", ""),
+            "[purity] forbid lost 'acme'": ('forbid = ["acme"]', "forbid = []"),
+            "[sources] roots lost 'code'": ('[sources]\nroots = ["code"]', "[sources]\nroots = []"),
+            "[python] roots lost 'lib'": ('[python]\nroots = ["lib"]', "[python]\nroots = []"),
+            "[cpp] include_dirs lost 'include'": ('include_dirs = ["include"]', "include_dirs = []"),
+            "[javascript] aliases lost '@/'": ('aliases = { "@/" = "src" }', "aliases = {}"),
+        }
+        path = os.path.join(self.root, cli.CONFIG)
+        for message, (old, new) in cases.items():
+            with self.subTest(message=message):
+                self.assertIn(old, self.RULES)
+                with open(path, "w", encoding="utf-8") as handle:
+                    handle.write(self.RULES.replace(old, new))
+                code, out = run(self.root, "--since", "HEAD")
+                self.assertEqual(code, 1, out)
+                self.assertIn(message, out)
+                self.assertEqual(run(self.root, "--since", "HEAD", "--allow-weaker")[0], 0)
+
+    def test_a_revision_without_rules_is_said_not_passed_in_silence(self):
+        self.git("rm", "-q", "--cached", cli.CONFIG)
+        self.git("commit", "-q", "-m", "no rules here")
+        err = io.StringIO()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+            code = cli.main(["--root", self.root, "--since", "HEAD"])
+        self.assertEqual(code, 0)
+        self.assertIn("HEAD has no architecture.toml, so --since had nothing to compare with", err.getvalue())
+
+
 class Walk(unittest.TestCase):
     def test_what_gitignore_leaves_out_is_not_read(self):
         files = dict(Python.FILES)

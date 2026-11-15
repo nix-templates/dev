@@ -109,8 +109,13 @@ layers --accept    # write today's violations to architecture-baseline.json
 
 After that, known violations pass and new ones fail. The baseline can only
 shrink. Fix a violation and `layers` fails until `layers --prune` takes it
-off the list. In CI, `layers --since origin/main` also fails if someone grew
-the baseline.
+off the list.
+
+In CI, run `layers --since origin/main`. It also fails when someone grew the
+baseline, or made the check pass by loosening the rules: dropping `pure`,
+widening `may_use`, excluding the file, or moving it to a layer that asks
+less. Rules may only get stricter. `--allow-weaker` is for the one change
+where loosening them was agreed.
 
 ### What it reads
 

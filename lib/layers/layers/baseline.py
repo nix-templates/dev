@@ -46,6 +46,12 @@ def save(path: str, keys: set[Key]) -> None:
         handle.write(dump(keys))
 
 
+def file_at(root: str, revision: str, name: str) -> str | None:
+    """A file as it was at a git revision; None when it did not exist there."""
+    result = subprocess.run(["git", "-C", root, "show", f"{revision}:./{name}"], capture_output=True, text=True, check=False)
+    return result.stdout if result.returncode == 0 else None
+
+
 def at_revision(root: str, revision: str, config_name: str, baseline_name: str) -> set[Key] | None:
     """The baseline as it was at a git revision; None when the rules did not exist there yet."""
 
