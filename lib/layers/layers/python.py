@@ -101,6 +101,22 @@ def _cells(text: str) -> list[tuple[int, str]] | None:
     return cells
 
 
+_IMPORT_CALLS = frozenset({"import_module", "__import__", "run_module"})
+
+
+def _loaded_file(path: str, call: ast.Call, known: frozenset[str]) -> str | None:
+    """The .py file a spec_from_file_location call names: beside the caller, or the only one of that name."""
+    for node in ast.walk(call):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value.endswith(".py"):
+            beside = posixpath.normpath(posixpath.join(posixpath.dirname(path), node.value))
+            if beside in known:
+                return beside
+            same = [other for other in known if other == node.value or other.endswith("/" + node.value.lstrip("./"))]
+            if len(same) == 1:
+                return same[0]
+    return None
+
+
 def _beside(path: str, dotted: str, known: frozenset[str]) -> str | None:
     """A module next to a script.
 
@@ -143,6 +159,18 @@ def _refs(path: str, tree: ast.AST, package: str, index: dict[str, str], cell: i
             refs.append(Ref(path, at(node), "effect", "global", "global " + ", ".join(node.names)))
         elif isinstance(node, ast.Call):
             called = _dotted(node.func)
+            first = node.args[0] if node.args else None
+            named = first.value if isinstance(first, ast.Constant) and isinstance(first.value, str) else None
+            if called and called[-1] in _IMPORT_CALLS and named:
+                # importlib.import_module("a.b") with the name written out is an import like any other.
+                refs.append(_ref(path, at(node), named, index, known))
+            elif called and called[-1] == "spec_from_file_location":
+                # A module loaded by the path of its file: the file's name is in the call.
+                target = _loaded_file(path, node, known)
+                if target:
+                    refs.append(Ref(path, at(node), "internal", target, posixpath.basename(target)))
+                elif named:
+                    refs.append(_ref(path, at(node), named, index, known))
             if len(called) == 1 and called[0] in _BUILTIN_EFFECTS:
                 refs.append(Ref(path, at(node), "effect", called[0] + "()", called[0] + "()"))
             elif len(called) >= 2 and tuple(called[-2:]) in _ATTRIBUTE_EFFECTS:

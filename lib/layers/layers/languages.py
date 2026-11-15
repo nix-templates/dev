@@ -17,10 +17,12 @@ from .generic import (
     Repo,
     Source,
     Syntax,
+    blank,
     close_of,
     namespaces,
     nearest,
     paths,
+    spaces,
 )
 
 # --- how comments and strings look -------------------------------------------
@@ -443,6 +445,99 @@ def _path_literals(pattern: str, endings: tuple[str, ...], index: tuple[str, ...
     return reader
 
 
+_NIX_CODE = re.compile(r"""#|/\*|"|''|[{}]""")
+_NIX_STRING = re.compile(r"""\\.|\$\{|\"""", re.S)
+_NIX_INDENTED = re.compile(r"""'''|''\$|''\\.|''|\$\$|\$\{""", re.S)
+
+
+def _nix_bare(text: str) -> str:
+    """Nix with comments and the text of strings as spaces.
+
+    Code inside ${...} stays, whatever string it is in, and the escapes of an
+    indented string do not end it.
+    """
+    parts: list[str] = []
+    stack: list[str | int] = []  # the string we are in, or the brace depth inside a ${...}
+    n = len(text)
+    i = 0
+    while i < n:
+        top = stack[-1] if stack else None
+        if top == '"' or top == "''":
+            found = (_NIX_STRING if top == '"' else _NIX_INDENTED).search(text, i)
+            if not found:
+                parts.append(spaces(text[i:]))
+                break
+            parts.append(spaces(text[i : found.start()]))
+            token = found.group(0)
+            if token == top:
+                parts.append(token)
+                stack.pop()
+            elif token == "${":
+                parts.append(token)
+                stack.append(0)
+            else:
+                parts.append(spaces(token))
+            i = found.end()
+            continue
+        found = _NIX_CODE.search(text, i)
+        if not found:
+            parts.append(text[i:])
+            break
+        parts.append(text[i : found.start()])
+        token = found.group(0)
+        i = found.end()
+        if token == "#":
+            end = text.find("\n", i)
+            end = n if end < 0 else end
+            parts.append(" " * (end - found.start()))
+            i = end
+        elif token == "/*":
+            end = text.find("*/", i)
+            end = n if end < 0 else end + 2
+            parts.append(spaces(text[found.start() : end]))
+            i = end
+        elif token in ('"', "''"):
+            parts.append(token)
+            stack.append(token)
+        else:
+            parts.append(token)
+            if isinstance(top, int):
+                if token == "{":
+                    stack[-1] = top + 1
+                elif top == 0:
+                    stack.pop()
+                else:
+                    stack[-1] = top - 1
+    return "".join(parts)
+
+
+_HEREDOC = re.compile(r"""<<(-?)[ \t]*(['"]?)([A-Za-z_]\w*)\2""")
+
+
+def _heredocs(text: str) -> str:
+    """Here-document bodies as spaces: they are data, and a lone quote in one must not open a string."""
+    lines = text.split("\n")
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        out.append(line)
+        i += 1
+        if "<<" not in line or line.lstrip().startswith("#"):
+            continue
+        for match in _HEREDOC.finditer(line):
+            if line[max(0, match.start() - 1) : match.start()] == "<" or line[match.end() : match.end() + 1] == "<":
+                continue  # <<< is a here-string
+            word, tabs = match.group(3), bool(match.group(1))
+            end = next((k for k in range(i, len(lines)) if (lines[k].lstrip("\t") if tabs else lines[k]) == word), None)
+            if end is None:
+                continue  # no closing line: it was not a here-document
+            out.extend(" " * len(body) for body in lines[i:end])
+            out.append(lines[end])
+            i = end + 1
+    return "\n".join(out)
+
+
 # --- Shell and PowerShell: files that are sourced ------------------------------
 
 
@@ -469,18 +564,59 @@ def _word(text: str, start: int) -> str:
     return text[start:i]
 
 
+def _by_tail(repo: Repo, tail: str, importer: str, endings: tuple[str, ...] = ()) -> str | None:
+    """The file whose path ends in tail: the one nearest the importer when there are several."""
+    hits = [
+        path
+        for ending in ("",) + endings
+        for path in repo.named(posixpath.basename(tail) + ending)
+        if path == tail + ending or path.endswith("/" + tail + ending)
+    ]
+    return nearest(hits, importer) if hits else None
+
+
+_SHELL_ASSIGNMENT = re.compile(r"^[ \t]*(?:(?:local|readonly|export|declare|typeset)\s+(?:-\w+\s+)*)?(\w+)=(.*)$", re.M)
+_SHELL_COMMENTS = Syntax(line=("#",), block=(), quotes="", spaced=True)
+
+
+def _shell_paths(repo: Repo, language: Language, everything: list[Source], checked: list[Source]) -> None:
+    """Files a script names by its own location: "$here/lib/run.py" after here=$(dirname "$0").
+
+    A variable counts when it is set from $0, BASH_SOURCE or the repository's
+    top level, or from another variable that counts.
+    """
+    for source in checked:
+        code = blank(source.text, _SHELL_COMMENTS)
+        anchored: set[str] = set()
+        for _ in range(2):
+            for match in _SHELL_ASSIGNMENT.finditer(code):
+                value = match.group(2)
+                if re.search(r"\$0|\$\{0|BASH_SOURCE|--show-toplevel", value) or any(
+                    re.search(r"\$\{?" + re.escape(name) + r"\b", value) for name in anchored
+                ):
+                    anchored.add(match.group(1))
+        if not anchored:
+            continue
+        use = re.compile(r"\$\{?(?:" + "|".join(sorted(map(re.escape, anchored))) + r")\}?/((?:\.\./)*[\w.\-]+(?:/[\w.\-]+)*)")
+        seen: set[str] = set()
+        for match in use.finditer(code):
+            tail = posixpath.normpath(match.group(1))
+            while tail.startswith("../"):
+                tail = tail[3:]
+            if tail in ("", ".", "..") or tail in seen:
+                continue
+            seen.add(tail)
+            target = _by_tail(repo, tail, source.path)
+            if target:
+                repo.internal(source.path, source.line(match.start()), [target], match.group(0))
+
+
 def _sourced(statements: tuple[str, ...], endings: tuple[str, ...], named: bool) -> Reader:
     compiled = [re.compile(statement, re.M) for statement in statements]
 
     def reader(repo: Repo, language: Language, everything: list[Source], checked: list[Source]) -> None:
         def by_tail(tail: str, importer: str) -> str | None:
-            hits = [
-                path
-                for ending in ("",) + endings
-                for path in repo.named(posixpath.basename(tail) + ending)
-                if path == tail + ending or path.endswith("/" + tail + ending)
-            ]
-            return nearest(hits, importer) if hits else None
+            return _by_tail(repo, tail, importer, endings)
 
         for source in checked:
             here = posixpath.dirname(source.path)
@@ -1582,13 +1718,18 @@ LANGUAGES: tuple[Language, ...] = (
             (r"\bbuiltins\s*\.\s*currentSystem\b", "builtins.currentSystem"),
             (r"<\w[\w./+\-]*>", "NIX_PATH"),
         ),
+        lexer=_nix_bare,
     ),
     Language(
         "shell",
         (".sh", ".bash", ".zsh", ".ksh"),
         HASH,
-        (_sourced((r"(?:^|[;&|({]|\bthen\b|\bdo\b|\belse\b)[ \t]*(?:source|\.)[ \t]+(?=\S)",), (".sh",), False),),
+        (
+            _sourced((r"(?:^|[;&|({]|\bthen\b|\bdo\b|\belse\b)[ \t]*(?:source|\.)[ \t]+(?=\S)",), (".sh",), False),
+            _shell_paths,
+        ),
         shebang=r"\b(?:ba|z|k|da)?sh\b",
+        prepare=_heredocs,
     ),
     Language(
         "powershell",

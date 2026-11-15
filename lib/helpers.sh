@@ -68,6 +68,30 @@ when_any() {
   fi
 }
 
+# shell_scripts: every *.sh and *.bash file, and every file with no extension
+# whose first line names sh, bash, dash or ksh.
+shell_scripts() {
+  collect '*.sh'
+  collect '*.bash'
+  local file
+  while IFS= read -r file; do
+    if head -n 1 -- "$file" 2> /dev/null | grep -qE '^#!.*[/ ](ba|da|k)?sh( |$)'; then
+      echo "$file"
+    fi
+  done < <(find . \( -name .git -o -name .direnv -o -name .venv -o -name node_modules -o -name target -o -name result -o -name build -o -name dist -o -name .build -o -name _build -o -name vendor -o -name .terraform -o -name .stack-work \) -prune -o -type f ! -name '*.*' -print)
+}
+
+# on_shell_scripts command...: run the command on the project's shell scripts.
+on_shell_scripts() {
+  local files=()
+  mapfile -t files < <(shell_scripts)
+  if [ "${#files[@]}" -eq 0 ]; then
+    echo ":: skipping $1 (no shell scripts)"
+    return
+  fi
+  run "$@" "${files[@]}"
+}
+
 # has TEXT FILE...: true when one of the files exists and contains TEXT.
 has() {
   local text="$1"

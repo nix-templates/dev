@@ -1,6 +1,7 @@
 """The layers command: check a repository against the layers in architecture.toml."""
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -43,13 +44,25 @@ def languages() -> list[tuple[str, tuple[str, ...]]]:
     return sorted(list(OWN) + [(language.name, language.extensions) for language in LANGUAGES])
 
 
-def _explain(config: Config, scan: Scan) -> str:
+def _explain(config: Config, scan: Scan, as_json: bool = False) -> str:
     out = []
     by_layer: dict[str, list[str]] = {layer.name: [] for layer in config.layers}
     unassigned = []
     for path in scan.files:
         layer = config.layer_of(path)
         (by_layer[layer.name] if layer else unassigned).append(path)
+    if as_json:
+        return json.dumps(
+            {
+                "layers": [
+                    {"name": layer.name, "pure": layer.pure, "may_use": layer.may_use, "files": by_layer[layer.name]}
+                    for layer in config.layers
+                ],
+                "in_no_layer": unassigned,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
     for layer in config.layers:
         uses = ", ".join(layer.may_use) or "nothing"
         out.append(f"{layer.name} ({'pure, ' if layer.pure else ''}may use: {uses}): {len(by_layer[layer.name])} files")
@@ -116,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"layers: warning: {warning}", file=sys.stderr)
 
     if args.explain:
-        print(_explain(config, scan))
+        print(_explain(config, scan, args.format == "json"))
         return 0
 
     current = {violation.key for violation in violations}

@@ -17,6 +17,7 @@ RUST = (
     # the outside world
     "std::fs",
     "std::net",
+    "chrono::Local",
     "std::process",
     "std::env",
     "std::os",

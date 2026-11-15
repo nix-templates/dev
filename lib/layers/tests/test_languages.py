@@ -757,8 +757,21 @@ CASES: dict[str, tuple[dict[str, str], set[tuple[str, str, str]]]] = {
                 #!/bin/sh
                 if true; then . adapters/store.sh; fi
             """,
+            # A wrapper that starts a program it finds from its own location.
+            "bin/report": """
+                #!/usr/bin/env bash
+                here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+                lib="$here/../adapters"
+                exec python3 "$lib/report.py" "$@"  # not "$here/../adapters/ghost.py"
+            """,
+            "adapters/report.py": "x = 1\n",
+            "adapters/ghost.py": "x = 1\n",
         },
-        {layer("core/price.sh", "adapters/store.sh"), layer("bin/run", "adapters/store.sh")},
+        {
+            layer("core/price.sh", "adapters/store.sh"),
+            layer("bin/run", "adapters/store.sh"),
+            layer("bin/report", "adapters/report.py"),
+        },
     ),
     "powershell": (
         {
@@ -1130,6 +1143,59 @@ class TestFiles(unittest.TestCase):
         self.assertEqual(found(tree(files)), CASES["go"][1])
         files["architecture.toml"] = "include_tests = true\n" + files["architecture.toml"]
         self.assertEqual(found(tree(files)), CASES["go"][1] | {layer("core/price_test.go", "adapters/store.go")})
+
+
+class NixStrings(unittest.TestCase):
+    def test_escapes_do_not_end_a_string_and_code_in_one_is_read(self):
+        nix = "\n".join(
+            [
+                "{ pkgs, ... }:",
+                "{",
+                "  # An escaped ${ inside an indented string, then text that looks like a lookup path.",
+                "  environment.etc.\"kmscon.conf\".text = ''",
+                "    dir=''${WILLEXANDER_HARNESS_DIR:-/run}",
+                "    quote='''",
+                "    grab-zoom-in=<Ctrl>plus",
+                "    see ../scripts/ghost.sh",
+                "  '';",
+                "  script = \"run ${../scripts/recorder.py} \\\"<Alt>\\\"\";",
+                "  text = builtins.readFile ../scripts/tmux.sh;",
+                "}",
+                "",
+            ]
+        )
+        files = {
+            "architecture.toml": rules('"modules/**"', '"scripts/**"'),
+            "modules/consoles.nix": nix,
+            "scripts/recorder.py": "x = 1\n",
+            "scripts/tmux.sh": "true\n",
+            "scripts/ghost.sh": "true\n",
+        }
+        self.assertEqual(
+            found(tree(files)),
+            {layer("modules/consoles.nix", "scripts/recorder.py"), layer("modules/consoles.nix", "scripts/tmux.sh")},
+        )
+
+
+class Heredocs(unittest.TestCase):
+    def test_a_quote_in_a_here_document_does_not_hide_the_rest(self):
+        script = "\n".join(
+            [
+                "cat <<EOF",
+                "don't source ../adapters/ghost.sh",
+                "EOF",
+                "n=$(( 1 << shift ))",
+                "source ../adapters/store.sh",
+                "",
+            ]
+        )
+        files = {
+            "architecture.toml": rules('"core/**"', '"adapters/**"', pure=False),
+            "core/run.sh": script,
+            "adapters/store.sh": "true\n",
+            "adapters/ghost.sh": "true\n",
+        }
+        self.assertEqual(found(tree(files)), {layer("core/run.sh", "adapters/store.sh")})
 
 
 class NixDirectories(unittest.TestCase):

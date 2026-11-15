@@ -154,6 +154,11 @@ _EFFECTS = (
     (re.compile(r"\b(println|eprintln|print|eprint|dbg)\s*!"), lambda m: m.group(1) + "!"),
     (re.compile(r"\bstatic\s+mut\b"), lambda m: "static mut"),
     (re.compile(r"\b(Instant|SystemTime|Utc|Local)\s*::\s*now\b"), lambda m: m.group(1) + "::now"),
+    # Methods of std::path::Path that look at the disk.
+    (
+        re.compile(r"\.\s*(exists|try_exists|is_file|is_dir|is_symlink|read_dir|read_link|canonicalize|symlink_metadata)\s*\(\s*\)"),
+        lambda m: "Path::" + m.group(1),
+    ),
 )
 
 

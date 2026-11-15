@@ -24,15 +24,15 @@
   semgrep = true;
   trivy = true;
 
+  # A shell script is a *.sh or *.bash file, or a file with no extension whose
+  # first line names a shell: tools often have no extension.
   lint = ''
-    run_on '*.sh' shellcheck --external-sources
-    run_on '*.bash' shellcheck --external-sources
-    run_on '*.sh' shfmt -d -i 2 -ci
+    on_shell_scripts shellcheck --external-sources
+    on_shell_scripts shfmt -d -i 2 -ci
   '';
 
   fmt = ''
-    run_on '*.sh' shfmt -w -i 2 -ci
-    run_on '*.bash' shfmt -w -i 2 -ci
+    on_shell_scripts shfmt -w -i 2 -ci
   '';
 
   tests = {

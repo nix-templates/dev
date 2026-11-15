@@ -15,7 +15,7 @@
     # The indent size is left to each language's formatter: this check cannot
     # tell a line that is aligned with an opening bracket from one that is
     # indented wrong.
-    run editorconfig-checker -format gcc -disable-indent-size -exclude '(^|/)(\.direnv|\.venv|\.git|node_modules|vendor|result|dist|build|target)/'
+    run editorconfig-checker -format gcc -no-color -disable-indent-size -exclude '(^|/)(\.direnv|\.venv|\.git|node_modules|vendor|result|dist|build|target)/'
   '';
 
   scan = ''

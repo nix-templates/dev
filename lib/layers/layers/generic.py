@@ -43,7 +43,7 @@ class Syntax:
     spaced: bool = False  # a line comment starts only at the start of a line or after white space
 
 
-def _spaces(segment: str) -> str:
+def spaces(segment: str) -> str:
     """As many spaces as the segment is long, with its line breaks kept."""
     if "\n" not in segment:
         return " " * len(segment)
@@ -85,7 +85,7 @@ def blank(text: str, syntax: Syntax) -> str:
     def wipe(begin: int, stop: int) -> None:
         nonlocal last
         parts.append(text[last:begin])
-        parts.append(_spaces(text[begin:stop]))
+        parts.append(spaces(text[begin:stop]))
         last = stop
 
     while True:
@@ -136,11 +136,11 @@ def blank(text: str, syntax: Syntax) -> str:
 class Source:
     """One file: its text, and the same text with comments and strings blanked."""
 
-    def __init__(self, path: str, text: str, syntax: Syntax):
+    def __init__(self, path: str, text: str, syntax: Syntax, bare: str | None = None):
         self.path = path
         self.text = text
         self.syntax = syntax
-        self.bare = blank(text, syntax)
+        self.bare = blank(text, syntax) if bare is None else bare
         self._breaks: list[int] | None = None
 
     def line(self, position: int) -> int:
@@ -268,6 +268,8 @@ class Language:
     shebang: str | None = None
     # Turns text the scanner would misread into spaces, keeping every position.
     prepare: Callable[[str], str] | None = None
+    # A scanner of the language's own, for when comments and strings do not fit a Syntax.
+    lexer: Callable[[str], str] | None = None
 
 
 def nearest(candidates: list[str], importer: str) -> str:
@@ -564,7 +566,8 @@ def extract(
         everything = []
         for path in sorted(mine):
             text = repo.text(path)
-            everything.append(Source(path, language.prepare(text) if language.prepare else text, language.syntax))
+            text = language.prepare(text) if language.prepare else text
+            everything.append(Source(path, text, language.syntax, language.lexer(text) if language.lexer else None))
         checked = [source for source in everything if config.include_tests or not is_test(source.path)]
         scan.tests.update(source.path for source in everything if source not in checked)
         for source in checked:

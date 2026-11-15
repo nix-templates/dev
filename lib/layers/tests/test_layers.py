@@ -181,11 +181,13 @@ class Rust(unittest.TestCase):
 
     def test_effects_in_a_pure_crate_are_purity_violations(self):
         files = dict(RUST_WORKSPACE)
-        files["crates/core/Cargo.toml"] += '        tokio = { workspace = true }\n'
+        files["crates/core/Cargo.toml"] += '        tokio = { workspace = true }\n        chrono = "0.4"\n'
         files["crates/core/src/day.rs"] += """
         use std::{fs, collections::HashMap};
         pub fn now() -> std::time::Instant { println!("now"); Instant::now() }
         static mut COUNT: u32 = 0;
+        pub fn there(path: &std::path::Path) -> bool { path.join("x").exists() }
+        pub fn zone() { let _ = chrono::Local; }
         """
         self.assertEqual(
             found(tree(files)),
@@ -195,6 +197,8 @@ class Rust(unittest.TestCase):
                 ("purity", "crates/core/src/day.rs", "println!"),
                 ("purity", "crates/core/src/day.rs", "Instant::now"),
                 ("purity", "crates/core/src/day.rs", "static mut"),
+                ("purity", "crates/core/src/day.rs", "Path::exists"),
+                ("purity", "crates/core/src/day.rs", "chrono::Local"),
             },
         )
 
@@ -315,6 +319,25 @@ class Python(unittest.TestCase):
         files["app/core/plan.py"] += "\n            import logging\n            import numpy\n"
         files["architecture.toml"] += '\n            [purity]\n            allow = ["logging"]\n            forbid = ["numpy"]\n'
         self.assertEqual(found(tree(files)), {("purity", "app/core/plan.py", "numpy")})
+
+    def test_modules_loaded_by_name_or_by_file_are_imports_too(self):
+        files = dict(self.FILES)
+        files["app/core/rules.py"] = textwrap.dedent(
+            """
+            import importlib
+            import importlib.util
+            from pathlib import PurePath
+            disk = importlib.import_module("app.adapters.disk")
+            spec = importlib.util.spec_from_file_location("disk", PurePath(__file__).with_name("../adapters/disk.py"))
+            def limit(): return 3
+            """
+        )
+        self.assertEqual(
+            found(tree(files)),
+            {("layer", "app/core/rules.py", "app/adapters/disk.py"), ("purity", "app/core/rules.py", "importlib")},
+        )
+        code, out = run(tree(files), "--no-baseline")
+        self.assertIn("(2 times in this file)", out)
 
     def test_nothing_may_use_test_code(self):
         files = dict(self.FILES)
@@ -537,6 +560,8 @@ class CommandLine(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("core (pure, may use: nothing): 3 files", out)
         self.assertIn("in no layer: 1 files", out)
+        code, out = run(tree(Python.FILES), "--explain", "--format", "json")
+        self.assertEqual([layer["name"] for layer in json.loads(out)["layers"]], ["core", "adapters"])
 
 
 class Effects(unittest.TestCase):
