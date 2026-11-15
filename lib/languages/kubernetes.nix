@@ -53,7 +53,7 @@
   '';
 
   scan = ''
-    run trivy config --no-progress --skip-dirs .direnv .
+    run trivy config --exit-code 1 --skip-dirs .direnv .
     when_any '*.yaml' kubeconform -summary -ignore-missing-schemas .
   '';
 

@@ -54,7 +54,7 @@
   '';
 
   scan = ''
-    run trivy config --no-progress --skip-dirs .direnv .
-    run trivy fs --scanners vuln,secret --no-progress .
+    run trivy config --exit-code 1 --skip-dirs .direnv .
+    run trivy fs --scanners vuln,secret --no-progress --exit-code 1 .
   '';
 }

@@ -261,6 +261,10 @@ nix run \
   github:nix-templates/dev/<revision>#ci -- lint
 ```
 
+Take the nixpkgs revision from `nixos-unstable`. The tool lists here follow
+it, and a release branch can lack a tool, in which case no dev shell can be
+made and `ci` exits 2.
+
 The first line of a run says what it used:
 
 ```text

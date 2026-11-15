@@ -177,10 +177,12 @@ let
           exit "$status"
         '';
 
+        # trivy reports and exits 0 unless told otherwise, so every trivy line
+        # says --exit-code 1: a scanner that cannot fail is no check.
         scan = helpers + ''
           ${parts "scan"}
           ${lib.optionalString (wants "semgrep") "run semgrep scan --config auto --error --quiet ."}
-          ${lib.optionalString (wants "trivy") "run trivy fs --scanners vuln,secret --no-progress --skip-dirs .direnv --skip-dirs .venv ."}
+          ${lib.optionalString (wants "trivy") "run trivy fs --scanners vuln,secret --no-progress --exit-code 1 --skip-dirs .direnv --skip-dirs .venv ."}
           ${common.scan}
           checked scan
           exit "$status"

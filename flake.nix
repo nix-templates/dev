@@ -191,6 +191,35 @@
                 touch $out
               '';
 
+          # trivy exits 0 on a finding unless it is told --exit-code 1, and it
+          # stops on a flag it does not know. Either way `scan` would say nothing
+          # about the code. Every trivy line of every language is held to both,
+          # by asking trivy itself for help with exactly those flags.
+          scan-fails =
+            pkgs.runCommand "scan-fails"
+              {
+                nativeBuildInputs = [ pkgs.trivy ];
+                scan = everything.texts.scan;
+                passAsFile = [ "scan" ];
+              }
+              ''
+                export HOME="$TMPDIR"
+                grep -E '^[[:space:]]*run trivy ' "$scanPath" | sed -E 's/^[[:space:]]*run //' | sort -u > lines
+                test -s lines
+                while IFS= read -r line; do
+                  case "$line" in
+                    *" --exit-code 1 "*) ;;
+                    *) echo "never fails scan: $line"; exit 1 ;;
+                  esac
+                  if ! $line --help > /dev/null 2>&1; then
+                    echo "trivy does not take these flags: $line"
+                    exit 1
+                  fi
+                done < lines
+                echo "$(wc -l < lines) trivy lines fail on a finding"
+                touch $out
+              '';
+
           # A Rust project's shell has a C compiler: without `cc`, cargo cannot
           # link a build script, so clippy and the tests stop at the first one.
           # This is evaluated, nothing of Rust is built.
@@ -233,7 +262,8 @@
             inherit pkgs;
             toolbox = self;
             nixpkgs = inputs.nixpkgs;
-            # A flake that Nix fetched as a tarball may come without its revision.
+            # Nix gives a flake without a lock file no `rev`, so the hash of the
+            # source stands in for it.
             revision = self.rev or self.dirtyRev or self.narHash or "an unknown revision";
             nixpkgsRevision = inputs.nixpkgs.rev or lib.version;
           };
