@@ -31,6 +31,12 @@ class CannotRun(Exception):
     """No environment could be made, or the one made cannot be entered."""
 
 
+def stands_in(found: str) -> bool:
+    """Whether a program on a dev shell's PATH is one that every dev shell has, and not one the project brought."""
+    parts = found.split("/")
+    return found.startswith("/nix/store/") and len(parts) > 3 and parts[3].partition("-")[2].startswith(NOT_A_COMMAND)
+
+
 def _cache() -> str | None:
     base = os.environ.get("XDG_CACHE_HOME")
     if not base and os.environ.get("HOME"):
@@ -201,12 +207,7 @@ class Entered:
     def command(self, name: str) -> str | None:
         """Where the shell has a command of this name, or None when it brings none."""
         found = shutil.which(name, path=os.pathsep.join(self.path))
-        if not found:
-            return None
-        parts = found.split("/")
-        if found.startswith("/nix/store/") and len(parts) > 3 and parts[3].partition("-")[2].startswith(NOT_A_COMMAND):
-            return None
-        return found
+        return None if not found or stands_in(found) else found
 
     def leave(self) -> None:
         """Remove the directory the script made for temporary files."""

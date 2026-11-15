@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 # program on PATH is one of the library's commands.
 MADE_HERE = 'echo ":: $*"'
 
-TOOL = re.compile(r"^:: (?!skipping |tests: |layers\b|checked nothing: )")
+TOOL = re.compile(r"^:: (?!skipping |tests: |layers(?: |$)|checked nothing: )")
 FOR_LANGUAGE = re.compile(r"^:: checked nothing: (?P<command>.+) for (?P<language>.+)$")
 SUMMARY = re.compile(r"^layers: (?:ok|FAIL: .*) \(\d+ files checked, (?P<placed>\d+) of them in a layer")
 

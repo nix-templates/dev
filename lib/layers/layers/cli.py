@@ -62,6 +62,7 @@ def read_by(root: str, files: list[str]) -> dict[str, list[str]]:
         suffixes = tuple(ending for ending in endings if ending.startswith("."))
         found[name] = [path for path in files if path.endswith(suffixes)] + named(*(set(endings) - set(suffixes)))
     found["python"] += [path for path, first in scripts.items() if PYTHON_SCRIPT.search(first)]
+    found["javascript"] = [path for path in found["javascript"] if not javascript.translation(path, read(root, path))]
     extensions = generic.by_extension(files)
     for language in LANGUAGES:
         found[language.name] = generic.files_of(language, extensions, named, scripts, lambda path: read(root, path))

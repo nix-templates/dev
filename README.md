@@ -53,6 +53,10 @@ quiet and gets stricter as you add config.
 
 Every project gets `typos`, `editorconfig-checker` and `gitleaks` regardless.
 
+A command says what it left out. Every tool it skips gets a line,
+`:: skipping cargo-deny (no deny.toml here)`. And when nothing at all ran for
+one of your languages, you get `:: checked nothing: tests for python`.
+
 ## Architecture rules
 
 `layers` reads `architecture.toml` and fails when code breaks it.
@@ -201,6 +205,92 @@ It returns `devShell`, the pieces for a shell of your own (`packages`,
 `tools`, `env`), the five `commands` as packages for CI, and `checks`.
 The [`project`](./project/) template is this, for every system, with a
 starting `architecture.toml`.
+
+## In CI
+
+One command runs any of the five on a checkout:
+
+```shell
+nix run --no-write-lock-file github:nix-templates/dev#ci -- lint
+```
+
+A project with a flake of its own, where `lint` is in the default dev shell,
+runs it there. Your `flake.lock` decides the tools, same as on your machine.
+A project without one gets a dev shell made on the spot: `ci` reads the files
+git tracks, works out the languages and asks `mkProject` for them.
+`ci --languages` shows what it found.
+
+CI is stricter than your terminal in two places. `fmt` is `fmt --check`,
+because CI never rewrites your files. And `layers` fails when there is no
+`architecture.toml`: a check with nothing to check should not go green. A
+project with nothing to keep apart says so with one layer, `paths = ["."]`.
+
+It exits 0 when the check passed, 1 when it found something and 2 when it
+could not run. Arguments go to the command: `ci layers --since origin/main`.
+
+A GitLab job, five times over:
+
+```yaml
+check:
+  image: nixos/nix
+  variables:
+    NIX_CONFIG: experimental-features = nix-command flakes
+  parallel:
+    matrix:
+      - COMMAND: [fmt, scan, lint, layers, tests]
+  script:
+    - nix run --no-write-lock-file github:nix-templates/dev#ci -- $COMMAND
+```
+
+A GitHub Actions step:
+
+```yaml
+- uses: DeterminateSystems/nix-installer-action@main
+- run: nix run --no-write-lock-file github:nix-templates/dev#ci -- lint
+```
+
+### Pin it
+
+This repository has no lock file and follows unstable nixpkgs, so the line
+above can bring newer tools tomorrow. A project with its own flake does not
+care: its tools come from its own lock. For any other, name both revisions:
+
+```shell
+nix run \
+  --override-input nixpkgs github:NixOS/nixpkgs/<revision> \
+  github:nix-templates/dev/<revision>#ci -- lint
+```
+
+The first line of a run says what it used:
+
+```text
+ci: lint in a dev shell made for nix, shell by nix-templates/dev 4c1d329e9187 with nixpkgs d5cc68339997
+```
+
+Asking Nix for a dev shell takes seconds, so `ci` asks once and keeps the
+shell's script in `~/.cache/nix-templates-dev`. The other four commands of a
+pipeline then start in a fraction of a second, as long as the jobs share that
+directory. `XDG_CACHE_HOME` moves it.
+
+### Green means checked
+
+A run that passed without checking anything says so:
+
+```text
+ci: checked nothing (language): tests ran nothing for python
+```
+
+| Case | What happened |
+| :--- | :--- |
+| `no-languages` | None of the languages here was found, so only `typos`, `editorconfig-checker` and `gitleaks` ran. |
+| `no-tool` | The command ran no tool at all. |
+| `language` | A language has tools for this command and none of them ran. Python without tests, say. |
+| `no-layer-files` | `architecture.toml` puts no file in a layer. |
+| `no-comparison` | The revision you gave `--since` has no `architecture.toml`. |
+| `own-command` | The command is the project's own program, not one from here. |
+
+`ci --strict tests` fails on any of them. `ci --strict=language,no-tool tests`
+fails on the ones you name.
 
 ## For coding agents
 
@@ -391,7 +481,7 @@ nix develop           # or direnv allow
 check                 # evaluate every template, on every system
 build                 # build every template's shell
 format                # nixfmt every .nix file
-nix flake check       # the tests of layers and the MCP server, shellcheck on every command
+nix flake check       # the tests of layers, ci and the MCP server, shellcheck on every command
 ```
 
 | Path | What it is |
@@ -400,11 +490,18 @@ nix flake check       # the tests of layers and the MCP server, shellcheck on ev
 | `lib/default.nix` | `mkProject`, which puts languages together. |
 | `lib/helpers.sh` | The shell helpers the commands share (`run`, `when`, `run_on`, ...). |
 | `lib/layers/` | `layers`, in Python with no dependencies, and its tests. |
+| `lib/ci/` | `ci`, same. |
 | `mcp/` | The MCP server, same. |
 | `<name>/` | A template: a flake that names its language, plus editor files. |
 
 To add a language, add `lib/languages/<name>.nix` and a template folder for
 it. `check` and `build` test templates against your checkout, not against
 what is published.
+
+`ci` has to find the language in a checkout. It does when `layers` reads the
+language's files. If it has no reader, or shares its files with another
+language, name the files that give it away in `marks`, and the languages it
+replaces in `insteadOf`. [`deno.nix`](./lib/languages/deno.nix) shows both.
+Then add a sample to `lib/ci/tests/test_detect.py`.
 
 [direnv-ext]: https://marketplace.visualstudio.com/items?itemName=mkhl.direnv

@@ -143,6 +143,54 @@
                 touch $out
               '';
 
+          # The tests of `ci`. They find every language of the library in a
+          # sample checkout, so they get the marks of all of them.
+          ci =
+            pkgs.runCommand "ci-tests"
+              {
+                nativeBuildInputs = [
+                  pkgs.python3
+                  pkgs.git
+                ];
+              }
+              ''
+                mkdir source
+                cp -r ${./lib} source/lib
+                cp -r ${./mcp} source/mcp
+                cd source/lib/ci
+                export HOME="$TMPDIR"
+                export DEV_CI_MARKS=${pkgs.writeText "marks.json" (builtins.toJSON (self.lib.marks pkgs))}
+                PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.:../layers:../../mcp python3 -m unittest discover -s tests
+                touch $out
+              '';
+
+          # The built `ci` on a small checkout, with the commands `mkProject`
+          # writes for two languages made for this test. Only nix is a stand-in:
+          # a build cannot ask Nix for a dev shell.
+          ci-run =
+            let
+              example = self.lib.mkProject {
+                inherit pkgs;
+                languages = [
+                  ./lib/ci/tests/languages/tested.nix
+                  ./lib/ci/tests/languages/untested.nix
+                ];
+              };
+            in
+            pkgs.runCommand "ci-run"
+              {
+                nativeBuildInputs = [
+                  self.packages.${system}.ci
+                  pkgs.git
+                ];
+              }
+              ''
+                export HOME="$TMPDIR"
+                export CI_TEST_PATH=${lib.makeBinPath example.packages}
+                bash ${./lib/ci/tests/run.sh}
+                touch $out
+              '';
+
           # The commands of a project with every language in it pass shellcheck.
           # Building them without their tools keeps this quick.
           scripts = pkgs.linkFarmFromDrvs "library-scripts" (
@@ -173,7 +221,8 @@
             inherit pkgs;
             toolbox = self;
             nixpkgs = inputs.nixpkgs;
-            revision = self.rev or self.dirtyRev or "an unknown revision";
+            # A flake that Nix fetched as a tarball may come without its revision.
+            revision = self.rev or self.dirtyRev or self.narHash or "an unknown revision";
             nixpkgsRevision = inputs.nixpkgs.rev or lib.version;
           };
 

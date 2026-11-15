@@ -3,14 +3,10 @@
 {
   description = "TypeScript development environment: tsserver, Biome, ESLint and strict type checking";
 
-  # TypeScript files or a tsconfig.json; the project is then not also read as plain Node.js.
-  marks = [
-    "*.ts"
-    "*.tsx"
-    "*.mts"
-    "*.cts"
-    "tsconfig.json"
-  ];
+  # A TypeScript project has a tsconfig.json, and is then not also read as
+  # Node.js. Without one there is nothing for `tsc` to check, and node covers
+  # the rest.
+  marks = [ "tsconfig.json" ];
   insteadOf = [
     "node"
   ];

@@ -360,8 +360,9 @@ let
     in
     pkgs.writeShellApplication {
       name = "ci";
+      # git is behind PATH, for a machine that has none of its own.
       text = ''
-        exec ${pkgs.python3}/bin/python3 -B ${start} "$@"
+        PATH="$PATH:${pkgs.git}/bin" exec ${pkgs.python3}/bin/python3 -B ${start} "$@"
       '';
     };
 
