@@ -55,6 +55,45 @@
         "clear": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "layers",
+      "type": "shell",
+      "command": "layers",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [
+        {
+          "owner": "dev-layers",
+          "fileLocation": [
+            "autoDetect",
+            "${workspaceFolder}"
+          ],
+          "pattern": {
+            "regexp": "^(.+?):(\\d+):\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "message": 3
+          }
+        }
+      ]
+    },
+    {
+      "label": "tests",
+      "type": "shell",
+      "command": "tests",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "test"
+      }
     }
   ]
 }

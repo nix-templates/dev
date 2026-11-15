@@ -1,0 +1,23 @@
+# Haxe.
+{ pkgs, ... }:
+{
+  description = "Haxe development environment with the Neko VM";
+
+  tools = with pkgs; [
+    # Toolchain: the Haxe compiler ships its own language server
+    haxe
+    neko
+
+  ];
+
+  semgrep = true;
+  trivy = true;
+
+  lint = ''
+    when build.hxml haxe build.hxml
+  '';
+
+  fmt = ''
+    run typos --write-changes .
+  '';
+}

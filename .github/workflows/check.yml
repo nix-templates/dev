@@ -18,10 +18,10 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
 
       # Keeps /nix/store in the GitHub Actions cache. This job only evaluates,
-      # so what it saves is the nixpkgs fetch and the evaluation of 68 flakes.
+      # so what it saves is the nixpkgs fetch and the evaluation of every template.
       - uses: nix-community/cache-nix-action@v7
         with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/flake.nix') }}
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/flake.nix', 'lib/**', 'mcp/**') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           # GitHub allows 10G of cache per repository, so leave room to spare.
           gc-max-store-size-linux: 5G
@@ -36,3 +36,7 @@ jobs:
 
       - name: Evaluate every template
         run: nix develop --command check
+
+      # The tests of layers and of the MCP server, and shellcheck on every command.
+      - name: Check the library
+        run: nix flake check
