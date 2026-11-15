@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "lint",
+      "label": "quality",
       "type": "shell",
-      "command": "lint",
+      "command": "quality",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -12,7 +12,7 @@
       },
       "problemMatcher": [
         {
-          "owner": "dev-lint",
+          "owner": "dev-quality",
           "fileLocation": [
             "autoDetect",
             "${workspaceFolder}"
@@ -32,9 +32,9 @@
       }
     },
     {
-      "label": "fmt",
+      "label": "style",
       "type": "shell",
-      "command": "fmt",
+      "command": "style",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -46,9 +46,9 @@
       }
     },
     {
-      "label": "scan",
+      "label": "security",
       "type": "shell",
-      "command": "scan",
+      "command": "security",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -57,9 +57,9 @@
       "problemMatcher": []
     },
     {
-      "label": "layers",
+      "label": "architecture",
       "type": "shell",
-      "command": "layers",
+      "command": "architecture",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -67,7 +67,7 @@
       },
       "problemMatcher": [
         {
-          "owner": "dev-layers",
+          "owner": "dev-architecture",
           "fileLocation": [
             "autoDetect",
             "${workspaceFolder}"

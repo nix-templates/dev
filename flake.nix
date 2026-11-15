@@ -98,7 +98,7 @@
           };
         in
         {
-          # The tests of `layers`.
+          # The tests of `architecture`.
           layers =
             pkgs.runCommand "layers-tests"
               {
@@ -192,14 +192,14 @@
               '';
 
           # trivy exits 0 on a finding unless it is told --exit-code 1, and it
-          # stops on a flag it does not know. Either way `scan` would say nothing
+          # stops on a flag it does not know. Either way `security` would say nothing
           # about the code. Every trivy line of every language is held to both,
           # by asking trivy itself for help with exactly those flags.
           scan-fails =
             pkgs.runCommand "scan-fails"
               {
                 nativeBuildInputs = [ pkgs.trivy ];
-                scan = everything.texts.scan;
+                scan = everything.texts.security;
                 passAsFile = [ "scan" ];
               }
               ''
@@ -232,6 +232,19 @@
               "the dev shell of a Rust project has no C compiler";
             pkgs.runCommand "rust-links" { } "touch $out";
 
+          # On macOS `security` is also the keychain tool, and ours hands over to
+          # it when it gets arguments. Those lines only exist in the command made
+          # for macOS, so its text is checked here as well, on any system.
+          security-on-macos = pkgs.writeShellApplication {
+            name = "security";
+            text =
+              (self.lib.mkProject {
+                pkgs = import inputs.nixpkgs { system = "aarch64-darwin"; };
+                languages = [ "shell" ];
+              }).texts.security;
+            excludeShellChecks = [ "SC2329" ];
+          };
+
           # The commands of a project with every language in it pass shellcheck.
           # Building them without their tools keeps this quick.
           scripts = pkgs.linkFarmFromDrvs "library-scripts" (
@@ -254,7 +267,7 @@
           default = self.packages.${system}.dvt;
 
           # Dependency and purity rules from a repository's architecture.toml.
-          layers = self.lib.layers pkgs;
+          architecture = self.lib.architecture pkgs;
 
           # What a CI job calls: one of the five commands on a checkout, with or
           # without a flake of its own. `nix run .#ci -- lint`

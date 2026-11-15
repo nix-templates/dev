@@ -1,8 +1,8 @@
 """Which of the library's languages a checkout is written in.
 
 Nothing here knows a file type of its own. A file belongs to the language
-`layers` reads it as, and the MCP server's READ_AS says which language of the
-library that is. A language that `layers` has no reader for, or that shares
+`architecture` reads it as, and the MCP server's READ_AS says which language of
+the library that is. A language that `architecture` has no reader for, or that shares
 its files with another, names the files that mark it in its module in
 lib/languages (`marks`), and the languages it then stands in for (`insteadOf`).
 """
@@ -24,7 +24,7 @@ def marked(mark: str, path: str) -> bool:
 def among(files: list[str], read: dict[str, list[str]], marks: dict[str, dict]) -> dict[str, list[str]]:
     """The languages these files are written in, each with the files that say so.
 
-    read is which reader of `layers` takes which file (layers.cli.read_by).
+    read is which reader of `architecture` takes which file (layers.cli.read_by).
     marks has, for every language of the library, its `marks` (None when its
     module names none) and its `insteadOf`.
     """

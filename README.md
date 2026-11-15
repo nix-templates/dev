@@ -10,14 +10,18 @@ templates, and all of them answer to the same five commands:
 
 | Command | What it runs |
 | :--- | :--- |
-| `lint` | Every linter and static analyser for your languages. |
-| `fmt` | Every formatter. `fmt --check` reports and changes nothing. |
-| `scan` | Leaked secrets, vulnerable dependencies, SAST. |
-| `layers` | Your architecture rules: which code may use which, and what must stay pure. |
+| `quality` | Every linter and static analyser for your languages. |
+| `style` | Every formatter. `style --check` reports and changes nothing. |
+| `security` | Leaked secrets, vulnerable dependencies, SAST. |
+| `architecture` | Your architecture rules: which code may use which, and what must stay pure. |
 | `tests` | Your tests. `tests --coverage` and `tests --mutation` where the language has a tool for it. |
 
 The terminal, VS Code and Neovim all call these same five, so your editor and
-your CI never disagree about what "clean" means.
+your CI never disagree about what "clean" means. And when CI stops you, the
+name of the job says which of the five it was.
+
+Four of them had other names before: `lint`, `fmt`, `scan` and `layers`.
+Those are gone.
 
 ## Quick start
 
@@ -59,7 +63,7 @@ one of your languages, you get `:: checked nothing: tests for python`.
 
 ## Architecture rules
 
-`layers` reads `architecture.toml` and fails when code breaks it.
+`architecture` reads `architecture.toml` and fails when code breaks it.
 
 ```toml
 version = 1
@@ -107,15 +111,15 @@ the error.
 Existing code won't pass new rules on day one. So:
 
 ```shell
-layers --explain   # which file landed in which layer
-layers --accept    # write today's violations to architecture-baseline.json
+architecture --explain   # which file landed in which layer
+architecture --accept    # write today's violations to architecture-baseline.json
 ```
 
 After that, known violations pass and new ones fail. The baseline can only
-shrink. Fix a violation and `layers` fails until `layers --prune` takes it
-off the list.
+shrink. Fix a violation and `architecture` fails until `architecture --prune`
+takes it off the list.
 
-In CI, run `layers --since origin/main`. It also fails when someone grew the
+In CI, run `architecture --since origin/main`. It also fails when someone grew the
 baseline, or made the check pass by loosening the rules: dropping `pure`,
 widening `may_use`, excluding the file, or moving it to a layer that asks
 less. Rules may only get stricter. `--allow-weaker` is for the one change
@@ -123,7 +127,7 @@ where loosening them was agreed.
 
 ### What it reads
 
-55 languages. `layers --languages` lists them with their file types.
+55 languages. `architecture --languages` lists them with their file types.
 
 | How a file names what it uses | Languages |
 | :--- | :--- |
@@ -146,8 +150,8 @@ unread. In a git checkout it reads what git tracks or would add, so whatever
 `.gitignore` leaves out stays out. A script with no file extension is read as
 the language its `#!` line names.
 
-Some languages have a real architecture tool of their own. `layers` runs it
-after the rules, when you have its config: go-arch-lint, `cargo deny check
+Some languages have a real architecture tool of their own. `architecture`
+runs it after the rules, when you have its config: go-arch-lint, `cargo deny check
 bans`, deptry and import-linter, dependency-cruiser and knip, the Maven
 enforcer, Gradle's `buildHealth`, sbt-explicit-dependencies, `mix xref`,
 `rebar3 xref`, deptrac, packwerk, weeder, `dependency_validator`, periphery
@@ -211,22 +215,23 @@ starting `architecture.toml`.
 One command runs any of the five on a checkout:
 
 ```shell
-nix run github:nix-templates/dev#ci -- lint
+nix run github:nix-templates/dev#ci -- quality
 ```
 
-A project with a flake of its own, where `lint` is in the default dev shell,
+A project with a flake of its own, where `quality` is in the default dev shell,
 runs it there. Your `flake.lock` decides the tools, same as on your machine.
 A project without one gets a dev shell made on the spot: `ci` reads the files
 git tracks, works out the languages and asks `mkProject` for them.
 `ci --languages` shows what it found.
 
-CI is stricter than your terminal in two places. `fmt` is `fmt --check`,
-because CI never rewrites your files. And `layers` fails when there is no
+CI is stricter than your terminal in two places. `style` is `style --check`,
+because CI never rewrites your files. And `architecture` fails when there is no
 `architecture.toml`: a check with nothing to check should not go green. A
 project with nothing to keep apart says so with one layer, `paths = ["."]`.
 
 It exits 0 when the check passed, 1 when it found something and 2 when it
-could not run. Arguments go to the command: `ci layers --since origin/main`.
+could not run. Arguments go to the command:
+`ci architecture --since origin/main`.
 
 A GitLab job, five times over:
 
@@ -237,7 +242,7 @@ check:
     NIX_CONFIG: experimental-features = nix-command flakes
   parallel:
     matrix:
-      - COMMAND: [fmt, scan, lint, layers, tests]
+      - COMMAND: [style, security, quality, architecture, tests]
   script:
     - nix run github:nix-templates/dev#ci -- $COMMAND
 ```
@@ -246,7 +251,7 @@ A GitHub Actions step:
 
 ```yaml
 - uses: DeterminateSystems/nix-installer-action@main
-- run: nix run github:nix-templates/dev#ci -- lint
+- run: nix run github:nix-templates/dev#ci -- quality
 ```
 
 ### Pin it
@@ -256,7 +261,7 @@ is one set of tools, because its `flake.lock` names the nixpkgs they come
 from. So in CI, name the revision:
 
 ```shell
-nix run github:nix-templates/dev/<revision>#ci -- lint
+nix run github:nix-templates/dev/<revision>#ci -- quality
 ```
 
 A project with its own flake does not care: its tools come from its own lock.
@@ -269,7 +274,7 @@ a tool, in which case no dev shell can be made and `ci` exits 2.
 The first line of a run says what it used:
 
 ```text
-ci: lint in a dev shell made for nix, shell by nix-templates/dev 4c1d329e9187 with nixpkgs d5cc68339997
+ci: quality in a dev shell made for nix, shell by nix-templates/dev 4c1d329e9187 with nixpkgs d5cc68339997
 ```
 
 Asking Nix for a dev shell takes seconds, so `ci` asks once and keeps the
@@ -291,7 +296,7 @@ ci: checked nothing (language): tests ran nothing for python
 | `no-languages` | None of the languages here was found, so only `typos`, `editorconfig-checker` and `gitleaks` ran. |
 | `no-tool` | The command ran no tool at all. |
 | `language` | A language has tools for this command and none of them ran. Python without tests, say. |
-| `no-layer-files` | `layers` read files and `architecture.toml` puts none of them in a layer. |
+| `no-layer-files` | `architecture` read files and `architecture.toml` puts none of them in a layer. |
 | `no-comparison` | The revision you gave `--since` has no `architecture.toml`. |
 | `own-command` | The command is the project's own program, not one from here. |
 
@@ -316,7 +321,7 @@ write the flake for the project it is working on.
 
 | Tool | What it does |
 | :--- | :--- |
-| `list_languages` | Every language, with its test modes, whether `layers` reads it, and whether it has an architecture tool of its own. |
+| `list_languages` | Every language, with its test modes, whether `architecture` reads it, and whether it has an architecture tool of its own. |
 | `describe_language` | Every tool in one language's shell, and exactly what each command runs. |
 | `generate_flake` | The `flake.nix` and `.envrc` for the languages you name. |
 | `architecture_rules` | An `architecture.toml` from a list of layers, checked by the real parser. |
@@ -325,14 +330,14 @@ It writes nothing to disk. It hands back file contents and the agent decides.
 
 ## Templates
 
-A tick under `layers` means it reads that template's sources, so your
+A tick under `architecture` means it reads that template's sources, so your
 `architecture.toml` applies to them. `+ tool` means the language also has an
 architecture tool of its own, which runs after the rules. `tests` lists the
 extra modes next to plain `tests`.
 
 ### Systems and application languages
 
-| Template | In the shell | `layers` | `tests` |
+| Template | In the shell | `architecture` | `tests` |
 | :--- | :--- | :--- | :--- |
 | [`c-cpp`](./c-cpp/) | `cmake`, `ninja`, `meson`, `bear`, `gtest`, `lcov`, `doxygen`, ... | ✓ | ✓ |
 | [`crystal`](./crystal/) | `crystal`, `shards`, `crystalline`, `ameba` | ✓ | ✓ |
@@ -361,7 +366,7 @@ extra modes next to plain `tests`.
 
 ### Functional languages
 
-| Template | In the shell | `layers` | `tests` |
+| Template | In the shell | `architecture` | `tests` |
 | :--- | :--- | :--- | :--- |
 | [`clojure`](./clojure/) | `clojure`, `leiningen`, `boot`, `babashka`, `clojure-lsp`, `clj-kondo`, `cljfmt`, ... | ✓ | ✓ coverage |
 | [`elixir`](./elixir/) | `elixir`, `git`, `elixir-ls`, `nodejs`, `inotify-tools`, `libnotify`, `gigalixir` | ✓ + tool | ✓ coverage |
@@ -375,7 +380,7 @@ extra modes next to plain `tests`.
 
 ### JavaScript and the web
 
-| Template | In the shell | `layers` | `tests` |
+| Template | In the shell | `architecture` | `tests` |
 | :--- | :--- | :--- | :--- |
 | [`bun`](./bun/) | `bun`, `nodejs`, `typescript`, `typescript-language-server`, `vscode-langservers-extracted`, `biome`, `oxlint`, ... | ✓ + tool | ✓ coverage, mutation, browser |
 | [`deno`](./deno/) | `deno` | ✓ | ✓ coverage, bench |
@@ -386,7 +391,7 @@ extra modes next to plain `tests`.
 
 ### Scripting and glue
 
-| Template | In the shell | `layers` | `tests` |
+| Template | In the shell | `architecture` | `tests` |
 | :--- | :--- | :--- | :--- |
 | [`assembly`](./assembly/) | `nasm`, `yasm`, `binutils`, `asm-lsp`, `radare2`, `lldb`, `gdb` | ✓ |  |
 | [`groovy`](./groovy/) | `groovy`, `gradle`, `openjdk`, `groovy-language-server`, `npm-groovy-lint` | ✓ + tool | ✓ coverage |
@@ -397,7 +402,7 @@ extra modes next to plain `tests`.
 
 ### Configuration and policy languages
 
-| Template | In the shell | `layers` | `tests` |
+| Template | In the shell | `architecture` | `tests` |
 | :--- | :--- | :--- | :--- |
 | [`cue`](./cue/) | `cue`, `cuelsp` | ✓ | ✓ |
 | [`dhall`](./dhall/) | `dhall`, `dhall-json`, `dhall-bash`, `dhall-docs`, `dhall-nix`, `dhall-lsp-server` | ✓ |  |
@@ -408,7 +413,7 @@ extra modes next to plain `tests`.
 
 ### Infrastructure and operations
 
-| Template | In the shell | `layers` | `tests` |
+| Template | In the shell | `architecture` | `tests` |
 | :--- | :--- | :--- | :--- |
 | [`ansible`](./ansible/) | `ansible-core`, `sshpass`, `ansible-language-server`, `yaml-language-server`, `ansible-lint`, `yamllint`, `yamlfmt`, ... |  | ✓ |
 | [`docker`](./docker/) | `docker-compose`, `docker-buildx`, `podman`, `buildah`, `skopeo`, `dive`, `dockerfile-language-server`, ... |  |  |
@@ -420,7 +425,7 @@ extra modes next to plain `tests`.
 
 ### Data, hardware and documents
 
-| Template | In the shell | `layers` | `tests` |
+| Template | In the shell | `architecture` | `tests` |
 | :--- | :--- | :--- | :--- |
 | [`hdl`](./hdl/) | `verilator`, `iverilog`, `ghdl-mcode`, `gtkwave`, `verible`, `svls`, `sby`, ... | ✓ | ✓ |
 | [`jupyter`](./jupyter/) | `python3`, `poetry`, `uv`, `basedpyright`, `ruff`, `mypy`, `nbstripout`, ... | ✓ | ✓ |
@@ -435,7 +440,7 @@ extra modes next to plain `tests`.
 
 ### Starting point
 
-| Template | In the shell | `layers` | `tests` |
+| Template | In the shell | `architecture` | `tests` |
 | :--- | :--- | :--- | :--- |
 | [`empty`](./empty/) | `treefmt`, `dprint`, `taplo`, `yamlfmt`, `yamllint`, `markdownlint-cli2`, `actionlint` |  |  |
 | [`project`](./project/) | For several languages at once: you list them in `flake.nix`. Comes with an `architecture.toml`. |  |  |
@@ -461,7 +466,7 @@ vim.o.exrc = true
 
 Answer `:trust` the first time. You get LSP through the built-in
 `vim.lsp.config` (Neovim 0.11+, no plugins), format on save, and
-`:DevLint`, `:DevFmt`, `:DevScan`, `:DevLayers` and `:DevTests`.
+`:DevQuality`, `:DevStyle`, `:DevSecurity`, `:DevArchitecture` and `:DevTests`.
 
 **Anything else.** Start it from a directory where direnv is active and it
 inherits the whole toolchain through `PATH`.
@@ -487,11 +492,11 @@ nix develop           # or direnv allow
 check                 # evaluate every template, on every system
 build                 # build every template's shell
 format                # nixfmt every .nix file
-nix flake check       # the tests of layers, ci and the MCP server, shellcheck on every command
-nix flake update      # a newer nixpkgs for ci, layers and the MCP server
+nix flake check       # the tests of architecture, ci and the MCP server, shellcheck on every command
+nix flake update      # a newer nixpkgs for ci, architecture and the MCP server
 ```
 
-`flake.lock` names the nixpkgs that `ci`, `layers` and the MCP server run
+`flake.lock` names the nixpkgs that `ci`, `architecture` and the MCP server run
 with. A project with a flake of its own follows its own nixpkgs and never
 sees it, and the templates stay without a lock file. On the first of each
 month a workflow opens a pull request with a newer lock.
@@ -501,7 +506,7 @@ month a workflow opens a pull request with a newer lock.
 | `lib/languages/` | One file per language: its tools and its part of each command. |
 | `lib/default.nix` | `mkProject`, which puts languages together. |
 | `lib/helpers.sh` | The shell helpers the commands share (`run`, `when`, `run_on`, ...). |
-| `lib/layers/` | `layers`, in Python with no dependencies, and its tests. |
+| `lib/layers/` | `architecture`, in Python with no dependencies, and its tests. |
 | `lib/ci/` | `ci`, same. |
 | `mcp/` | The MCP server, same. |
 | `<name>/` | A template: a flake that names its language, plus editor files. |
@@ -510,7 +515,7 @@ To add a language, add `lib/languages/<name>.nix` and a template folder for
 it. `check` and `build` test templates against your checkout, not against
 what is published.
 
-`ci` has to find the language in a checkout. It does when `layers` reads the
+`ci` has to find the language in a checkout. It does when `architecture` reads the
 language's files. If it has no reader, or shares its files with another
 language, name the files that give it away in `marks`, and the languages it
 replaces in `insteadOf`. [`deno.nix`](./lib/languages/deno.nix) shows both.

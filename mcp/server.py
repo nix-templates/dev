@@ -23,16 +23,16 @@ SYSTEMS = ["x86_64-linux", "aarch64-linux", "aarch64-darwin"]
 
 INSTRUCTIONS = """nix-templates/dev gives a project a Nix dev shell with the compilers, language servers, \
 linters, formatters, scanners and test tools of every language it is written in, and five commands \
-that work the same in every project: lint, fmt (fmt --check), scan, layers and tests \
+that work the same in every project: quality, style (style --check), security, architecture and tests \
 (tests --coverage, --mutation and more where the language has a tool).
 
 To set a project up: call list_languages, pick the names that match the project's files, look at \
 describe_language for anything you need to know about one, then call generate_flake and write the \
 files it returns. architecture_rules writes an architecture.toml (layers and a functional core) \
-that `layers` enforces. After writing the files: `git add` them, then `nix develop`."""
+that `architecture` enforces. After writing the files: `git add` them, then `nix develop`."""
 
 
-# Templates whose sources `layers` reads under another name than their own.
+# Templates whose sources `architecture` reads under another name than their own.
 READ_AS = {
     "bun": ["javascript"],
     "deno": ["javascript"],
@@ -53,7 +53,7 @@ READ_AS = {
 
 
 def read_as(name: str) -> list[str]:
-    """The readers `layers` has for a template's sources; empty when there is nothing to read."""
+    """The readers `architecture` has for a template's sources; empty when there is nothing to read."""
     readers = {reader for reader, _ in read_languages()}
     return READ_AS.get(name, [name] if name in readers else [])
 
@@ -87,16 +87,16 @@ def list_languages(catalogue: dict, _arguments: dict) -> dict:
             {
                 "name": name,
                 "description": entry["description"],
-                "layers_reads": read_as(name),
+                "architecture_reads": read_as(name),
                 "architecture_tools": bool(entry["layers"]),
                 "tests": sorted(entry["tests"]),
             }
             for name, entry in sorted(catalogue.items())
         ],
         "note": "tests lists the modes `tests` has for that language: run is plain `tests`, the others are `tests --<mode>`. "
-        "Every language also gets typos, editorconfig-checker and gitleaks, and `layers` for architecture.toml. "
-        "layers_reads names the readers `layers` has for that language's sources, so architecture.toml applies to them. "
-        "architecture_tools says the language also has a tool of its own that `layers` runs after the rules.",
+        "Every language also gets typos, editorconfig-checker and gitleaks, and `architecture` for architecture.toml. "
+        "architecture_reads names the readers `architecture` has for that language's sources, so architecture.toml applies to them. "
+        "architecture_tools says the language also has a tool of its own that `architecture` runs after the rules.",
     }
 
 
@@ -108,10 +108,10 @@ def describe_language(catalogue: dict, arguments: dict) -> dict:
         "description": entry["description"],
         "tools": entry["tools"],
         "commands": {
-            "lint": entry["lint"],
-            "fmt": entry["fmt"],
-            "scan": entry["scan"] + ("run semgrep scan --config auto --error --quiet .\n" if entry["semgrep"] else ""),
-            "layers (after the rules in architecture.toml)": "".join(entry["layers"]),
+            "quality": entry["lint"],
+            "style": entry["fmt"],
+            "security": entry["scan"] + ("run semgrep scan --config auto --error --quiet .\n" if entry["semgrep"] else ""),
+            "architecture (after the rules in architecture.toml)": "".join(entry["layers"]),
             **{("tests" if mode == "run" else f"tests --{mode}"): "".join(blocks) for mode, blocks in entry["tests"].items()},
         },
         "nixpkgs_config": entry["nixpkgsConfig"],
@@ -197,7 +197,8 @@ def generate_flake(catalogue: dict, arguments: dict) -> dict:
         );
 
       # What this project is written in. Each name adds that language's tools to
-      # the shell, and its checks to `lint`, `fmt`, `scan`, `layers` and `tests`.
+      # the shell, and its checks to `quality`, `style`, `security`, `architecture`
+      # and `tests`.
       project =
         pkgs:
         inputs.dev.lib.mkProject {{
@@ -229,7 +230,7 @@ def generate_flake(catalogue: dict, arguments: dict) -> dict:
     modes = sorted({mode for name in languages for mode in catalogue[name]["tests"]} - {"run"})
     return {
         "files": files,
-        "commands": ["lint", "fmt", "fmt --check", "scan", "layers", "tests"] + [f"tests --{mode}" for mode in modes],
+        "commands": ["quality", "style", "style --check", "security", "architecture", "tests"] + [f"tests --{mode}" for mode in modes],
         "next": steps,
     }
 
@@ -247,7 +248,7 @@ forbid_external lists packages a layer may not depend on. hint is added to that 
 apart = true keeps the entries under paths apart: files under one entry may not use files under another, \
 which is how to say that apps or plugins do not use each other.
 
-`layers` checks these rules. It reads the sources of these languages itself: {languages}. \
+`architecture` checks these rules. It reads the sources of these languages itself: {languages}. \
 It reads them as text, so it is close, not exact: names built at run time and build-system path mappings are not followed. \
 After the rules it runs a language's own architecture tool when the project has that tool's config \
 (describe_language shows which).
@@ -255,7 +256,7 @@ After the rules it runs a language's own architecture tool when the project has 
 roots lists directories that imports are resolved from, for when a language's usual ones (the repository root, src, lib) do not fit. \
 purity_allow and purity_forbid take entries off, and add entries to, what a pure layer may not touch.
 
-Adopting it in existing code: `layers --explain` shows which files are in which layer, `layers --accept` writes today's \
+Adopting it in existing code: `architecture --explain` shows which files are in which layer, `architecture --accept` writes today's \
 violations to architecture-baseline.json. After that only new violations fail, and the baseline may only get shorter.""".format(
     languages=", ".join(name for name, _ in read_languages())
 )
@@ -311,7 +312,7 @@ def architecture_rules(_catalogue: dict, arguments: dict) -> dict:
         raise ToolError(f"these rules are not valid: {error}") from error
     return {
         "files": {"architecture.toml": text},
-        "next": ["`layers --explain` to see which files land in which layer.", "`layers` to check; `layers --accept` to adopt the rules in existing code."],
+        "next": ["`architecture --explain` to see which files land in which layer.", "`architecture` to check; `architecture --accept` to adopt the rules in existing code."],
     }
 
 
@@ -324,7 +325,7 @@ TOOLS = {
     ),
     "describe_language": (
         describe_language,
-        "One language in full: every tool in its shell, and exactly what lint, fmt, scan, layers and tests run for it and which config file switches each tool on.",
+        "One language in full: every tool in its shell, and exactly what quality, style, security, architecture and tests run for it and which config file switches each tool on.",
         {"type": "object", "properties": {"name": {"type": "string", "description": "A name from list_languages, such as rust."}}, "required": ["name"]},
     ),
     "generate_flake": (
@@ -335,7 +336,7 @@ TOOLS = {
             "properties": {
                 "languages": {**STRINGS, "description": "Names from list_languages, in the order their checks should run."},
                 "extra_tools": {**STRINGS, "description": "More nixpkgs packages for the shell, as attribute names: jq, python3Packages.requests."},
-                "checks": {"type": "boolean", "description": "Also expose `layers` as a flake check. Needs an architecture.toml."},
+                "checks": {"type": "boolean", "description": "Also expose `architecture` as a flake check. Needs an architecture.toml."},
                 "python_venv": {"type": "boolean", "description": "For python and jupyter: make and activate a .venv on entering the shell."},
                 "systems": {**STRINGS, "description": f"Default: {', '.join(SYSTEMS)}."},
                 "nixpkgs": {"type": "string", "description": f"The nixpkgs flake URL. Default: {NIXPKGS} (unstable)."},
@@ -346,7 +347,7 @@ TOOLS = {
     ),
     "architecture_rules": (
         architecture_rules,
-        "Write an architecture.toml from a list of layers, checked by the same parser `layers` uses. Called without layers it returns the format's reference.",
+        "Write an architecture.toml from a list of layers, checked by the same parser `architecture` uses. Called without layers it returns the format's reference.",
         {
             "type": "object",
             "properties": {

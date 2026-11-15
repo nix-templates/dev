@@ -14,10 +14,12 @@ from dataclasses import dataclass, field
 # program on PATH is one of the library's commands.
 MADE_HERE = 'echo ":: $*"'
 
-TOOL = re.compile(r"^:: (?!skipping |tests: |layers(?: |$)|checked nothing: )")
+# A line that starts with ":: " and is not a tool: a skip, the header of
+# `tests` or of `architecture` (`layers` before), or a command's own count.
+TOOL = re.compile(r"^:: (?!skipping |tests: |(?:architecture|layers)(?: |$)|checked nothing: )")
 FOR_LANGUAGE = re.compile(r"^:: checked nothing: (?P<command>.+) for (?P<language>.+)$")
 NO_TOOL = re.compile(r"^:: checked nothing: .+ ran no tool$")
-SUMMARY = re.compile(r"^layers: (?:ok|FAIL: .*) \((?P<read>\d+) files checked, (?P<placed>\d+) of them in a layer")
+SUMMARY = re.compile(r"^(?:architecture|layers): (?:ok|FAIL: .*) \((?P<read>\d+) files checked, (?P<placed>\d+) of them in a layer")
 
 # The ways a command passes without having checked anything, by the name
 # --strict takes for each.
@@ -33,7 +35,7 @@ class Seen:
     # its lines: a tool that found nothing to check has a line and did not run.
     none: bool = False
     languages: list[str] = field(default_factory=list)
-    # What `layers` read, and how much of it is in a layer.
+    # What `architecture` read, and how much of it is in a layer.
     read: int | None = None
     placed: int | None = None
 
@@ -58,10 +60,10 @@ def unchecked(command: str, seen: Seen, made_here: bool) -> list[tuple[str, str]
     if not made_here:
         return [("own-command", f"{command} is this project's own program, so what it checked is not known")]
     cases = []
-    if command == "layers":
-        # A checkout with nothing for `layers` to read has said so by having an architecture.toml.
+    if command == "architecture":
+        # A checkout with nothing for `architecture` to read has said so by having an architecture.toml.
         if seen.read and seen.placed == 0:
-            cases.append(("no-layer-files", f"layers read {seen.read} files and architecture.toml puts none of them in a layer"))
+            cases.append(("no-layer-files", f"architecture read {seen.read} files and architecture.toml puts none of them in a layer"))
         return cases
     if seen.tools == 0 or seen.none:
         cases.append(("no-tool", f"{command} ran no tool"))

@@ -86,14 +86,14 @@ class Tools(unittest.TestCase):
         self.assertFalse(error)
         self.assertEqual(
             result["languages"][1],
-            {"name": "rust", "description": "Rust development environment", "layers_reads": ["rust"], "architecture_tools": True, "tests": ["mutation", "run"]},
+            {"name": "rust", "description": "Rust development environment", "architecture_reads": ["rust"], "architecture_tools": True, "tests": ["mutation", "run"]},
         )
 
     def test_describe_language_shows_what_each_command_runs(self):
         error, result = call("describe_language", {"name": "rust"})
         self.assertFalse(error)
         self.assertEqual(result["commands"]["tests --mutation"], "when Cargo.toml cargo mutants\n")
-        self.assertIn("semgrep", result["commands"]["scan"])
+        self.assertIn("semgrep", result["commands"]["security"])
         self.assertEqual(result["tools"][0]["name"], "cargo-nextest")
 
     def test_an_unknown_language_is_an_error_with_a_suggestion(self):

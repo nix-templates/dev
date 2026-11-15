@@ -2,8 +2,13 @@
 #
 # A project takes this repository as a flake input and calls `mkProject` with
 # its own pkgs and the languages it is written in. The tools and the commands
-# `lint`, `fmt`, `scan`, `layers` and `tests` then come from the one definition
-# here, so `nix flake update` brings every improvement to every project.
+# `quality`, `style`, `security`, `architecture` and `tests` then come from the
+# one definition here, so `nix flake update` brings every improvement to every
+# project.
+#
+# The commands were `lint`, `fmt`, `scan` and `layers` before, and those names
+# are gone. A language's module still names its part of each command that way,
+# and so does the folder of the architecture program.
 { lib }:
 let
   helpers = builtins.readFile ./helpers.sh;
@@ -19,10 +24,10 @@ let
       );
 
   # The program that checks a repository against its architecture.toml.
-  layers =
+  architecture =
     pkgs:
     pkgs.writeShellApplication {
-      name = "layers";
+      name = "architecture";
       runtimeInputs = [
         pkgs.python3
         pkgs.git
@@ -104,7 +109,7 @@ let
         + ''
           part_end
         '';
-      # `layers` and `tests` are lists of blocks. Languages that share a build
+      # A module's `layers` and `tests` are lists of blocks. Languages that share a build
       # tool share blocks, and a shared block runs once.
       blocks = get: lib.concatStrings (lib.unique (lib.concatMap get own));
       modes = lib.unique (
@@ -125,7 +130,7 @@ let
           ${block}
         '') (lib.unique (lib.concatMap of own));
 
-      rules = "${layers pkgs}/bin/layers";
+      rules = "${architecture pkgs}/bin/architecture";
       tools = lib.unique (
         lib.concatMap (module: module.tools or [ ]) modules
         ++ lib.optional (wants "semgrep") pkgs.semgrep
@@ -138,16 +143,16 @@ let
       ) modes;
 
       texts = {
-        lint = helpers + ''
+        quality = helpers + ''
           ${parts "lint"}
           ${common.lint}
-          checked lint
+          checked quality
           exit "$status"
         '';
 
-        # `fmt` writes. `fmt --check` formats a copy and compares, so it covers
-        # every formatter, whether or not it has a check mode of its own.
-        fmt = helpers + ''
+        # `style` writes. `style --check` formats a copy and compares, so it
+        # covers every formatter, whether or not it has a check mode of its own.
+        style = helpers + ''
           if [ "''${1:-}" = "--check" ]; then
             keep=(--exclude=/.git --exclude=.direnv --exclude=.venv --exclude=node_modules --exclude=target --exclude=result --exclude=build --exclude=dist --exclude=.build --exclude=_build --exclude=vendor --exclude=.terraform --exclude=.stack-work)
             here=$PWD
@@ -162,12 +167,12 @@ let
 
           ${parts "fmt"}
           ${text "fmt" [ common ]}
-          checked fmt
+          checked style
           if [ "''${1:-}" = "--check" ]; then
             cd "$here"
             changed=$(rsync -rcn --existing "''${keep[@]}" --out-format='%n' "$copy/" ./ | grep -v '/$' || true)
             if [ -n "$changed" ]; then
-              echo "fmt would change:"
+              echo "style would change:"
               while IFS= read -r file; do
                 echo "  $file"
               done <<< "$changed"
@@ -179,19 +184,29 @@ let
 
         # trivy reports and exits 0 unless told otherwise, so every trivy line
         # says --exit-code 1: a scanner that cannot fail is no check.
-        scan = helpers + ''
-          ${parts "scan"}
-          ${lib.optionalString (wants "semgrep") "run semgrep scan --config auto --error --quiet ."}
-          ${lib.optionalString (wants "trivy") "run trivy fs --scanners vuln,secret --no-progress --exit-code 1 --skip-dirs .direnv --skip-dirs .venv ."}
-          ${common.scan}
-          checked scan
-          exit "$status"
-        '';
+        security =
+          # macOS has a `security` of its own, the keychain tool, and programs
+          # call it by that name. It never runs without arguments and this
+          # command takes none, so with arguments it is the keychain tool.
+          lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+            if [ "$#" -gt 0 ] && [ -x /usr/bin/security ]; then
+              exec /usr/bin/security "$@"
+            fi
+          ''
+          + helpers
+          + ''
+            ${parts "scan"}
+            ${lib.optionalString (wants "semgrep") "run semgrep scan --config auto --error --quiet ."}
+            ${lib.optionalString (wants "trivy") "run trivy fs --scanners vuln,secret --no-progress --exit-code 1 --skip-dirs .direnv --skip-dirs .venv ."}
+            ${common.scan}
+            checked security
+            exit "$status"
+          '';
 
-        # `layers` is the rules of architecture.toml, then each language's own
-        # architecture tools where the project has their config. Its other
+        # `architecture` is the rules of architecture.toml, then each language's
+        # own architecture tools where the project has their config. Its other
         # modes, and machine-readable output, are the rules program alone.
-        layers = helpers + ''
+        architecture = helpers + ''
           for argument in "$@"; do
             case "$argument" in
               --accept | --prune | --explain | --languages | --version | --help | -h | json | --format=json)
@@ -200,12 +215,12 @@ let
             esac
           done
 
-          echo ":: layers''${*:+ $*}"
+          echo ":: architecture''${*:+ $*}"
           rules=0
           ${rules} "$@" || rules=1
           ${blocks (module: module.layers or [ ])}
           if [ "$status" -ne 0 ]; then
-            echo "layers: FAIL: an architecture tool above did not pass"
+            echo "architecture: FAIL: an architecture tool above did not pass"
           fi
           if [ "$rules" -ne 0 ]; then
             status=1
@@ -262,7 +277,7 @@ let
         if lib.any (module: module.needsCC or false) modules then pkgs.mkShell else pkgs.mkShellNoCC;
     in
     {
-      # `lint`, `fmt`, `scan`, `layers` and `tests`, each a package.
+      # `quality`, `style`, `security`, `architecture` and `tests`, each a package.
       inherit commands;
 
       # The tools alone, and the tools with the commands: for a shell of your own.
@@ -287,7 +302,7 @@ let
       checks = lib.optionalAttrs (src != null) {
         # Naming the file makes a missing architecture.toml a failure. A flake
         # only sees files git knows about, so a new one must be `git add`ed.
-        layers = pkgs.runCommand "layers-check" { } ''
+        architecture = pkgs.runCommand "architecture-check" { } ''
           ${rules} --check --root ${src} --config ${src}/architecture.toml
           touch $out
         '';
@@ -306,7 +321,7 @@ let
       module;
 
   # How each language is told from the files of a checkout. `marks` are file
-  # names or globs; a language without them is found by the files `layers`
+  # names or globs; a language without them is found by the files `architecture`
   # reads as that language. `insteadOf` names the languages it then stands in
   # for. `ci` reads this for a checkout that names no languages itself.
   marks =
@@ -397,7 +412,7 @@ let
   self = {
     inherit
       languages
-      layers
+      architecture
       mkProject
       catalogue
       marks
