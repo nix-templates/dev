@@ -106,16 +106,21 @@ has "architecture: ok (" "$out" "architecture"
 expect 0 architecture --since HEAD
 has "ci: checked nothing (no-comparison): HEAD has no architecture.toml, so --since compared nothing" "$err" "architecture --since"
 
-# The names four of the commands had before still work: as arguments of ci, and
-# as commands in the dev shell, where each says what it is called now.
-expect 0 lint
-has "ci: lint is called quality now" "$err" "ci lint"
-has ":: test -s ./sample.words" "$out" "ci lint"
-expect 0 layers
-has "architecture: ok (" "$out" "ci layers"
-for before in lint:quality fmt:style scan:security layers:architecture; do
-  said=$(PATH="$CI_TEST_PATH:$PATH" "${before%%:*}" --check 2>&1 > /dev/null || true)
-  has "${before%%:*} is called ${before##*:} now" "$said" "the old command ${before%%:*} in the dev shell"
+# The names four of the commands had before are gone: ci does not take them,
+# and the dev shell has no command under them.
+expect 2 lint
+has "ci: there is no command lint. It is called quality now" "$err" "ci lint"
+for before in lint fmt scan layers; do
+  if PATH="$CI_TEST_PATH" command -v "$before" > /dev/null; then
+    echo "FAIL: the dev shell still has $before"
+    failed=1
+  fi
+done
+for now in quality style security architecture tests; do
+  if ! PATH="$CI_TEST_PATH" command -v "$now" > /dev/null; then
+    echo "FAIL: the dev shell has no $now"
+    failed=1
+  fi
 done
 
 if [ "$failed" -ne 0 ]; then

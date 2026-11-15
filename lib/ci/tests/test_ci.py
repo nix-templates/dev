@@ -510,7 +510,7 @@ class Scripts(unittest.TestCase):
 
 
 class Renamed(unittest.TestCase):
-    """Four commands had other names before: lint, fmt, scan and layers."""
+    """Four commands had other names before: lint, fmt, scan and layers. ci does not take those."""
 
     # The commands of a revision from before, by their old names.
     OLDER = {
@@ -521,28 +521,19 @@ class Renamed(unittest.TestCase):
         "tests": 'echo ":: tests: run"\nrun true\nexit "$status"\n',
     }
 
-    def test_an_old_name_runs_the_command_and_says_what_it_is_called_now(self):
+    def test_an_old_name_is_no_command_and_ci_says_what_it_is_called_now(self):
         root, nix = plain({"run.sh": "echo 1\n", "architecture.toml": RULES})
         for before, now in (("lint", "quality"), ("fmt", "style"), ("scan", "security"), ("layers", "architecture")):
             with self.subTest(before=before):
                 result = ci(root, before, nix=nix)
-                self.assertEqual(result.code, 0, result.err)
-                self.assertTrue(result.said[0].startswith(f"ci: {now} in a dev shell made for shell by"), result.said)
-                self.assertEqual(result.said[1], f"ci: {before} is called {now} now")
-        self.assertIn("style got: --check\n", ci(root, "fmt", nix=nix).out)
+                self.assertEqual(result.code, 2)
+                self.assertEqual(result.said, [f"ci: there is no command {before}. It is called {now} now"])
+                self.assertIn("usage: ci [--strict[=CASE,...]] <style|security|quality|architecture|tests> [arguments]", result.err)
+                self.assertEqual(result.out, "")
+        self.assertEqual(nix.calls, [])
 
-    def test_the_new_name_says_nothing_of_the_old_one(self):
-        root, nix = plain()
-        self.assertFalse([line for line in ci(root, "quality", nix=nix).said if "is called" in line])
-
-    def test_layers_without_rules_fails_as_architecture_does(self):
-        root, nix = plain()
-        result = ci(root, "layers", nix=nix)
-        self.assertEqual((result.code, nix.calls), (1, []))
-        self.assertTrue(result.said[0].startswith("ci: architecture: there is no architecture.toml in this checkout"), result.said)
-        self.assertEqual(result.said[1:], ["ci: layers is called architecture now"])
-
-    def test_a_dev_shell_from_before_is_served_by_its_old_commands(self):
+    def test_a_checkout_that_pins_a_revision_from_before_is_served_by_the_commands_it_has(self):
+        # Its pin decides its tools, and at that pin the commands have their old names.
         root, nix = flaked(shell(self.OLDER), {"architecture.toml": RULES})
         result = ci(root, "quality", nix=nix)
         self.assertEqual(result.code, 0, result.err)

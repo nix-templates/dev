@@ -6,8 +6,10 @@ a dev shell made for the languages found in it, from the revision of this
 repository that ci itself came from.
 
 The commands are style, security, quality, architecture and tests. Four of
-them had other names before (fmt, scan, lint, layers); those are still taken,
-and a checkout that pins an older revision is still served by them.
+them had other names before: fmt, scan, lint and layers. ci does not take
+those. A checkout that pins a revision from before only has them under the old
+names, though, and its pin is what decides its tools, so there ci runs the
+command the checkout has.
 
 It exits 0 when the check passed, 1 when it found something and 2 when it
 could not run. Every line of its own starts with "ci: " and goes to stderr;
@@ -25,8 +27,8 @@ from . import __version__, environment, watch
 from .environment import CannotRun
 
 COMMANDS = ("style", "security", "quality", "architecture", "tests")
-# What four of them were called before. A project that pins an older revision
-# still has them under these names, and a pipeline may still ask for them.
+# What four of them were called before. A project that pins a revision from
+# before still has them under these names in its dev shell.
 FORMERLY = {"style": "fmt", "security": "scan", "quality": "lint", "architecture": "layers"}
 RULES = "architecture.toml"
 
@@ -48,9 +50,6 @@ starts with "ci: checked nothing (CASE)". --strict makes those runs fail,
 all of them or the cases named: {", ".join(watch.CASES)}.
 
   --languages  print the languages found in the checkout, and stop
-
-Four of the commands had another name before: {", ".join(f"{now} was {before}" for now, before in FORMERLY.items())}.
-The old names still work.
 """
 
 
@@ -158,9 +157,7 @@ def follow(program: str, arguments: list[str], root: str, entered: environment.E
     return process.wait(), seen
 
 
-def check(command: str, arguments: list[str], root: str, settings: dict, strict: set[str], asked: str | None = None) -> int:
-    """Run a command. asked is the name it was asked for by, when that is its old one."""
-    renamed = f"{asked} is called {command} now" if asked and asked != command else None
+def check(command: str, arguments: list[str], root: str, settings: dict, strict: set[str]) -> int:
     cases: list[tuple[str, str]] = []
     if command == "architecture":
         missing, uncompared = rules(arguments)
@@ -169,8 +166,6 @@ def check(command: str, arguments: list[str], root: str, settings: dict, strict:
                 f"architecture: there is no {missing} in this checkout, so nothing was checked. Add one that names the layers "
                 'and what each may use. A project with nothing to keep apart says so with one layer: paths = ["."].'
             )
-            if renamed:
-                say(renamed)
             return 1
         if uncompared:
             cases.append(uncompared)
@@ -205,8 +200,6 @@ def check(command: str, arguments: list[str], root: str, settings: dict, strict:
         if os.path.basename(program) != command:
             origin += f", where it is still called {os.path.basename(program)}"
         say(f"{command} in this checkout's own dev shell ({origin})")
-        if renamed:
-            say(renamed)
     else:
         languages = languages_of(root, settings)
         names = ", ".join(languages) or "no language"
@@ -214,8 +207,6 @@ def check(command: str, arguments: list[str], root: str, settings: dict, strict:
             f"{command} in a dev shell made for {names} by nix-templates/dev {short(settings['revision'])} "
             f"with nixpkgs {short(settings['nixpkgsRevision'])}"
         )
-        if renamed:
-            say(renamed)
         if why:
             say(f"{why}, so one was made here")
         if languages:
@@ -287,16 +278,18 @@ def main(argv: list[str] | None = None, settings: dict | str | None = None) -> i
             say(f"there is no option {given}")
             sys.stderr.write(USAGE)
             return 2
-    now = {before: command for command, before in FORMERLY.items()}
-    if not argv or (argv[0] not in COMMANDS and argv[0] not in now):
-        say(f"there is no command {argv[0]}" if argv else "which command?")
+    if not argv or argv[0] not in COMMANDS:
+        now = {before: command for command, before in FORMERLY.items()}
+        if argv and argv[0] in now:
+            say(f"there is no command {argv[0]}. It is called {now[argv[0]]} now")
+        else:
+            say(f"there is no command {argv[0]}" if argv else "which command?")
         sys.stderr.write(USAGE)
         return 2
 
-    asked, arguments = argv[0], argv[1:]
-    command = now.get(asked, asked)
+    command, arguments = argv[0], argv[1:]
     try:
-        return check(command, arguments, os.getcwd(), settings, strict, asked)
+        return check(command, arguments, os.getcwd(), settings, strict)
     except CannotRun as reason:
         say(f"{command} could not run: {reason}")
         return 2

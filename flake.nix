@@ -268,8 +268,6 @@
 
           # Dependency and purity rules from a repository's architecture.toml.
           architecture = self.lib.architecture pkgs;
-          # The same, under the name it had before.
-          layers = self.lib.layers pkgs;
 
           # What a CI job calls: one of the five commands on a checkout, with or
           # without a flake of its own. `nix run .#ci -- lint`

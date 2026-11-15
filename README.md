@@ -21,7 +21,7 @@ your CI never disagree about what "clean" means. And when CI stops you, the
 name of the job says which of the five it was.
 
 Four of them had other names before: `lint`, `fmt`, `scan` and `layers`.
-Those still work, and each tells you what it is called now.
+Those are gone.
 
 ## Quick start
 

@@ -6,9 +6,9 @@
 # one definition here, so `nix flake update` brings every improvement to every
 # project.
 #
-# The commands were `lint`, `fmt`, `scan` and `layers` before. A language's
-# module still names its part of each command that way, and so does the folder
-# of the architecture program.
+# The commands were `lint`, `fmt`, `scan` and `layers` before, and those names
+# are gone. A language's module still names its part of each command that way,
+# and so does the folder of the architecture program.
 { lib }:
 let
   helpers = builtins.readFile ./helpers.sh;
@@ -36,29 +36,6 @@ let
         PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=${./layers} exec python3 -m layers "$@"
       '';
     };
-
-  # What four of the commands were called before. The old names stay, so that
-  # habits, editor tasks and the pipelines of older projects go on working.
-  formerly = {
-    quality = "lint";
-    style = "fmt";
-    security = "scan";
-    architecture = "layers";
-  };
-
-  # A command under its old name: it says what it is called now, and runs it.
-  renamed =
-    pkgs: before: now: command:
-    pkgs.writeShellApplication {
-      name = before;
-      text = ''
-        echo "${before} is called ${now} now" >&2
-        exec ${command}/bin/${now} "$@"
-      '';
-    };
-
-  # The architecture program under its old name.
-  layers = pkgs: renamed pkgs "layers" "architecture" (architecture pkgs);
 
   mkProject =
     {
@@ -290,13 +267,7 @@ let
           excludeShellChecks = [ "SC2329" ];
         };
 
-      now = lib.mapAttrs mkScript texts;
-      # The five commands, and four of them under their old names as well.
-      commands =
-        now
-        // lib.mapAttrs' (
-          name: before: lib.nameValuePair before (renamed pkgs before name now.${name})
-        ) formerly;
+      commands = lib.mapAttrs mkScript texts;
 
       packages = tools ++ builtins.attrValues commands;
       env = lib.foldl' (acc: module: acc // (module.env or { })) { } modules;
@@ -306,8 +277,7 @@ let
         if lib.any (module: module.needsCC or false) modules then pkgs.mkShell else pkgs.mkShellNoCC;
     in
     {
-      # `quality`, `style`, `security`, `architecture` and `tests`, each a
-      # package, and `lint`, `fmt`, `scan` and `layers`, which run them.
+      # `quality`, `style`, `security`, `architecture` and `tests`, each a package.
       inherit commands;
 
       # The tools alone, and the tools with the commands: for a shell of your own.
@@ -443,8 +413,6 @@ let
     inherit
       languages
       architecture
-      layers
-      formerly
       mkProject
       catalogue
       marks
