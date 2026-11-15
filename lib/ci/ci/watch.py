@@ -16,7 +16,7 @@ MADE_HERE = 'echo ":: $*"'
 
 TOOL = re.compile(r"^:: (?!skipping |tests: |layers(?: |$)|checked nothing: )")
 FOR_LANGUAGE = re.compile(r"^:: checked nothing: (?P<command>.+) for (?P<language>.+)$")
-SUMMARY = re.compile(r"^layers: (?:ok|FAIL: .*) \(\d+ files checked, (?P<placed>\d+) of them in a layer")
+SUMMARY = re.compile(r"^layers: (?:ok|FAIL: .*) \((?P<read>\d+) files checked, (?P<placed>\d+) of them in a layer")
 
 # The ways a command passes without having checked anything, by the name
 # --strict takes for each.
@@ -29,6 +29,8 @@ class Seen:
 
     tools: int = 0
     languages: list[str] = field(default_factory=list)
+    # What `layers` read, and how much of it is in a layer.
+    read: int | None = None
     placed: int | None = None
 
     def line(self, text: str) -> None:
@@ -41,7 +43,7 @@ class Seen:
             return
         summary = SUMMARY.match(text)
         if summary:
-            self.placed = int(summary["placed"])
+            self.read, self.placed = int(summary["read"]), int(summary["placed"])
 
 
 def unchecked(command: str, seen: Seen, made_here: bool) -> list[tuple[str, str]]:
@@ -50,8 +52,9 @@ def unchecked(command: str, seen: Seen, made_here: bool) -> list[tuple[str, str]
         return [("own-command", f"{command} is this project's own program, so what it checked is not known")]
     cases = []
     if command == "layers":
-        if seen.placed == 0:
-            cases.append(("no-layer-files", "no file of this checkout is in a layer of architecture.toml"))
+        # A checkout with nothing for `layers` to read has said so by having an architecture.toml.
+        if seen.read and seen.placed == 0:
+            cases.append(("no-layer-files", f"layers read {seen.read} files and architecture.toml puts none of them in a layer"))
         return cases
     if seen.tools == 0:
         cases.append(("no-tool", f"{command} ran no tool"))

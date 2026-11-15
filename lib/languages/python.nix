@@ -74,15 +74,16 @@ in
     '';
   };
 
+  # ruff finds *.py by itself. A script with no extension has to be named.
   lint = ''
-    run ruff check .
+    with_scripts 'python[0-9.]*' ruff check .
     when pyproject.toml mypy .
     run vulture . --min-confidence 80 --exclude '.venv,.direnv,build,dist'
   '';
 
   fmt = ''
-    run ruff check --select I --fix .
-    run ruff format .
+    with_scripts 'python[0-9.]*' ruff check --select I --fix .
+    with_scripts 'python[0-9.]*' ruff format .
   '';
 
   scan = ''

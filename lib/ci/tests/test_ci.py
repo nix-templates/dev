@@ -364,7 +364,15 @@ class Layers(unittest.TestCase):
         )
         result = ci(root, "layers", nix=nix)
         self.assertEqual(result.code, 0)
-        self.assertEqual(result.said[-1], "ci: checked nothing (no-layer-files): no file of this checkout is in a layer of architecture.toml")
+        self.assertEqual(result.said[-1], "ci: checked nothing (no-layer-files): layers read 3 files and architecture.toml puts none of them in a layer")
+
+    def test_a_checkout_with_nothing_for_layers_to_read_has_said_so_with_its_rules(self):
+        root, nix = plain(
+            {"README.md": "# Words\n", "architecture.toml": RULES},
+            layers='echo "layers: ok (0 files checked, 0 of them in a layer, 0 known violations in the baseline)"\n',
+        )
+        result = ci(root, "--strict", "layers", nix=nix)
+        self.assertEqual((result.code, len(result.said)), (0, 2))
 
     def test_a_revision_without_rules_compares_nothing(self):
         root, nix = plain()
@@ -441,21 +449,52 @@ class CheckedNothing(unittest.TestCase):
         self.assertEqual(ci(root, "--strict", "fmt", nix=nix).code, 2)
 
 
+class Scripts(unittest.TestCase):
+    """The helpers that find a script with no extension by its first line."""
+
+    FILES = {
+        "bin/tool": "#!/usr/bin/env python3\nprint(1)\n",
+        "bin/older": "#!/usr/bin/python3.12 -u\nprint(1)\n",
+        "bin/report": "#!/usr/bin/perl\nprint 1;\n",
+        "bin/start": "#!/usr/bin/env bash\necho 1\n",
+        "bin/notes": "python and perl are words here\n",
+        "lib/module.py": "#!/usr/bin/env python3\nprint(1)\n",
+        "node_modules/dep/tool": "#!/usr/bin/env python3\nprint(1)\n",
+    }
+
+    def run_lint(self, body: str, files: dict[str, str] | None = None) -> list[str]:
+        root, nix = plain(files or self.FILES, lint=body)
+        return sorted(ci(root, "lint", nix=nix).out.splitlines())
+
+    def test_scripts_are_found_by_the_interpreter_their_first_line_names(self):
+        self.assertEqual(self.run_lint("scripts 'python[0-9.]*'\n"), ["./bin/older", "./bin/tool"])
+        self.assertEqual(self.run_lint("scripts perl\n"), ["./bin/report"])
+        self.assertEqual(self.run_lint("shell_scripts\n"), ["./bin/start"])
+
+    def test_a_command_runs_on_the_scripts_of_an_interpreter_or_says_it_skips(self):
+        self.assertEqual(self.run_lint("on_scripts perl echo critic\n"), [":: echo critic ./bin/report", "critic ./bin/report"])
+        self.assertEqual(self.run_lint("on_scripts ruby echo cop\n"), [":: skipping echo (no ruby scripts)"])
+
+    def test_a_tool_that_takes_a_directory_gets_the_scripts_as_well(self):
+        self.assertEqual(self.run_lint("with_scripts perl echo check .\n"), [":: echo check . ./bin/report", "check . ./bin/report"])
+        self.assertEqual(self.run_lint("with_scripts ruby echo check .\n"), [":: echo check .", "check ."])
+
+
 class Reading(unittest.TestCase):
     def test_tools_are_counted_and_headers_and_skips_are_not(self):
         seen = watch.Seen()
         for line in (":: tests: run", ":: layers --since main", ":: skipping bats (no *.bats files)", ":: checked nothing: tests for go", "1..1", ":: bats a.bats", ":: layers-tool x"):
             seen.line(line)
-        self.assertEqual((seen.tools, seen.languages, seen.placed), (2, ["go"], None))
+        self.assertEqual((seen.tools, seen.languages, seen.read, seen.placed), (2, ["go"], None, None))
 
     def test_the_summary_of_layers_tells_how_many_files_are_in_a_layer(self):
-        for line, placed in (
-            ("layers: ok (12 files checked, 0 of them in a layer, 0 known violations in the baseline)", 0),
-            ("layers: FAIL: 1 new violations (12 files checked, 7 of them in a layer, 0 known violations in the baseline)", 7),
+        for line, numbers in (
+            ("layers: ok (12 files checked, 0 of them in a layer, 0 known violations in the baseline)", (12, 0)),
+            ("layers: FAIL: 1 new violations (12 files checked, 7 of them in a layer, 0 known violations in the baseline)", (12, 7)),
         ):
             seen = watch.Seen()
             seen.line(line)
-            self.assertEqual(seen.placed, placed)
+            self.assertEqual((seen.read, seen.placed), numbers)
 
     def test_a_status_becomes_one_of_three(self):
         self.assertEqual([watch.verdict(status) for status in (0, 1, 2, 3, 125, 126, 127, 137, -15)], [0, 1, 2, 1, 1, 2, 2, 2, 2])

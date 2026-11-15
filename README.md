@@ -285,7 +285,7 @@ ci: checked nothing (language): tests ran nothing for python
 | `no-languages` | None of the languages here was found, so only `typos`, `editorconfig-checker` and `gitleaks` ran. |
 | `no-tool` | The command ran no tool at all. |
 | `language` | A language has tools for this command and none of them ran. Python without tests, say. |
-| `no-layer-files` | `architecture.toml` puts no file in a layer. |
+| `no-layer-files` | `layers` read files and `architecture.toml` puts none of them in a layer. |
 | `no-comparison` | The revision you gave `--since` has no `architecture.toml`. |
 | `own-command` | The command is the project's own program, not one from here. |
 

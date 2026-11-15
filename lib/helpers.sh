@@ -117,17 +117,48 @@ when_any() {
   fi
 }
 
+# scripts INTERPRETER: every file with no extension whose first line names the
+# interpreter, which is an extended regular expression. Tools that find their
+# files by extension never see these.
+scripts() {
+  local file
+  while IFS= read -r file; do
+    if head -n 1 -- "$file" 2> /dev/null | grep -qE "^#!.*[/ ]($1)( |\$)"; then
+      echo "$file"
+    fi
+  done < <(find . \( -name .git -o -name .direnv -o -name .venv -o -name node_modules -o -name target -o -name result -o -name build -o -name dist -o -name .build -o -name _build -o -name vendor -o -name .terraform -o -name .stack-work \) -prune -o -type f ! -name '*.*' -print)
+}
+
+# on_scripts INTERPRETER command...: run the command on the scripts of an interpreter.
+on_scripts() {
+  local interpreter="$1"
+  shift
+  local files=()
+  mapfile -t files < <(scripts "$interpreter")
+  if [ "${#files[@]}" -eq 0 ]; then
+    echo ":: skipping $1 (no $interpreter scripts)"
+    return
+  fi
+  run "$@" "${files[@]}"
+}
+
+# with_scripts INTERPRETER command...: run the command with the scripts of an
+# interpreter after its own arguments, for a tool that takes a directory and
+# finds the rest itself.
+with_scripts() {
+  local interpreter="$1"
+  shift
+  local files=()
+  mapfile -t files < <(scripts "$interpreter")
+  run "$@" "${files[@]}"
+}
+
 # shell_scripts: every *.sh and *.bash file, and every file with no extension
 # whose first line names sh, bash, dash or ksh.
 shell_scripts() {
   collect '*.sh'
   collect '*.bash'
-  local file
-  while IFS= read -r file; do
-    if head -n 1 -- "$file" 2> /dev/null | grep -qE '^#!.*[/ ](ba|da|k)?sh( |$)'; then
-      echo "$file"
-    fi
-  done < <(find . \( -name .git -o -name .direnv -o -name .venv -o -name node_modules -o -name target -o -name result -o -name build -o -name dist -o -name .build -o -name _build -o -name vendor -o -name .terraform -o -name .stack-work \) -prune -o -type f ! -name '*.*' -print)
+  scripts '(ba|da|k)?sh'
 }
 
 # on_shell_scripts command...: run the command on the project's shell scripts.
