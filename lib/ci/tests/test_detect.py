@@ -124,7 +124,7 @@ class Files(unittest.TestCase):
         files = {".gitignore": "out/\n", "out/made.py": "print(1)\n", "node_modules/dep/index.js": "export {}\n", "vendor/dep.sh": "echo 1\n"}
         self.assertEqual(found(files), [])
 
-    def test_a_file_that_layers_does_not_read_as_a_language_is_not_that_language(self):
+    def test_a_file_that_architecture_does_not_read_as_a_language_is_not_that_language(self):
         # Qt names its translations .ts, and Perl and Prolog share .pl.
         self.assertEqual(found({"notes_nl.ts": '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE TS>\n<TS version="2.1"/>\n'}), [])
         self.assertEqual(found({"facts.pl": "likes(a, b).\n", "run.pl": "use strict;\nprint 1;\n"}, {"perl": {"marks": None, "insteadOf": []}}), ["perl"])

@@ -2,6 +2,7 @@
 
 import json
 
+from . import NAME
 from .baseline import Key
 from .model import Violation
 
@@ -18,7 +19,7 @@ def text(
         out.append("")
         out.append(f"{len(fixed)} baseline entries no longer occur:")
         out.extend(f"    {rule}: {file} -> {target}" for rule, file, target in fixed)
-        out.append("    Run `layers --prune` and commit the shorter baseline.")
+        out.append(f"    Run `{NAME} --prune` and commit the shorter baseline.")
     if grown:
         out.append("")
         out.append(f"{len(grown)} entries were added to the baseline; it may only get shorter:")
@@ -40,9 +41,9 @@ def text(
             reasons.append(f"{len(grown)} entries added to the baseline")
         if weaker:
             reasons.append(f"{len(weaker)} places where the rules got weaker")
-        out.append(f"layers: FAIL: {', '.join(reasons)} ({summary})")
+        out.append(f"{NAME}: FAIL: {', '.join(reasons)} ({summary})")
     else:
-        out.append(f"layers: ok ({summary})")
+        out.append(f"{NAME}: ok ({summary})")
     return "\n".join(out)
 
 

@@ -31,7 +31,8 @@
 
       # Everything this project is written in. Each name adds that language's
       # compilers, language servers, linters, formatters and scanners to the
-      # shell, and its checks to `lint`, `fmt`, `scan`, `layers` and `tests`.
+      # shell, and its checks to `quality`, `style`, `security`, `architecture` and
+      # `tests`.
       # The names are the templates of nix-templates/dev: rust, python, go, ...
       project =
         pkgs:
@@ -45,7 +46,8 @@
         };
     in
     {
-      # `lint`, `fmt`, `scan`, `layers` and `tests` are on PATH in this shell.
+      # `quality`, `style`, `security`, `architecture` and `tests` are on PATH in
+      # this shell.
       devShells = forEachSupportedSystem (
         { pkgs, ... }:
         {

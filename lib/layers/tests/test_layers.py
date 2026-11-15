@@ -1,4 +1,4 @@
-"""Tests for layers --check. Run with: PYTHONPATH=. python -m unittest discover -s tests"""
+"""Tests for architecture --check. Run with: PYTHONPATH=. python -m unittest discover -s tests"""
 
 import contextlib
 import io
@@ -39,7 +39,7 @@ def call(*argv: str) -> tuple[int, str]:
 
 
 def run(root: str, *args: str) -> tuple[int, str]:
-    """`layers --check` on root, or the mode named in args."""
+    """`architecture --check` on root, or the mode named in args."""
     mode = [] if MODES & set(args) else ["--check"]
     return call(*mode, "--root", root, *args)
 
@@ -690,7 +690,7 @@ class CommandLine(unittest.TestCase):
     def test_no_rules_is_a_skip_not_a_failure(self):
         code, out = run(tree({"a.py": ""}))
         self.assertEqual(code, 0)
-        self.assertIn("skipping layers", out)
+        self.assertIn("skipping architecture", out)
 
     def test_a_broken_config_exits_2(self):
         self.assertEqual(run(tree({"architecture.toml": "version = 9\n"}))[0], 2)

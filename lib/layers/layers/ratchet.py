@@ -1,6 +1,6 @@
 """Rules that may only get stricter.
 
-`layers --since REVISION` compares architecture.toml with what it was at that
+`architecture --since REVISION` compares architecture.toml with what it was at that
 revision. Emptying the baseline by loosening the rules is the easy way out:
 drop `pure`, widen `may_use`, exclude the file, or move it to a layer that
 allows more. Each of those is reported here.

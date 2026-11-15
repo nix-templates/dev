@@ -94,9 +94,9 @@ vim.api.nvim_create_autocmd("BufWritePost", {
   end,
 })
 
--- :DevLint / :DevFmt / :DevScan / :DevLayers / :DevTests run the same `lint`,
--- `fmt`, `scan`, `layers` and `tests` the devShell exposes. Lint and
--- architecture results land in the quickfix list.
+-- :DevQuality / :DevStyle / :DevSecurity / :DevArchitecture / :DevTests run
+-- the same `quality`, `style`, `security`, `architecture` and `tests` the
+-- devShell exposes. Quality and architecture results land in the quickfix list.
 local function dev_run(script, to_quickfix, args)
   if vim.fn.executable(script) ~= 1 then
     vim.notify("[dev] '" .. script .. "' not found. Is the devShell loaded?", vim.log.levels.ERROR)
@@ -123,16 +123,16 @@ local function dev_run(script, to_quickfix, args)
   end))
 end
 
-vim.api.nvim_create_user_command("DevLint", function() dev_run("lint", true) end, {
+vim.api.nvim_create_user_command("DevQuality", function() dev_run("quality", true) end, {
   desc = "Run this environment's linters into the quickfix list",
 })
-vim.api.nvim_create_user_command("DevFmt", function() dev_run("fmt", false) end, {
+vim.api.nvim_create_user_command("DevStyle", function() dev_run("style", false) end, {
   desc = "Format the whole project with this environment's formatters",
 })
-vim.api.nvim_create_user_command("DevScan", function() dev_run("scan", false) end, {
+vim.api.nvim_create_user_command("DevSecurity", function() dev_run("security", false) end, {
   desc = "Run this environment's SAST, dependency and secret scanners",
 })
-vim.api.nvim_create_user_command("DevLayers", function() dev_run("layers", true) end, {
+vim.api.nvim_create_user_command("DevArchitecture", function() dev_run("architecture", true) end, {
   desc = "Check the architecture rules into the quickfix list",
 })
 vim.api.nvim_create_user_command("DevTests", function() dev_run("tests", false) end, {

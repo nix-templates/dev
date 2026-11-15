@@ -34,8 +34,8 @@
         );
 
       # What this project is written in. Add a name to get that language's tools
-      # in the same shell, and its checks in `lint`, `fmt`, `scan`, `layers` and
-      # `tests`. The names are the templates of nix-templates/dev.
+      # in the same shell, and its checks in `quality`, `style`, `security`,
+      # `architecture` and `tests`. The names are the templates of nix-templates/dev.
       project =
         pkgs:
         inputs.dev.lib.mkProject {

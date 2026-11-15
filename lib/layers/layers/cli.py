@@ -1,4 +1,4 @@
-"""The layers command: check a repository against the layers in architecture.toml."""
+"""The architecture command: check a repository against the layers in architecture.toml."""
 
 import argparse
 import json
@@ -6,7 +6,7 @@ import os
 import re
 import sys
 
-from . import __version__, baseline, cpp, generic, javascript, python, ratchet, report, rust
+from . import NAME, __version__, baseline, cpp, generic, javascript, python, ratchet, report, rust
 from .config import Config, ConfigError, parse
 from .languages import LANGUAGES
 from .model import Scan
@@ -102,7 +102,7 @@ def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
 
     parser = argparse.ArgumentParser(
-        prog="layers",
+        prog=NAME,
         description="Check the dependency and purity rules in architecture.toml. "
         "It exits 0 when they hold, 1 when they do not and 2 when it could not run.",
     )
@@ -112,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--prune", action="store_true", help="remove baseline entries that no longer occur, then check")
     mode.add_argument("--explain", action="store_true", help="list the layers and the files in each")
     mode.add_argument("--languages", action="store_true", help="list the languages this program reads, and their files")
-    mode.add_argument("--version", action="version", version=f"layers {__version__}")
+    mode.add_argument("--version", action="version", version=f"{NAME} {__version__}")
     parser.add_argument("--root", default=".", help="the repository to check (default: the current directory)")
     parser.add_argument("--config", help=f"the rules (default: {CONFIG} in the root)")
     parser.add_argument("--baseline", help=f"the known violations (default: {BASELINE} in the root)")
@@ -136,9 +136,9 @@ def main(argv: list[str] | None = None) -> int:
     baseline_path = args.baseline or os.path.join(root, BASELINE)
     if not os.path.exists(config_path):
         if args.config:
-            print(f"layers: {config_path} does not exist", file=sys.stderr)
+            print(f"{NAME}: {config_path} does not exist", file=sys.stderr)
             return 2
-        print(f":: skipping layers (no {CONFIG} here)")
+        print(f":: skipping {NAME} (no {CONFIG} here)")
         return 0
 
     try:
@@ -160,11 +160,11 @@ def main(argv: list[str] | None = None) -> int:
             elif not args.allow_weaker:
                 weaker = ratchet.weaker(parse(before), config, scan.files)
     except (ConfigError, baseline.BaselineError) as error:
-        print(f"layers: {error}", file=sys.stderr)
+        print(f"{NAME}: {error}", file=sys.stderr)
         return 2
 
     for warning in scan.warnings:
-        print(f"layers: warning: {warning}", file=sys.stderr)
+        print(f"{NAME}: warning: {warning}", file=sys.stderr)
 
     if args.explain:
         print(_explain(config, scan, args.format == "json"))
@@ -173,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
     current = {violation.key for violation in violations}
     if args.accept:
         baseline.save(baseline_path, current)
-        print(f"layers: wrote {len(current)} violations to {baseline_path}")
+        print(f"{NAME}: wrote {len(current)} violations to {baseline_path}")
         return 0
 
     new = [violation for violation in violations if violation.key not in known_keys]
@@ -181,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
     fixed = sorted(known_keys - current)
     if args.prune:
         baseline.save(baseline_path, known_keys & current)
-        print(f"layers: removed {len(fixed)} entries from {baseline_path}")
+        print(f"{NAME}: removed {len(fixed)} entries from {baseline_path}")
         fixed = []
         known_keys &= current
     grown = sorted(known_keys - previous) if previous is not None else []

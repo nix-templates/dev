@@ -5,6 +5,10 @@ it there, so the project's own pin decides the tools. Any other checkout gets
 a dev shell made for the languages found in it, from the revision of this
 repository that ci itself came from.
 
+The commands are style, security, quality, architecture and tests. Four of
+them had other names before (fmt, scan, lint, layers); those are still taken,
+and a checkout that pins an older revision is still served by them.
+
 It exits 0 when the check passed, 1 when it found something and 2 when it
 could not run. Every line of its own starts with "ci: " and goes to stderr;
 the first names the environment. A run that passed without having checked
@@ -20,7 +24,10 @@ import sys
 from . import __version__, environment, watch
 from .environment import CannotRun
 
-COMMANDS = ("fmt", "scan", "lint", "layers", "tests")
+COMMANDS = ("style", "security", "quality", "architecture", "tests")
+# What four of them were called before. A project that pins an older revision
+# still has them under these names, and a pipeline may still ask for them.
+FORMERLY = {"style": "fmt", "security": "scan", "quality": "lint", "architecture": "layers"}
 RULES = "architecture.toml"
 
 USAGE = f"""\
@@ -31,9 +38,9 @@ Runs one of the five commands on the checkout in the current directory.
 A checkout with a flake whose default dev shell has the command runs it
 there. Any other checkout gets a dev shell made for the languages found in it.
 
-  fmt        is `fmt --check` here: nothing is rewritten
-  layers     fails when the checkout has no {RULES}
-  arguments  go to the command as they are, as in `ci layers --since origin/main`
+  style         is `style --check` here: nothing is rewritten
+  architecture  fails when the checkout has no {RULES}
+  arguments     go to the command as they are, as in `ci architecture --since origin/main`
 
 It exits 0 when the check passed, 1 when it found something, 2 when it could
 not run. A run that passed without checking anything prints a line that
@@ -41,11 +48,14 @@ starts with "ci: checked nothing (CASE)". --strict makes those runs fail,
 all of them or the cases named: {", ".join(watch.CASES)}.
 
   --languages  print the languages found in the checkout, and stop
+
+The commands were {", ".join(f"{before} ({now})" for now, before in FORMERLY.items())} before.
+Those names still work.
 """
 
 
 def languages_of(root: str, settings: dict) -> dict[str, list[str]]:
-    # Finding languages loads every reader of `layers`. A checkout with its own dev shell never needs them.
+    # Finding languages loads every reader of `architecture`. A checkout with its own dev shell never needs them.
     from . import detect
 
     return detect.found(root, settings["marks"])
@@ -75,9 +85,9 @@ def option(arguments: list[str], name: str) -> str | None:
 
 
 def rules(arguments: list[str]) -> tuple[str | None, tuple[str, str] | None]:
-    """What `layers` with these arguments would have nothing to check with.
+    """What `architecture` with these arguments would have nothing to check with.
 
-    First the architecture.toml that is missing, when layers would skip
+    First the architecture.toml that is missing, when the command would skip
     because of it. Then the reason a comparison with --since compares nothing.
     """
     if any(argument in ("--languages", "--version", "--help", "-h") for argument in arguments):
@@ -148,19 +158,23 @@ def follow(program: str, arguments: list[str], root: str, entered: environment.E
     return process.wait(), seen
 
 
-def check(command: str, arguments: list[str], root: str, settings: dict, strict: set[str]) -> int:
+def check(command: str, arguments: list[str], root: str, settings: dict, strict: set[str], asked: str | None = None) -> int:
+    """Run a command. asked is the name it was asked for by, when that is its old one."""
+    renamed = f"{asked} is called {command} now" if asked and asked != command else None
     cases: list[tuple[str, str]] = []
-    if command == "layers":
+    if command == "architecture":
         missing, uncompared = rules(arguments)
         if missing:
             say(
-                f"layers: there is no {missing} in this checkout, so nothing was checked. Add one that names the layers "
+                f"architecture: there is no {missing} in this checkout, so nothing was checked. Add one that names the layers "
                 'and what each may use. A project with nothing to keep apart says so with one layer: paths = ["."].'
             )
+            if renamed:
+                say(renamed)
             return 1
         if uncompared:
             cases.append(uncompared)
-    if command == "fmt" and "--check" not in arguments:
+    if command == "style" and "--check" not in arguments:
         arguments = ["--check", *arguments]
 
     system = settings["system"]
@@ -172,7 +186,9 @@ def check(command: str, arguments: list[str], root: str, settings: dict, strict:
             why = "this checkout's flake has no default dev shell"
         else:
             entered = enter(script, lambda: environment.own(root, system, key), key, settings)
-            program = entered.command(command)
+            # A project that pins a revision from before the commands were renamed has the old one.
+            before = FORMERLY.get(command)
+            program = entered.command(command) or (entered.command(before) if before else None)
             if program is None:
                 entered.leave()
                 entered = None
@@ -186,7 +202,11 @@ def check(command: str, arguments: list[str], root: str, settings: dict, strict:
             origin = f"nix-templates/dev {short(environment.pinned(root))}"
         else:
             origin = "nix-templates/dev, at a revision its flake.lock does not name"
+        if os.path.basename(program) != command:
+            origin += f", where it is still called {os.path.basename(program)}"
         say(f"{command} in this checkout's own dev shell ({origin})")
+        if renamed:
+            say(renamed)
     else:
         languages = languages_of(root, settings)
         names = ", ".join(languages) or "no language"
@@ -194,6 +214,8 @@ def check(command: str, arguments: list[str], root: str, settings: dict, strict:
             f"{command} in a dev shell made for {names} by nix-templates/dev {short(settings['revision'])} "
             f"with nixpkgs {short(settings['nixpkgsRevision'])}"
         )
+        if renamed:
+            say(renamed)
         if why:
             say(f"{why}, so one was made here")
         if languages:
@@ -265,14 +287,16 @@ def main(argv: list[str] | None = None, settings: dict | str | None = None) -> i
             say(f"there is no option {given}")
             sys.stderr.write(USAGE)
             return 2
-    if not argv or argv[0] not in COMMANDS:
+    now = {before: command for command, before in FORMERLY.items()}
+    if not argv or (argv[0] not in COMMANDS and argv[0] not in now):
         say(f"there is no command {argv[0]}" if argv else "which command?")
         sys.stderr.write(USAGE)
         return 2
 
-    command, arguments = argv[0], argv[1:]
+    asked, arguments = argv[0], argv[1:]
+    command = now.get(asked, asked)
     try:
-        return check(command, arguments, os.getcwd(), settings, strict)
+        return check(command, arguments, os.getcwd(), settings, strict, asked)
     except CannotRun as reason:
         say(f"{command} could not run: {reason}")
         return 2

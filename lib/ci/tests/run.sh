@@ -60,28 +60,28 @@ lacks() {
   fi
 }
 
-expect 0 lint
-has "ci: lint in a dev shell made for no language by nix-templates/dev" "$(head -n 1 <<< "$err")" "the first line of lint"
-has "ci: checked nothing (no-languages)" "$err" "lint"
-has ":: test -s ./sample.words" "$out" "lint"
-has ":: typos --format brief ." "$out" "lint"
-lacks "checked nothing: lint for" "$out" "lint"
+expect 0 quality
+has "ci: quality in a dev shell made for no language by nix-templates/dev" "$(head -n 1 <<< "$err")" "the first line of quality"
+has "ci: checked nothing (no-languages)" "$err" "quality"
+has ":: test -s ./sample.words" "$out" "quality"
+has ":: typos --format brief ." "$out" "quality"
+lacks "checked nothing: quality for" "$out" "quality"
 
-expect 0 fmt
-has ":: sed -i" "$out" "fmt"
+expect 0 style
+has ":: sed -i" "$out" "style"
 printf 'three  \n' >> sample.words
 before=$(cat sample.words)
-expect 1 fmt
-has "fmt would change:" "$out" "fmt on a file with a space at the end of a line"
-has "  sample.words" "$out" "fmt on a file with a space at the end of a line"
+expect 1 style
+has "style would change:" "$out" "style on a file with a space at the end of a line"
+has "  sample.words" "$out" "style on a file with a space at the end of a line"
 if [ "$(cat sample.words)" != "$before" ]; then
-  echo "FAIL: fmt rewrote sample.words"
+  echo "FAIL: style rewrote sample.words"
   failed=1
 fi
 git checkout -q sample.words
 
-expect 0 scan
-has ":: gitleaks dir ." "$out" "scan"
+expect 0 security
+has ":: gitleaks dir ." "$out" "security"
 
 expect 0 tests
 has ":: tests: run" "$out" "tests"
@@ -97,14 +97,26 @@ has "ci: failing: --strict was given for language" "$err" "tests with --strict"
 expect 2 tests --no-such-mode
 has "tests: there is no 'no-such-mode' here" "$err" "tests with a mode it does not have"
 
-expect 1 layers
-has "ci: layers: there is no architecture.toml in this checkout" "$err" "layers"
+expect 1 architecture
+has "ci: architecture: there is no architecture.toml in this checkout" "$err" "architecture"
 printf '[[layer]]\nname = "all"\npaths = ["."]\n' > architecture.toml
 git add -A
+expect 0 architecture
+has "architecture: ok (" "$out" "architecture"
+expect 0 architecture --since HEAD
+has "ci: checked nothing (no-comparison): HEAD has no architecture.toml, so --since compared nothing" "$err" "architecture --since"
+
+# The names four of the commands had before still work: as arguments of ci, and
+# as commands in the dev shell, where each says what it is called now.
+expect 0 lint
+has "ci: lint is called quality now" "$err" "ci lint"
+has ":: test -s ./sample.words" "$out" "ci lint"
 expect 0 layers
-has "layers: ok (" "$out" "layers"
-expect 0 layers --since HEAD
-has "ci: checked nothing (no-comparison): HEAD has no architecture.toml, so --since compared nothing" "$err" "layers --since"
+has "architecture: ok (" "$out" "ci layers"
+for before in lint:quality fmt:style scan:security layers:architecture; do
+  said=$(PATH="$CI_TEST_PATH:$PATH" "${before%%:*}" --check 2>&1 > /dev/null || true)
+  has "${before%%:*} is called ${before##*:} now" "$said" "the old command ${before%%:*} in the dev shell"
+done
 
 if [ "$failed" -ne 0 ]; then
   exit 1

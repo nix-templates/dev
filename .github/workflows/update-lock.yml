@@ -1,6 +1,6 @@
 name: update lock
 
-# Once a month: a newer nixpkgs for `ci`, `layers` and the MCP server, as a pull
+# Once a month: a newer nixpkgs for `ci`, `architecture` and the MCP server, as a pull
 # request. Projects with a flake of their own follow their own nixpkgs and are
 # not touched by it.
 #
@@ -66,7 +66,7 @@ jobs:
           LOCK: ${{ needs.update.outputs.lock }}
           SAID: ${{ needs.update.outputs.said }}
         run: |
-          title="A newer nixpkgs for ci, layers and the MCP server"
+          title="A newer nixpkgs for ci, architecture and the MCP server"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # git pushes with the token of this job, which is kept out of the checkout.
