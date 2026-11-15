@@ -191,6 +191,18 @@
                 touch $out
               '';
 
+          # A Rust project's shell has a C compiler: without `cc`, cargo cannot
+          # link a build script, so clippy and the tests stop at the first one.
+          # This is evaluated, nothing of Rust is built.
+          rust-links =
+            assert lib.assertMsg
+              (self.lib.mkProject {
+                inherit pkgs;
+                languages = [ "rust" ];
+              }).devShell.stdenv.hasCC
+              "the dev shell of a Rust project has no C compiler";
+            pkgs.runCommand "rust-links" { } "touch $out";
+
           # The commands of a project with every language in it pass shellcheck.
           # Building them without their tools keeps this quick.
           scripts = pkgs.linkFarmFromDrvs "library-scripts" (
