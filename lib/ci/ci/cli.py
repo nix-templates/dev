@@ -49,8 +49,8 @@ all of them or the cases named: {", ".join(watch.CASES)}.
 
   --languages  print the languages found in the checkout, and stop
 
-The commands were {", ".join(f"{before} ({now})" for now, before in FORMERLY.items())} before.
-Those names still work.
+Four of the commands had another name before: {", ".join(f"{now} was {before}" for now, before in FORMERLY.items())}.
+The old names still work.
 """
 
 
