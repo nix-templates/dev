@@ -167,6 +167,16 @@
           # Dependency and purity rules from a repository's architecture.toml.
           layers = self.lib.layers pkgs;
 
+          # What a CI job calls: one of the five commands on a checkout, with or
+          # without a flake of its own. `nix run .#ci -- lint`
+          ci = self.lib.ci {
+            inherit pkgs;
+            toolbox = self;
+            nixpkgs = inputs.nixpkgs;
+            revision = self.rev or self.dirtyRev or "an unknown revision";
+            nixpkgsRevision = inputs.nixpkgs.rev or lib.version;
+          };
+
           # An MCP server: lets an agent see what the library has and write the
           # flake for a project that uses it. `nix run .#mcp`
           mcp = pkgs.writeShellApplication {

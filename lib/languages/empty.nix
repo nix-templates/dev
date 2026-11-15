@@ -3,6 +3,9 @@
 {
   description = "Starter environment with only the language-agnostic linters and scanners";
 
+  # Never found by itself: this is a starting point, not a language.
+  marks = [ ];
+
   tools = with pkgs; [
 
     # Language-agnostic formatters worth keeping

@@ -539,6 +539,40 @@ def close_of(text: str, start: int) -> int:
     return len(text)
 
 
+def by_extension(files: list[str]) -> dict[str, list[str]]:
+    """The files under their extension, the dot included. A name without a dot is left out."""
+    found: dict[str, list[str]] = {}
+    for path in files:
+        name = posixpath.basename(path)
+        if "." in name:
+            found.setdefault("." + name.rsplit(".", 1)[1], []).append(path)
+    return found
+
+
+def files_of(
+    language: Language,
+    extensions: dict[str, list[str]],
+    named: Callable[..., list[str]],
+    scripts: dict[str, str],
+    text: Callable[[str], str],
+) -> list[str]:
+    """The files written in a language: by extension, whole name and #! line, less what it does not accept.
+
+    extensions is by_extension(files), named gives the files with one of the
+    names it is called with, scripts is first_lines(root, files) and text
+    reads a file.
+    """
+    mine = [path for extension in language.extensions for path in extensions.get(extension, [])]
+    if language.names:
+        mine += named(*language.names)
+    if language.shebang:
+        wanted = re.compile(language.shebang)
+        mine += [path for path, first in scripts.items() if wanted.search(first)]
+    if language.accepts:
+        mine = [path for path in mine if language.accepts(path, text(path))]
+    return mine
+
+
 def extract(
     root: str,
     files: list[str],
@@ -549,22 +583,11 @@ def extract(
 ) -> None:
     """Read every language in languages. scripts is first_lines(root, files), when the caller has it."""
     repo = Repo(root, files, config, scan)
-    by_extension: dict[str, list[str]] = {}
-    for path in files:
-        name = posixpath.basename(path)
-        if "." in name:
-            by_extension.setdefault("." + name.rsplit(".", 1)[1], []).append(path)
+    extensions = by_extension(files)
+    if scripts is None:
+        scripts = first_lines(root, files)
     for language in languages:
-        mine = [path for extension in language.extensions for path in by_extension.get(extension, [])]
-        if language.names:
-            mine += repo.named(*language.names)
-        if language.shebang:
-            if scripts is None:
-                scripts = first_lines(root, files)
-            wanted = re.compile(language.shebang)
-            mine += [path for path, first in scripts.items() if wanted.search(first)]
-        if language.accepts:
-            mine = [path for path in mine if language.accepts(path, repo.text(path))]
+        mine = files_of(language, extensions, repo.named, scripts, repo.text)
         if not mine:
             continue
         everything = []

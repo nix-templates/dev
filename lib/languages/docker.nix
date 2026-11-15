@@ -3,6 +3,18 @@
 {
   description = "Container environment: dockerfile-language-server, Hadolint, Trivy and Dive";
 
+  # Dockerfiles and Compose files.
+  marks = [
+    "Dockerfile"
+    "Dockerfile.*"
+    "*.dockerfile"
+    "Containerfile"
+    "compose.yaml"
+    "compose.yml"
+    "docker-compose.yaml"
+    "docker-compose.yml"
+  ];
+
   tools = with pkgs; [
     # Container tooling and rootless runtimes
     docker-compose

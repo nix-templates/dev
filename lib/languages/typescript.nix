@@ -3,6 +3,18 @@
 {
   description = "TypeScript development environment: tsserver, Biome, ESLint and strict type checking";
 
+  # TypeScript files or a tsconfig.json; the project is then not also read as plain Node.js.
+  marks = [
+    "*.ts"
+    "*.tsx"
+    "*.mts"
+    "*.cts"
+    "tsconfig.json"
+  ];
+  insteadOf = [
+    "node"
+  ];
+
   tools = with pkgs; [
     # Toolchain
     nodejs

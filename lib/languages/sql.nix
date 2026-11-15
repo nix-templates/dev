@@ -3,6 +3,11 @@
 {
   description = "SQL environment: sqls language server, SQLFluff, sqruff and pg_format";
 
+  # SQL files.
+  marks = [
+    "*.sql"
+  ];
+
   tools = with pkgs; [
     # Engines and clients
     postgresql

@@ -77,15 +77,53 @@ let
       common = load (import ./languages/common.nix);
       modules = own ++ [ common ];
 
+      # What a command calls each language when it says what it ran nothing for.
+      nameOf =
+        language:
+        if builtins.isString language then
+          language
+        else if builtins.isPath language then
+          lib.removeSuffix ".nix" (baseNameOf language)
+        else
+          "a language of your own";
+      named = lib.zipListsWith (name: module: { inherit name module; }) (map nameOf languages) own;
+
       wants = flag: lib.any (module: module.${flag} or false) own;
       text = name: list: lib.concatMapStrings (module: module.${name} or "") list;
+      # A command's text for the project's languages: each language's part
+      # under its name, then `part_end` for what follows them.
+      parts =
+        name:
+        lib.concatMapStrings (
+          entry:
+          lib.optionalString ((entry.module.${name} or "") != "") ''
+            part ${lib.escapeShellArg entry.name}
+            ${entry.module.${name}}
+          ''
+        ) named
+        + ''
+          part_end
+        '';
       # `layers` and `tests` are lists of blocks. Languages that share a build
       # tool share blocks, and a shared block runs once.
       blocks = get: lib.concatStrings (lib.unique (lib.concatMap get own));
       modes = lib.unique (
         [ "run" ] ++ lib.concatMap (module: builtins.attrNames (module.tests or { })) own
       );
-      testBlocks = mode: blocks (module: (module.tests or { }).${mode} or [ ]);
+      # The blocks of a test mode, each as the part of the languages that have it.
+      testBlocks =
+        mode:
+        let
+          of = module: (module.tests or { }).${mode} or [ ];
+        in
+        lib.concatMapStrings (block: ''
+          part ${
+            lib.escapeShellArgs (
+              map (entry: entry.name) (lib.filter (entry: lib.elem block (of entry.module)) named)
+            )
+          }
+          ${block}
+        '') (lib.unique (lib.concatMap of own));
 
       rules = "${layers pkgs}/bin/layers";
       tools = lib.unique (
@@ -101,7 +139,9 @@ let
 
       texts = {
         lint = helpers + ''
-          ${text "lint" modules}
+          ${parts "lint"}
+          ${common.lint}
+          checked lint
           exit "$status"
         '';
 
@@ -120,7 +160,9 @@ let
             cd "$copy"
           fi
 
-          ${text "fmt" modules}
+          ${parts "fmt"}
+          ${text "fmt" [ common ]}
+          checked fmt
           if [ "''${1:-}" = "--check" ]; then
             cd "$here"
             changed=$(rsync -rcn --existing "''${keep[@]}" --out-format='%n' "$copy/" ./ | grep -v '/$' || true)
@@ -136,10 +178,11 @@ let
         '';
 
         scan = helpers + ''
-          ${text "scan" own}
+          ${parts "scan"}
           ${lib.optionalString (wants "semgrep") "run semgrep scan --config auto --error --quiet ."}
           ${lib.optionalString (wants "trivy") "run trivy fs --scanners vuln,secret --no-progress --skip-dirs .direnv --skip-dirs .venv ."}
           ${common.scan}
+          checked scan
           exit "$status"
         '';
 
@@ -178,6 +221,7 @@ let
             ${mode})
               echo ":: tests: ${mode}"
             ${testBlocks mode}
+              checked ${lib.escapeShellArg (if mode == "run" then "tests" else "tests --${mode}")}
               ;;
           '') modes}
             help | h)
@@ -248,6 +292,79 @@ let
       };
     };
 
+  # A language's module as it is without options of the project.
+  plain =
+    pkgs: module:
+    if builtins.isFunction module then
+      module {
+        inherit pkgs lib;
+        options = { };
+      }
+    else
+      module;
+
+  # How each language is told from the files of a checkout. `marks` are file
+  # names or globs; a language without them is found by the files `layers`
+  # reads as that language. `insteadOf` names the languages it then stands in
+  # for. `ci` reads this for a checkout that names no languages itself.
+  marks =
+    pkgs:
+    lib.mapAttrs (
+      _: module:
+      let
+        loaded = plain pkgs module;
+      in
+      {
+        marks = loaded.marks or null;
+        insteadOf = loaded.insteadOf or [ ];
+      }
+    ) self.languages;
+
+  # The program a CI job calls: one of the five commands on a checkout, in the
+  # checkout's own dev shell or in one made for the languages found in it.
+  # See lib/ci.
+  ci =
+    {
+      pkgs,
+      # This repository and the nixpkgs it runs with, as source trees. The dev
+      # shell of a checkout without a flake is made from these two.
+      toolbox,
+      nixpkgs,
+      # What to call them in the first line of a run.
+      revision ? "an unknown revision",
+      nixpkgsRevision ? lib.version,
+    }:
+    let
+      settings = pkgs.writeText "ci-settings.json" (
+        builtins.toJSON {
+          toolbox = "${toolbox}";
+          nixpkgs = "${nixpkgs}";
+          inherit (pkgs.stdenv.hostPlatform) system;
+          inherit revision nixpkgsRevision;
+          bash = "${pkgs.bash}/bin/bash";
+          env = "${pkgs.coreutils}/bin/env";
+          marks = marks pkgs;
+        }
+      );
+      # Nothing of ci's own may reach the command it runs, so the paths are
+      # given to Python here and not through the environment.
+      start = pkgs.writeText "ci.py" ''
+        import sys
+
+        sys.path[:0] = ["${./ci}", "${./layers}", "${../mcp}"]
+
+        from ci.cli import main
+
+        sys.exit(main(settings="${settings}"))
+      '';
+    in
+    pkgs.writeShellApplication {
+      name = "ci";
+      text = ''
+        exec ${pkgs.python3}/bin/python3 -B ${start} "$@"
+      '';
+    };
+
   # Every language as plain data: what it brings and what its commands run.
   # The MCP server answers from this, and the README's tables are made from it.
   catalogue =
@@ -255,14 +372,7 @@ let
     lib.mapAttrs (
       name: module:
       let
-        loaded =
-          if builtins.isFunction module then
-            module {
-              inherit pkgs lib;
-              options = { };
-            }
-          else
-            module;
+        loaded = plain pkgs module;
       in
       {
         description = loaded.description or name;
@@ -287,6 +397,8 @@ let
       layers
       mkProject
       catalogue
+      marks
+      ci
       ;
   };
 in

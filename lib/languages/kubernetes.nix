@@ -3,6 +3,13 @@
 {
   description = "Kubernetes environment: yaml-language-server, helm_ls, kube-linter, kubeconform and Trivy";
 
+  # A Helm chart or a kustomization. Plain manifests are YAML like any other.
+  marks = [
+    "Chart.yaml"
+    "kustomization.yaml"
+    "kustomization.yml"
+  ];
+
   tools = with pkgs; [
     # Cluster tooling
     kubectl

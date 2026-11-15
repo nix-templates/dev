@@ -2,9 +2,58 @@
 # one pass; `run_on` skips a tool entirely when the project has no such files.
 status=0
 
+# How many tools ran. A command that ran none has checked nothing.
+ran=0
+
 run() {
   echo ":: $*"
+  ran=$((ran + 1))
   "$@" || status=1
+}
+
+# A command is made of parts, one for each language of the project. `part`,
+# `part_end` and `checked` keep count, so that a command which ran nothing for
+# a language says so: nothing passes unseen.
+part_names=()
+part_from=0
+part_order=()
+declare -A part_ran=()
+
+# part_end: what follows belongs to no language.
+part_end() {
+  local name
+  for name in ${part_names[@]+"${part_names[@]}"}; do
+    if [ -z "${part_ran[$name]:-}" ]; then
+      part_order+=("$name")
+      part_ran[$name]=no
+    fi
+    if [ "$ran" -gt "$part_from" ]; then
+      part_ran[$name]=yes
+    fi
+  done
+  part_names=()
+}
+
+# part NAME...: what follows is these languages' part, until the next `part`
+# or `part_end`.
+part() {
+  part_end
+  part_names=("$@")
+  part_from=$ran
+}
+
+# checked COMMAND: name what COMMAND ran nothing for.
+checked() {
+  part_end
+  local name
+  for name in ${part_order[@]+"${part_order[@]}"}; do
+    if [ "${part_ran[$name]}" = no ]; then
+      echo ":: checked nothing: $1 for $name"
+    fi
+  done
+  if [ "$ran" -eq 0 ]; then
+    echo ":: checked nothing: $1 ran no tool"
+  fi
 }
 
 collect() {

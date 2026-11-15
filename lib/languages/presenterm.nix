@@ -3,6 +3,9 @@
 {
   description = "Terminal-slides environment: Presenterm, Mermaid, Typst and markdown linting";
 
+  # Never found by itself: slides are Markdown like any other.
+  marks = [ ];
+
   tools = with pkgs; [
     # Slide rendering
     presenterm
