@@ -1,5 +1,5 @@
 {
-  description = "Nix flake templates for development environments that come with linters, formatters, language servers and security scanners";
+  description = "Project-aware Nix environments for quality, style, security, architecture and tests";
 
   inputs.nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1"; # unstable Nixpkgs
 
@@ -29,9 +29,27 @@
       devShells = forEachSupportedSystem (
         { pkgs, system }:
         (lib.mapAttrs (
-          name: _:
+          name: module:
+          let
+            metadata =
+              if builtins.isFunction module then
+                module {
+                  inherit pkgs lib;
+                  options = { };
+                }
+              else
+                module;
+            languagePkgs =
+              if metadata ? packageConfig then
+                import inputs.nixpkgs {
+                  inherit system;
+                  config = metadata.packageConfig;
+                }
+              else
+                pkgs;
+          in
           (self.lib.mkProject {
-            inherit pkgs;
+            pkgs = languagePkgs;
             languages = [ name ];
           }).devShell
         ) self.lib.languages)
@@ -104,10 +122,49 @@
             languages = builtins.attrNames self.lib.languages;
           };
         in
-        {
+        (import ./lib/frameworks/checks.nix {
+          inherit pkgs lib;
+          dev = self.lib;
+        })
+        // {
+          dvt =
+            pkgs.runCommand "dvt-tests"
+              {
+                nativeBuildInputs = [
+                  (pkgs.python3.withPackages (ps: [ ps.pyyaml ]))
+                  pkgs.nix
+                  pkgs.git
+                ];
+              }
+              ''
+                cd ${./lib}
+                export HOME="$TMPDIR"
+                export DVT_TEST_CATALOGUE=${
+                  pkgs.writeText "dvt-test-catalogue.json" (
+                    builtins.toJSON {
+                      languages = self.lib.catalogue pkgs;
+                      frameworks = lib.mapAttrs (
+                        _: profile: builtins.removeAttrs profile [ "module" ]
+                      ) self.lib.frameworks;
+                      versionReader = "${./lib/frameworks/version_guard.py}";
+                      readerPaths = [
+                        "${./lib/ci}"
+                        "${./lib/layers}"
+                        "${./mcp}"
+                      ];
+                      marks = self.lib.marks pkgs;
+                      coverage = builtins.fromJSON (builtins.readFile ./lib/frameworks/coverage.json);
+                      devInput = "path:${self}";
+                    }
+                  )
+                }
+                PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=dvt:frameworks python3 -m unittest discover -s dvt/tests
+                touch $out
+              '';
+
           # The tests of `architecture`.
-          layers =
-            pkgs.runCommand "layers-tests"
+          architecture =
+            pkgs.runCommand "architecture-tests"
               {
                 nativeBuildInputs = [
                   pkgs.python3
@@ -202,8 +259,8 @@
           # stops on a flag it does not know. Either way `security` would say nothing
           # about the code. Every trivy line of every language is held to both,
           # by asking trivy itself for help with exactly those flags.
-          scan-fails =
-            pkgs.runCommand "scan-fails"
+          security-fails =
+            pkgs.runCommand "security-fails"
               {
                 nativeBuildInputs = [ pkgs.trivy ];
                 scan = everything.texts.security;
@@ -277,7 +334,7 @@
           architecture = self.lib.architecture pkgs;
 
           # What a CI job calls: one of the five commands on a checkout, with or
-          # without a flake of its own. `nix run .#ci -- lint`
+          # without a flake of its own. `nix run .#ci -- quality`
           ci = self.lib.ci {
             inherit pkgs;
             toolbox = self;
@@ -299,20 +356,37 @@
             '';
           };
 
-          # dvt <template> initialises a template in the current directory.
+          # Framework-aware initialization; this never installs application dependencies.
           dvt = pkgs.writeShellApplication {
             name = "dvt";
             text = ''
-              if [ -z "''${1:-}" ]; then
-                echo "usage: dvt <template>"
-                exit 1
-              fi
-
-              nix \
-                --experimental-features 'nix-command flakes' \
-                flake init \
-                --template \
-                "github:nix-templates/dev#''${1}"
+              export DVT_CATALOGUE=${
+                pkgs.writeText "dvt-catalogue.json" (
+                  builtins.toJSON {
+                    languages = self.lib.catalogue pkgs;
+                    versionReader = "${./lib/frameworks/version_guard.py}";
+                    readerPaths = [
+                      "${./lib/ci}"
+                      "${./lib/layers}"
+                      "${./mcp}"
+                    ];
+                    marks = self.lib.marks pkgs;
+                    coverage = builtins.fromJSON (builtins.readFile ./lib/frameworks/coverage.json);
+                    frameworks = lib.mapAttrs (
+                      _: profile: builtins.removeAttrs profile [ "module" ]
+                    ) self.lib.frameworks;
+                    devInput = if self ? rev then "github:nix-templates/dev/${self.rev}" else "path:${self}";
+                  }
+                )
+              }
+              exec ${
+                pkgs.python3.withPackages (ps: [ ps.pyyaml ])
+              }/bin/python3 -I -B ${pkgs.writeText "dvt-start.py" ''
+                import sys
+                sys.path.insert(0, "${./lib/dvt}")
+                from dvt import main
+                sys.exit(main())
+              ''} "$@"
             '';
           };
         }

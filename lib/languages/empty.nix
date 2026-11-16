@@ -24,13 +24,13 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     run yamllint --strict .
     run markdownlint-cli2 '**/*.md'
     when .github/workflows actionlint
   '';
 
-  fmt = ''
+  style = ''
     run yamlfmt .
     when taplo.toml taplo fmt
   '';

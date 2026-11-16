@@ -32,13 +32,13 @@
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     run statix check .
     run deadnix --fail .
     run_on '*.nix' nixfmt --check
   '';
 
-  fmt = ''
+  style = ''
     run_on '*.nix' nixfmt
     run statix fix .
   '';

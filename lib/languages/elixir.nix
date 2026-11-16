@@ -38,16 +38,16 @@ in
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when mix.exs mix compile --warnings-as-errors
     when mix.exs mix format --check-formatted
   '';
 
-  fmt = ''
+  style = ''
     when mix.exs mix format
   '';
 
-  layers = [
+  architecture = [
     ''
       when mix.exs mix xref graph --format cycles --label compile-connected --fail-above 0
     ''

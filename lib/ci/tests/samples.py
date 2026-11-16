@@ -163,6 +163,14 @@ def write(template: str, directory: str) -> list[str]:
             with open(full, "w", encoding="utf-8") as handle:
                 handle.write(text)
             written.append(path)
+    # Systems fixtures exercise all five commands, so they need an explicit
+    # architecture check. This is only test data: templates and dvt init do
+    # not require this file, and a template's own rules must remain intact.
+    rules = os.path.join(directory, "architecture.toml")
+    if not os.path.exists(rules):
+        with open(rules, "x", encoding="utf-8") as handle:
+            handle.write('[[layer]]\nname = "sample"\npaths = ["."]\n')
+        written.append("architecture.toml")
     return written
 
 

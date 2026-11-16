@@ -26,12 +26,12 @@
 
   # A shell script is a *.sh or *.bash file, or a file with no extension whose
   # first line names a shell: tools often have no extension.
-  lint = ''
+  quality = ''
     on_shell_scripts shellcheck --external-sources
     on_shell_scripts shfmt -d -i 2 -ci
   '';
 
-  fmt = ''
+  style = ''
     on_shell_scripts shfmt -w -i 2 -ci
   '';
 

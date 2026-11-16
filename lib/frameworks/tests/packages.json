@@ -1,0 +1,44 @@
+{
+  "django-4.2.27": {
+    "pname": "django",
+    "version": "4.2.27",
+    "url": "https://files.pythonhosted.org/packages/dd/f5/1a2319cc090870bfe8c62ef5ad881a6b73b5f4ce7330c5cf2cb4f9536b12/django-4.2.27-py3-none-any.whl",
+    "sha256": "f393a394053713e7d213984555c5b7d3caeee78b2ccb729888a0774dff6c11a8"
+  },
+  "django-5.2.9": {
+    "pname": "django",
+    "version": "5.2.9",
+    "url": "https://files.pythonhosted.org/packages/17/b0/7f42bfc38b8f19b78546d47147e083ed06e12fc29c42da95655e0962c6c2/django-5.2.9-py3-none-any.whl",
+    "sha256": "3a4ea88a70370557ab1930b332fd2887a9f48654261cdffda663fef5976bb00a"
+  },
+  "django-6.0": {
+    "pname": "django",
+    "version": "6.0",
+    "url": "https://files.pythonhosted.org/packages/d7/ae/f19e24789a5ad852670d6885f5480f5e5895576945fcc01817dfd9bc002a/django-6.0-py3-none-any.whl",
+    "sha256": "1cc2c7344303bbfb7ba5070487c17f7fc0b7174bbb0a38cebf03c675f5f19b6d"
+  },
+  "flask-3.0.3": {
+    "pname": "flask",
+    "version": "3.0.3",
+    "url": "https://files.pythonhosted.org/packages/61/80/ffe1da13ad9300f87c93af113edd0638c75138c42a0994becfacac078c06/flask-3.0.3-py3-none-any.whl",
+    "sha256": "34e815dfaa43340d1d15a5c3a02b8476004037eb4840b34910c6e21679d288f3"
+  },
+  "flask-3.1.2": {
+    "pname": "flask",
+    "version": "3.1.2",
+    "url": "https://files.pythonhosted.org/packages/ec/f9/7f9263c5695f4bd0023734af91bedb2ff8209e8de6ead162f35d8dc762fd/flask-3.1.2-py3-none-any.whl",
+    "sha256": "ca1d8112ec8a6158cc29ea4858963350011b5c846a414cdb7a954aa9e967d03c"
+  },
+  "fastapi-0.115.14": {
+    "pname": "fastapi",
+    "version": "0.115.14",
+    "url": "https://files.pythonhosted.org/packages/53/50/b1222562c6d270fea83e9c9075b8e8600b8479150a18e4516a6138b980d1/fastapi-0.115.14-py3-none-any.whl",
+    "sha256": "6c0c8bf9420bd58f565e585036d971872472b4f7d3f6c73b698e10cffdefb3ca"
+  },
+  "starlette-0.46.2": {
+    "pname": "starlette",
+    "version": "0.46.2",
+    "url": "https://files.pythonhosted.org/packages/8b/0c/9d30a4ebeb6db2b25a841afbb80f6ef9a854fc3b41be131d249a977b4959/starlette-0.46.2-py3-none-any.whl",
+    "sha256": "595633ce89f8ffa71a015caed34a5b2dc1c0cdb3f0f1fbd1e69339cf2abeec35"
+  }
+}

@@ -26,16 +26,16 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when .scalafmt.conf scalafmt --test
     when .scalafix.conf scalafix --check
   '';
 
-  fmt = ''
+  style = ''
     when .scalafmt.conf scalafmt
   '';
 
-  layers = [
+  architecture = [
     ''
       when_has project/plugins.sbt sbt-explicit-dependencies sbt undeclaredCompileDependenciesTest unusedCompileDependenciesTest
     ''

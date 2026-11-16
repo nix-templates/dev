@@ -11,12 +11,12 @@
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     when_any '*.v' v vet .
     when_any '*.v' v fmt -verify .
   '';
 
-  fmt = ''
+  style = ''
     when_any '*.v' v fmt -w .
   '';
 

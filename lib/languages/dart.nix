@@ -13,20 +13,20 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when pubspec.yaml dart analyze --fatal-infos
     run dart format --output=none --set-exit-if-changed .
   '';
 
-  fmt = ''
+  style = ''
     run dart format .
   '';
 
-  scan = ''
+  security = ''
     when pubspec.lock dart pub outdated
   '';
 
-  layers = [
+  architecture = [
     ''
       when_has pubspec.yaml dependency_validator dart run dependency_validator
     ''

@@ -14,11 +14,11 @@
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     run_on '*.ncl' nickel format --check
   '';
 
-  fmt = ''
+  style = ''
     run_on '*.ncl' nickel format --in-place
   '';
 }

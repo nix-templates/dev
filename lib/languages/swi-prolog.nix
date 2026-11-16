@@ -9,11 +9,11 @@
 
   ];
 
-  lint = ''
+  quality = ''
     for_each '*.pl' swipl -q -g halt -t 'halt(1).'
   '';
 
-  fmt = ''
+  style = ''
     run typos --write-changes .
   '';
 }

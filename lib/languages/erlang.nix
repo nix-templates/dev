@@ -19,16 +19,16 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when rebar.config rebar3 dialyzer
     run_on '*.erl' erlfmt --check
   '';
 
-  fmt = ''
+  style = ''
     run_on '*.erl' erlfmt --write
   '';
 
-  layers = [
+  architecture = [
     ''
       when rebar.config rebar3 xref
     ''

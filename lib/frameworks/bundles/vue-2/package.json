@@ -1,0 +1,14 @@
+{
+  "name": "dvt-vue-2",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "eslint": "9.39.1",
+    "@typescript-eslint/parser": "8.46.4",
+    "typescript": "5.9.3",
+    "prettier": "3.6.2",
+    "globals": "16.5.0",
+    "eslint-plugin-vue": "10.5.1",
+    "vue-eslint-parser": "10.2.0"
+  }
+}

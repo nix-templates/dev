@@ -32,16 +32,16 @@
     molecule
   ];
 
-  lint = ''
+  quality = ''
     run yamllint --strict .
     when_any '*.yml' ansible-lint --offline
   '';
 
-  fmt = ''
+  style = ''
     run yamlfmt .
   '';
 
-  scan = ''
+  security = ''
     run trivy config --exit-code 1 --skip-dirs .direnv .
   '';
 

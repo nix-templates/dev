@@ -19,12 +19,12 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when_any '*.cr' ameba
     run crystal tool format --check
   '';
 
-  fmt = ''
+  style = ''
     run crystal tool format
   '';
 

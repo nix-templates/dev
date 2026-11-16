@@ -22,12 +22,12 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when dune-project dune build @check
     when .ocamlformat dune build @fmt
   '';
 
-  fmt = ''
+  style = ''
     when .ocamlformat dune build @fmt --auto-promote
   '';
 

@@ -44,16 +44,16 @@
 
   ];
 
-  lint = ''
+  quality = ''
     for_each 'Dockerfile*' hadolint
     run yamllint --strict .
   '';
 
-  fmt = ''
+  style = ''
     run yamlfmt .
   '';
 
-  scan = ''
+  security = ''
     run trivy config --exit-code 1 --skip-dirs .direnv .
     run trivy fs --scanners vuln,secret --no-progress --exit-code 1 .
   '';

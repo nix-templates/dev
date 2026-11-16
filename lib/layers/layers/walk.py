@@ -118,7 +118,7 @@ def walk(root: str, exclude: list[str], hidden: bool = False) -> list[str]:
         subdirs[:] = sorted(
             d
             for d in subdirs
-            if not d.startswith(".")
+            if (hidden or not d.startswith("."))
             and d not in SKIP_DIRS
             and not any_match(exclude, rel_dir + d)
         )

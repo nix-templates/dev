@@ -32,11 +32,11 @@ in
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     run Rscript -e 'lintr::lint_dir(".")'
   '';
 
-  fmt = ''
+  style = ''
     run Rscript -e 'styler::style_dir(".")'
   '';
 

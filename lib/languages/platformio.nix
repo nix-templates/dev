@@ -56,19 +56,19 @@ in
     export PLATFORMIO_CORE_DIR=$PWD/.platformio
   '';
 
-  lint = ''
+  quality = ''
     run cppcheck --enable=warning,style,performance,portability --inline-suppr --suppress=missingIncludeSystem --error-exitcode=1 -i .pio -i .direnv .
     when compile_commands.json run-clang-tidy -p .
     run codespell --skip='./.git,./.pio,./.platformio,./.direnv'
   '';
 
-  fmt = ''
+  style = ''
     run_on '*.c' clang-format -i
     run_on '*.h' clang-format -i
     run_on '*.cpp' clang-format -i
   '';
 
-  scan = ''
+  security = ''
     run flawfinder --quiet --error-level=4 .
   '';
 

@@ -30,12 +30,12 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when .sqlfluff sqlfluff lint .
     when .sqruff sqruff lint .
   '';
 
-  fmt = ''
+  style = ''
     for_each '*.sql' pg_format --inplace
   '';
 }

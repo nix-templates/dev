@@ -19,12 +19,12 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     for_each '*.nim' nim check --hints:off
     run_on '*.nim' nph --check
   '';
 
-  fmt = ''
+  style = ''
     run_on '*.nim' nph
   '';
 

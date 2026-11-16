@@ -15,13 +15,13 @@
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     when_any '*.rego' regal lint .
     when_any '*.rego' opa check .
     when_any '*.rego' opa fmt --fail --list .
   '';
 
-  fmt = ''
+  style = ''
     when_any '*.rego' opa fmt --write .
   '';
 

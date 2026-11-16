@@ -19,12 +19,12 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when fpm.toml fpm build
     run_on '*.f90' fprettify --diff
   '';
 
-  fmt = ''
+  style = ''
     run_on '*.f90' fprettify --indent 2
   '';
 

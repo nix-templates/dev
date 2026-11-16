@@ -14,11 +14,11 @@
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     when Project.toml julia --project=. -e 'using Pkg; Pkg.status()'
   '';
 
-  fmt = ''
+  style = ''
     run typos --write-changes .
   '';
 

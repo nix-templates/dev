@@ -27,15 +27,15 @@
     DOTNET_NOLOGO = "1";
   };
 
-  lint = ''
+  quality = ''
     when_any '*.fsproj' dotnet build --no-restore --warnaserror
   '';
 
-  fmt = ''
+  style = ''
     when_any '*.fs' fantomas .
   '';
 
-  scan = ''
+  security = ''
     when_any '*.fsproj' dotnet list package --vulnerable --include-transitive
   '';
 

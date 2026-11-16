@@ -88,7 +88,7 @@ def list_languages(catalogue: dict, _arguments: dict) -> dict:
                 "name": name,
                 "description": entry["description"],
                 "architecture_reads": read_as(name),
-                "architecture_tools": bool(entry["layers"]),
+                "architecture_tools": bool(entry["architecture"]),
                 "tests": sorted(entry["tests"]),
             }
             for name, entry in sorted(catalogue.items())
@@ -108,10 +108,10 @@ def describe_language(catalogue: dict, arguments: dict) -> dict:
         "description": entry["description"],
         "tools": entry["tools"],
         "commands": {
-            "quality": entry["lint"],
-            "style": entry["fmt"],
-            "security": entry["scan"] + ("run semgrep scan --config auto --error --quiet .\n" if entry["semgrep"] else ""),
-            "architecture (after the rules in architecture.toml)": "".join(entry["layers"]),
+            "quality": entry["quality"],
+            "style": entry["style"],
+            "security": entry["security"] + ("run semgrep scan --config auto --error --quiet .\n" if entry["semgrep"] else ""),
+            "architecture (after the rules in architecture.toml)": "".join(entry["architecture"]),
             **{("tests" if mode == "run" else f"tests --{mode}"): "".join(blocks) for mode, blocks in entry["tests"].items()},
         },
         "nixpkgs_config": entry["nixpkgsConfig"],

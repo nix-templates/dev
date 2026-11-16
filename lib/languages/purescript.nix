@@ -15,11 +15,11 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when spago.yaml spago build --censor-stats
   '';
 
-  fmt = ''
+  style = ''
     if_have purs-tidy purs-tidy format-in-place src
   '';
 

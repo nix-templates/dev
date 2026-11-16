@@ -30,16 +30,16 @@
 
   ];
 
-  lint = ''
+  quality = ''
     when .github/workflows actionlint
     run yamllint --strict .
   '';
 
-  fmt = ''
+  style = ''
     run yamlfmt .
   '';
 
-  scan = ''
+  security = ''
     when .github/workflows zizmor --persona regular .github/workflows
   '';
 }

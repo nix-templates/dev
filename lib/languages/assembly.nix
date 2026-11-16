@@ -37,11 +37,11 @@ in
   # The shell needs a C compiler and its wrapper.
   needsCC = true;
 
-  lint = ''
+  quality = ''
     for_each '*.asm' nasm -f elf64 -o /dev/null
   '';
 
-  fmt = ''
+  style = ''
     run typos --write-changes .
   '';
 }

@@ -19,12 +19,12 @@
 
   ];
 
-  lint = ''
+  quality = ''
     run_on '*.typ' typstyle --check
     when .vale.ini vale .
   '';
 
-  fmt = ''
+  style = ''
     run_on '*.typ' typstyle --inplace
   '';
 }

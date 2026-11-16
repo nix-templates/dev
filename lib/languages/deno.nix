@@ -23,12 +23,12 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     run deno lint
     when deno.json deno check .
   '';
 
-  fmt = ''
+  style = ''
     run deno fmt
   '';
 

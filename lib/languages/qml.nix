@@ -7,11 +7,11 @@
   # to resolve modules; without them it still catches syntax errors.
   tools = [ pkgs.qt6.qtdeclarative ];
 
-  lint = ''
+  quality = ''
     run_on '*.qml' qmllint
   '';
 
-  fmt = ''
+  style = ''
     run_on '*.qml' qmlformat --inplace
   '';
 }

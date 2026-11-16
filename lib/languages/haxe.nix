@@ -13,11 +13,11 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when build.hxml haxe build.hxml
   '';
 
-  fmt = ''
+  style = ''
     run typos --write-changes .
   '';
 }

@@ -16,21 +16,21 @@
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     when buf.yaml buf lint
     when_any '*.proto' protolint lint .
   '';
 
-  fmt = ''
+  style = ''
     when buf.yaml buf format --write
     when_any '*.proto' protolint lint --fix .
   '';
 
-  scan = ''
+  security = ''
     when buf.yaml buf breaking --against .git#branch=main
   '';
 
-  layers = [
+  architecture = [
     ''
       # Breaking changes against the main branch, by the rules under `breaking:` in buf.yaml.
       buf_breaking() {

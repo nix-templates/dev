@@ -43,6 +43,11 @@
 
   ];
 
+  # The same requirements as data, for consumers that construct a package set.
+  packageConfig = {
+    allowInsecurePredicate = pkg: lib.getName pkg == "ecdsa";
+  };
+
   # What the project's nixpkgs has to allow before these tools evaluate.
   nixpkgsConfig = [
     ''config.allowInsecurePredicate = pkg: inputs.nixpkgs.lib.getName pkg == "ecdsa";''
@@ -51,18 +56,18 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when go.mod golangci-lint run ./...
     when_any '*.py' ruff check .
   '';
 
-  fmt = ''
+  style = ''
     run gofumpt -l -w .
     when_any '*.py' ruff format .
     run prettier --write --ignore-unknown --log-level warn .
   '';
 
-  scan = ''
+  security = ''
     run checkov --quiet --compact --directory .
   '';
 }

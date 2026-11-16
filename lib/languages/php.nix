@@ -26,21 +26,21 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when phpstan.neon phpstan analyse --no-progress
     when psalm.xml psalm --no-progress
     when phpcs.xml phpcs
   '';
 
-  fmt = ''
+  style = ''
     when_any '*.php' php-cs-fixer fix .
   '';
 
-  scan = ''
+  security = ''
     when composer.lock composer audit
   '';
 
-  layers = [
+  architecture = [
     ''
       if [ -e deptrac.yaml ] && [ -x vendor/bin/deptrac ]; then
         run vendor/bin/deptrac analyse

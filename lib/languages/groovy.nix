@@ -20,15 +20,15 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when_any '*.groovy' npm-groovy-lint --failon warning .
   '';
 
-  fmt = ''
+  style = ''
     when_any '*.groovy' npm-groovy-lint --format .
   '';
 
-  layers = [
+  architecture = [
     ''
       when_has pom.xml maven-enforcer-plugin mvn -B -q enforcer:enforce
     ''

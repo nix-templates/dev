@@ -16,7 +16,7 @@ MADE_HERE = 'echo ":: $*"'
 
 # A line that starts with ":: " and is not a tool: a skip, the header of
 # `tests` or of `architecture` (`layers` before), or a command's own count.
-TOOL = re.compile(r"^:: (?!skipping |tests: |(?:architecture|layers)(?: |$)|checked nothing: )")
+TOOL = re.compile(r"^:: (?!skipping |component |tests: |(?:architecture|layers)(?: |$)|checked nothing: )")
 FOR_LANGUAGE = re.compile(r"^:: checked nothing: (?P<command>.+) for (?P<language>.+)$")
 NO_TOOL = re.compile(r"^:: checked nothing: .+ ran no tool$")
 SUMMARY = re.compile(r"^(?:architecture|layers): (?:ok|FAIL: .*) \((?P<read>\d+) files checked, (?P<placed>\d+) of them in a layer")
@@ -64,7 +64,8 @@ def unchecked(command: str, seen: Seen, made_here: bool) -> list[tuple[str, str]
         # A checkout with nothing for `architecture` to read has said so by having an architecture.toml.
         if seen.read and seen.placed == 0:
             cases.append(("no-layer-files", f"architecture read {seen.read} files and architecture.toml puts none of them in a layer"))
-        return cases
+        if seen.read is not None:
+            return cases
     if seen.tools == 0 or seen.none:
         cases.append(("no-tool", f"{command} ran no tool"))
     cases.extend(("language", f"{command} ran nothing for {language}") for language in seen.languages)

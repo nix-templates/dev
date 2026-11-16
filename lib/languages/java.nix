@@ -36,16 +36,16 @@
     export JAVA_TOOL_OPTIONS="-javaagent:${pkgs.lombok}/share/java/lombok.jar''${JAVA_TOOL_OPTIONS:+ $JAVA_TOOL_OPTIONS}"
   '';
 
-  lint = ''
+  quality = ''
     when_any '*.java' checkstyle -c /google_checks.xml .
     when_any '*.java' pmd check --dir . --rulesets rulesets/java/quickstart.xml --format text --no-cache
   '';
 
-  fmt = ''
+  style = ''
     run_on '*.java' google-java-format --replace
   '';
 
-  layers = [
+  architecture = [
     ''
       when_has pom.xml maven-enforcer-plugin mvn -B -q enforcer:enforce
     ''

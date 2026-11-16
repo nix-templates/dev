@@ -19,12 +19,12 @@
 
   ];
 
-  lint = ''
+  quality = ''
     run_on '*.tex' chktex -q
     when .vale.ini vale .
   '';
 
-  fmt = ''
+  style = ''
     run_on '*.tex' latexindent --overwrite --silent
   '';
 }

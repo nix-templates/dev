@@ -1,11 +1,11 @@
 # A language for the tests of ci: every command has something of it to run.
 # Its files end in .words.
 _: {
-  lint = ''
+  quality = ''
     for_each '*.words' test -s
   '';
 
-  fmt = ''
+  style = ''
     for_each '*.words' sed -i 's/[[:space:]]*$//'
   '';
 
