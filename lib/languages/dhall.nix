@@ -18,12 +18,12 @@
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     for_each '*.dhall' dhall lint --check --file
     for_each '*.dhall' dhall format --check --file
   '';
 
-  fmt = ''
+  style = ''
     for_each '*.dhall' dhall format --file
   '';
 }

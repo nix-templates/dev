@@ -1,5 +1,5 @@
 # TypeScript.
-{ pkgs, ... }:
+{ pkgs, options, ... }:
 {
   description = "TypeScript development environment: tsserver, Biome, ESLint and strict type checking";
 
@@ -13,8 +13,9 @@
 
   tools = with pkgs; [
     # Toolchain
-    nodejs
+    (options.node or nodejs)
     pnpm
+    (pkgs.yarn.override { nodejs = options.node or pkgs.nodejs; })
     typescript
 
     # Language servers
@@ -35,19 +36,19 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when tsconfig.json tsc --noEmit
     when biome.json biome check .
     when eslint.config.js eslint .
     run oxlint .
   '';
 
-  fmt = ''
+  style = ''
     when biome.json biome format --write .
     run prettier --write --ignore-unknown --log-level warn .
   '';
 
-  layers = [
+  architecture = [
     ''
       depcruise_sources() {
         if [ -d src ]; then

@@ -17,11 +17,11 @@
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     run zig fmt --check .
   '';
 
-  fmt = ''
+  style = ''
     run zig fmt .
   '';
 

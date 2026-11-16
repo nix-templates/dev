@@ -21,16 +21,16 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when foundry.toml forge build --sizes
     if_have solhint solhint 'contracts/**/*.sol'
   '';
 
-  fmt = ''
+  style = ''
     when foundry.toml forge fmt
   '';
 
-  scan = ''
+  security = ''
     when foundry.toml slither . --exclude-dependencies
   '';
 

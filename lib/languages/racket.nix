@@ -11,11 +11,11 @@
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     run_on '*.rkt' raco make -v
   '';
 
-  fmt = ''
+  style = ''
     run typos --write-changes .
   '';
 

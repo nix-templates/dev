@@ -11,12 +11,12 @@
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     when lakefile.toml lake build
     when lakefile.lean lake build
   '';
 
-  fmt = ''
+  style = ''
     run typos --write-changes .
   '';
 

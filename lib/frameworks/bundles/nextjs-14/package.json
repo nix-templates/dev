@@ -1,0 +1,15 @@
+{
+  "name": "dvt-nextjs-14",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "eslint": "8.57.1",
+    "@typescript-eslint/parser": "8.46.4",
+    "typescript": "5.9.3",
+    "prettier": "3.6.2",
+    "globals": "16.5.0",
+    "@next/eslint-plugin-next": "14.2.35",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "5.2.0"
+  }
+}

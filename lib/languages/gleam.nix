@@ -15,12 +15,12 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when gleam.toml gleam check
     when gleam.toml gleam format --check .
   '';
 
-  fmt = ''
+  style = ''
     when gleam.toml gleam format
   '';
 

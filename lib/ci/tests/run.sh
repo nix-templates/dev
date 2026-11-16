@@ -97,8 +97,8 @@ has "ci: failing: --strict was given for language" "$err" "tests with --strict"
 expect 2 tests --no-such-mode
 has "tests: there is no 'no-such-mode' here" "$err" "tests with a mode it does not have"
 
-expect 1 architecture
-has "ci: architecture: there is no architecture.toml in this checkout" "$err" "architecture"
+expect 2 architecture
+has "architecture: no configured architecture check was found" "$err" "architecture"
 printf '[[layer]]\nname = "all"\npaths = ["."]\n' > architecture.toml
 git add -A
 expect 0 architecture

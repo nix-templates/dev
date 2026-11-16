@@ -24,16 +24,16 @@
   # The shell needs a C compiler and its wrapper.
   needsCC = true;
 
-  lint = ''
+  quality = ''
     when_any '*.swift' swiftlint lint --quiet
     run swiftformat --lint .
   '';
 
-  fmt = ''
+  style = ''
     run swiftformat .
   '';
 
-  layers = [
+  architecture = [
     ''
       # Periphery finds unused declarations. nixpkgs has it for macOS only, so it
       # runs when it is on PATH.

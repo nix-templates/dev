@@ -22,19 +22,19 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when_any '*.rb' rubocop --fail-level warning
   '';
 
-  fmt = ''
+  style = ''
     when_any '*.rb' rubocop --autocorrect-all --fail-level fatal
   '';
 
-  scan = ''
+  security = ''
     when Gemfile.lock bundle-audit check --update
   '';
 
-  layers = [
+  architecture = [
     ''
       when packwerk.yml bundle exec packwerk check
     ''

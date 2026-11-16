@@ -37,17 +37,17 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when eslint.config.js eslint .
     when .stylelintrc.json stylelint '**/*.{css,scss}'
     run_on '*.html' htmlhint
   '';
 
-  fmt = ''
+  style = ''
     run prettier --write --ignore-unknown --log-level warn .
   '';
 
-  layers = [
+  architecture = [
     ''
       depcruise_sources() {
         if [ -d src ]; then

@@ -25,16 +25,16 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when .graphqlrc.yml graphql-lsp validate
     when eslint.config.js eslint .
   '';
 
-  fmt = ''
+  style = ''
     run prettier --write --ignore-unknown --log-level warn .
   '';
 
-  layers = [
+  architecture = [
     ''
       depcruise_sources() {
         if [ -d src ]; then

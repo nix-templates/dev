@@ -29,12 +29,12 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when src elm-format --validate src
     when review/elm.json elm-review
   '';
 
-  fmt = ''
+  style = ''
     when src elm-format --yes src
   '';
 

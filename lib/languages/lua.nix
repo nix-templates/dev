@@ -25,13 +25,13 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when selene.toml selene .
     when .luacheckrc luacheck .
     run stylua --check .
   '';
 
-  fmt = ''
+  style = ''
     run stylua .
   '';
 

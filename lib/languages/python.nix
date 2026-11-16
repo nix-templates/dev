@@ -11,17 +11,26 @@ let
 
   # The interpreter with the test tools in it, so that `python -m pytest` finds
   # them. Separate packages on PATH would not see each other.
-  interpreter = python.withPackages (
-    ps: with ps; [
-      pip
-      pytest
-      pytest-cov
-      hypothesis
-    ]
-  );
+  interpreter =
+    if options.pythonProjectEnvironment or false then
+      python
+    else
+      python.withPackages (
+        ps: with ps; [
+          pip
+          pytest
+          pytest-cov
+          hypothesis
+        ]
+      );
 
   # A .venv next to the project, made and activated on entering the shell.
   venv = options.pythonVenv or false;
+  projectEnvironment = options.pythonProjectEnvironment or false;
+  pythonCommand = if projectEnvironment then "project_python" else "python";
+  consoleTool =
+    name:
+    if projectEnvironment then "project_python ${../dvt/project-python-tool.py} ${name}" else name;
 
   tools = with pkgs; [
     # Toolchain: interpreter, virtualenv hook and the uv package manager
@@ -46,6 +55,9 @@ let
     deptry
   ];
 in
+assert lib.assertMsg (
+  !(options.pythonProjectEnvironment or false) || !venv
+) "A framework uses the existing project environment; pythonVenv must be false.";
 {
   description = "Python development environment: basedpyright, ruff, mypy and bandit";
 
@@ -75,18 +87,18 @@ in
   };
 
   # ruff finds *.py by itself. A script with no extension has to be named.
-  lint = ''
+  quality = ''
     with_scripts 'python[0-9.]*' ruff check .
     when pyproject.toml mypy .
     run vulture . --min-confidence 80 --exclude '.venv,.direnv,build,dist'
   '';
 
-  fmt = ''
+  style = ''
     with_scripts 'python[0-9.]*' ruff check --select I --fix .
     with_scripts 'python[0-9.]*' ruff format .
   '';
 
-  scan = ''
+  security = ''
     # bandit reads a .bandit file by itself, and [tool.bandit] only when told where it is.
     if has tool.bandit pyproject.toml; then
       run bandit --quiet --recursive . --exclude ./.venv,./.direnv -c pyproject.toml
@@ -95,14 +107,14 @@ in
     fi
   '';
 
-  layers = [
+  architecture = [
     ''
       when_has pyproject.toml tool.deptry deptry .
     ''
     ''
       # import-linter is not in nixpkgs: it runs when the project's own environment has it.
       if [ -e .importlinter ] || has tool.importlinter pyproject.toml; then
-        if_have lint-imports lint-imports
+        run ${consoleTool "lint-imports"}
       fi
     ''
   ];
@@ -112,20 +124,20 @@ in
       ''
         if [ -d tests ] || [ -d test ] || [ -e pytest.ini ] || has tool.pytest pyproject.toml; then
           # pytest ends with 5 when it collected no test: a tests folder can be another language's.
-          run_some 5 python -m pytest -q
+          run_some 5 ${pythonCommand} -m pytest -q
         fi
       ''
     ];
     coverage = [
       ''
         if [ -d tests ] || [ -d test ] || [ -e pytest.ini ] || has tool.pytest pyproject.toml; then
-          run_some 5 python -m pytest --cov --cov-report=term-missing
+          run_some 5 ${pythonCommand} -m pytest --cov --cov-report=term-missing
         fi
       ''
     ];
     mutation = [
       ''
-        when_has pyproject.toml tool.mutmut mutmut run
+        when_has pyproject.toml tool.mutmut ${consoleTool "mutmut"} run
       ''
     ];
   };

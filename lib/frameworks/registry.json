@@ -1,0 +1,1580 @@
+{
+  "django": {
+    "description": "Django system, migration and deployment checks, Django template quality and style, and project-environment tests",
+    "languages": [
+      "python"
+    ],
+    "defaultVersion": "6.0",
+    "versions": [
+      "4.2",
+      "5.2",
+      "6.0"
+    ],
+    "distribution": "Django",
+    "validation": "framework-fixture",
+    "sources": [
+      "https://docs.djangoproject.com/en/5.2/ref/django-admin/",
+      "https://djlint.com/docs/languages/django/"
+    ]
+  },
+  "flask": {
+    "description": "Flask with Jinja template quality and style, Python security and architecture, and project-environment pytest",
+    "languages": [
+      "python"
+    ],
+    "defaultVersion": "3.1",
+    "versions": [
+      "3.0",
+      "3.1"
+    ],
+    "distribution": "flask",
+    "validation": "framework-fixture",
+    "sources": [
+      "https://flask.palletsprojects.com/en/stable/testing/",
+      "https://djlint.com/docs/languages/jinja/"
+    ]
+  },
+  "fastapi": {
+    "description": "FastAPI with Python quality, style, security and architecture, and project-environment pytest",
+    "languages": [
+      "python"
+    ],
+    "defaultVersion": "0.115",
+    "versions": [
+      "0.115"
+    ],
+    "distribution": "fastapi",
+    "validation": "framework-fixture",
+    "sources": [
+      "https://fastapi.tiangolo.com/tutorial/testing/"
+    ]
+  },
+  "nextjs": {
+    "description": "nextjs with isolated, version-matched ESLint, parser, framework plugins and Prettier",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "16",
+    "versions": [
+      "14",
+      "15",
+      "16"
+    ],
+    "adapter": "node",
+    "bundle": "nextjs",
+    "package": "next",
+    "validation": "tool-fixture",
+    "sources": [
+      "https://nextjs.org/docs/app/api-reference/config/eslint"
+    ]
+  },
+  "react": {
+    "description": "react with isolated, version-matched ESLint, parser, framework plugins and Prettier",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "19",
+    "versions": [
+      "18",
+      "19"
+    ],
+    "adapter": "node",
+    "bundle": "react",
+    "package": "react",
+    "validation": "tool-fixture",
+    "sources": [
+      "https://react.dev/reference/react/act",
+      "https://github.com/jsx-eslint/eslint-plugin-react"
+    ]
+  },
+  "vue": {
+    "description": "vue with isolated, version-matched ESLint, parser, framework plugins and Prettier",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "3",
+    "versions": [
+      "2",
+      "3"
+    ],
+    "adapter": "node",
+    "bundle": "vue",
+    "package": "vue",
+    "validation": "tool-fixture",
+    "sources": [
+      "https://eslint.vuejs.org/user-guide/"
+    ]
+  },
+  "rails": {
+    "description": "rails: project-native checks using existing locked dependencies",
+    "languages": [
+      "ruby"
+    ],
+    "defaultVersion": "8.1",
+    "versions": [
+      "7.2",
+      "8.0",
+      "8.1"
+    ],
+    "adapter": "native",
+    "kind": "gem",
+    "package": "rails",
+    "recipe": "rails",
+    "validation": "native-adapter",
+    "sources": [
+      "https://guides.rubyonrails.org/command_line.html",
+      "https://github.com/Shopify/packwerk"
+    ]
+  },
+  "laravel": {
+    "description": "laravel: project-native checks using existing locked dependencies",
+    "languages": [
+      "php"
+    ],
+    "defaultVersion": "13",
+    "versions": [
+      "11",
+      "12",
+      "13"
+    ],
+    "adapter": "native",
+    "kind": "composer",
+    "package": "laravel/framework",
+    "recipe": "laravel",
+    "validation": "native-adapter",
+    "sources": [
+      "https://laravel.com/framework/docs/pint",
+      "https://symfony.com/doc/current/testing.html",
+      "https://deptrac.github.io/deptrac/configuration/"
+    ]
+  },
+  "symfony": {
+    "description": "symfony: project-native checks using existing locked dependencies",
+    "languages": [
+      "php"
+    ],
+    "defaultVersion": "8.0",
+    "versions": [
+      "6.4",
+      "7.4",
+      "8.0"
+    ],
+    "adapter": "native",
+    "kind": "composer",
+    "package": "symfony/framework-bundle",
+    "recipe": "symfony",
+    "validation": "native-adapter",
+    "sources": [
+      "https://laravel.com/framework/docs/pint",
+      "https://symfony.com/doc/current/testing.html",
+      "https://deptrac.github.io/deptrac/configuration/"
+    ]
+  },
+  "phoenix": {
+    "description": "phoenix: project-native checks using existing locked dependencies",
+    "languages": [
+      "elixir"
+    ],
+    "defaultVersion": "1.8",
+    "versions": [
+      "1.7",
+      "1.8"
+    ],
+    "adapter": "native",
+    "kind": "mix",
+    "package": "phoenix",
+    "recipe": "phoenix",
+    "validation": "native-adapter",
+    "sources": [
+      "https://phoenix.hexdocs.pm/testing.html"
+    ]
+  },
+  "spring-boot": {
+    "description": "spring-boot: project-native checks using existing locked dependencies",
+    "languages": [
+      "java"
+    ],
+    "defaultVersion": "4",
+    "versions": [
+      "3",
+      "4"
+    ],
+    "adapter": "native",
+    "kind": "maven",
+    "package": "org.springframework.boot",
+    "recipe": "jvm",
+    "validation": "native-adapter",
+    "sources": [
+      "https://docs.spring.io/spring-boot/system-requirements.html",
+      "https://quarkus.io/guides/getting-started-testing/",
+      "https://www.archunit.org/userguide/html/000_Index.html"
+    ]
+  },
+  "ktor": {
+    "description": "ktor: project-native checks using existing locked dependencies",
+    "languages": [
+      "kotlin"
+    ],
+    "defaultVersion": "3",
+    "versions": [
+      "2",
+      "3"
+    ],
+    "adapter": "native",
+    "kind": "gradle",
+    "package": "io.ktor",
+    "recipe": "jvm",
+    "validation": "native-adapter",
+    "sources": [
+      "https://ktor.io/docs/server-testing.html",
+      "https://docs.spring.io/spring-boot/system-requirements.html"
+    ]
+  },
+  "gin": {
+    "description": "gin: project-native checks using existing locked dependencies",
+    "languages": [
+      "go"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "adapter": "native",
+    "kind": "go",
+    "package": "github.com/gin-gonic/gin",
+    "recipe": "go",
+    "validation": "native-adapter",
+    "sources": [
+      "https://gin-gonic.com/en/docs/testing/",
+      "https://echo.labstack.com/guide/testing/"
+    ]
+  },
+  "echo": {
+    "description": "echo: project-native checks using existing locked dependencies",
+    "languages": [
+      "go"
+    ],
+    "defaultVersion": "4",
+    "versions": [
+      "4"
+    ],
+    "adapter": "native",
+    "kind": "go",
+    "package": "github.com/labstack/echo/v4",
+    "recipe": "go",
+    "validation": "native-adapter",
+    "sources": [
+      "https://gin-gonic.com/en/docs/testing/",
+      "https://echo.labstack.com/guide/testing/"
+    ]
+  },
+  "axum": {
+    "description": "axum: project-native checks using existing locked dependencies",
+    "languages": [
+      "rust"
+    ],
+    "defaultVersion": "0.8",
+    "versions": [
+      "0.7",
+      "0.8"
+    ],
+    "adapter": "native",
+    "kind": "cargo",
+    "package": "axum",
+    "recipe": "rust",
+    "validation": "native-adapter",
+    "sources": [
+      "https://actix.rs/docs/testing/",
+      "https://docs.rs/axum/latest/src/axum/service_ext.rs.html"
+    ]
+  },
+  "actix-web": {
+    "description": "actix-web: project-native checks using existing locked dependencies",
+    "languages": [
+      "rust"
+    ],
+    "defaultVersion": "4",
+    "versions": [
+      "4"
+    ],
+    "adapter": "native",
+    "kind": "cargo",
+    "package": "actix-web",
+    "recipe": "rust",
+    "validation": "native-adapter",
+    "sources": [
+      "https://actix.rs/docs/testing/",
+      "https://docs.rs/axum/latest/src/axum/service_ext.rs.html"
+    ]
+  },
+  "vapor": {
+    "description": "vapor: project-native checks using existing locked dependencies",
+    "languages": [
+      "swift"
+    ],
+    "defaultVersion": "4",
+    "versions": [
+      "4"
+    ],
+    "adapter": "native",
+    "kind": "swift",
+    "package": "vapor",
+    "recipe": "vapor",
+    "validation": "native-adapter",
+    "sources": [
+      "https://docs.vapor.codes/advanced/testing/",
+      "https://docs.vapor.codes/install/macos/"
+    ]
+  },
+  "aspnetcore": {
+    "description": "aspnetcore: framework SDK checks with existing project dependencies",
+    "languages": [
+      "csharp"
+    ],
+    "defaultVersion": "10",
+    "versions": [
+      "8",
+      "9",
+      "10"
+    ],
+    "adapter": "native",
+    "kind": "dotnet",
+    "package": "Microsoft.AspNetCore.App",
+    "recipe": "dotnet",
+    "validation": "native-adapter",
+    "sources": [
+      "https://learn.microsoft.com/en-us/aspnet/core/testing/integration-testing",
+      "https://github.com/giraffe-fsharp/Giraffe",
+      "https://github.com/BenMorris/NetArchTest"
+    ]
+  },
+  "giraffe": {
+    "description": "giraffe: framework SDK checks with existing project dependencies",
+    "languages": [
+      "fsharp"
+    ],
+    "defaultVersion": "8",
+    "versions": [
+      "7",
+      "8"
+    ],
+    "adapter": "native",
+    "kind": "nuget",
+    "package": "Giraffe",
+    "recipe": "dotnet",
+    "validation": "native-adapter",
+    "sources": [
+      "https://learn.microsoft.com/en-us/aspnet/core/testing/integration-testing",
+      "https://github.com/giraffe-fsharp/Giraffe",
+      "https://github.com/BenMorris/NetArchTest",
+      "https://www.nuget.org/packages/Giraffe"
+    ],
+    "sdkVersion": "8"
+  },
+  "flutter": {
+    "description": "flutter: framework SDK checks with existing project dependencies",
+    "languages": [
+      "dart"
+    ],
+    "defaultVersion": "3",
+    "versions": [
+      "3"
+    ],
+    "adapter": "native",
+    "kind": "flutter",
+    "package": "flutter",
+    "recipe": "flutter",
+    "validation": "native-adapter",
+    "sources": [
+      "https://docs.flutter.dev/reference/flutter-cli",
+      "https://docs.flutter.dev/testing/testing-plugins"
+    ]
+  },
+  "sinatra": {
+    "description": "sinatra: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "ruby"
+    ],
+    "defaultVersion": "4",
+    "versions": [
+      "3",
+      "4"
+    ],
+    "adapter": "native",
+    "kind": "gem",
+    "package": "sinatra",
+    "recipe": "rack",
+    "validation": "native-adapter",
+    "sources": [
+      "https://sinatrarb.com/testing.html"
+    ],
+    "testRunner": "rake",
+    "notes": "Tests use the existing Bundler graph. Set options.rubyTestRunner to rspec or rake for the project test suite."
+  },
+  "hanami": {
+    "description": "hanami: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "ruby"
+    ],
+    "defaultVersion": "2",
+    "versions": [
+      "2"
+    ],
+    "adapter": "native",
+    "kind": "gem",
+    "package": "hanami",
+    "recipe": "rack",
+    "validation": "native-adapter",
+    "sources": [
+      "https://hanakai.org/learn/hanami/v2.0/actions/testing"
+    ],
+    "testRunner": "rspec",
+    "notes": "Tests use the existing Bundler graph. Set options.rubyTestRunner to rspec or rake for the project test suite."
+  },
+  "roda": {
+    "description": "roda: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "ruby"
+    ],
+    "defaultVersion": "3",
+    "versions": [
+      "3"
+    ],
+    "adapter": "native",
+    "kind": "gem",
+    "package": "roda",
+    "recipe": "rack",
+    "validation": "native-adapter",
+    "sources": [
+      "https://github.com/jeremyevans/roda"
+    ],
+    "testRunner": "rake",
+    "notes": "Tests use the existing Bundler graph. Set options.rubyTestRunner to rspec or rake for the project test suite."
+  },
+  "cakephp": {
+    "description": "cakephp: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "php"
+    ],
+    "defaultVersion": "5",
+    "versions": [
+      "4",
+      "5"
+    ],
+    "adapter": "native",
+    "kind": "composer",
+    "package": "cakephp/cakephp",
+    "recipe": "phpunit",
+    "validation": "native-adapter",
+    "sources": [
+      "https://book.cakephp.org/5/en/development/testing.html"
+    ],
+    "testRunner": "phpunit"
+  },
+  "slim": {
+    "description": "slim: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "php"
+    ],
+    "defaultVersion": "4",
+    "versions": [
+      "4"
+    ],
+    "adapter": "native",
+    "kind": "composer",
+    "package": "slim/slim",
+    "recipe": "phpunit",
+    "validation": "native-adapter",
+    "sources": [
+      "https://github.com/slimphp/Slim/blob/4.x/composer.json"
+    ],
+    "testRunner": "phpunit"
+  },
+  "codeigniter": {
+    "description": "codeigniter: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "php"
+    ],
+    "defaultVersion": "4",
+    "versions": [
+      "4"
+    ],
+    "adapter": "native",
+    "kind": "composer",
+    "package": "codeigniter4/framework",
+    "recipe": "phpunit",
+    "validation": "native-adapter",
+    "sources": [
+      "https://github.com/codeigniter4/CodeIgniter4/blob/develop/user_guide_src/source/testing/overview.rst"
+    ],
+    "testRunner": "phpunit"
+  },
+  "yii": {
+    "description": "yii: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "php"
+    ],
+    "defaultVersion": "2",
+    "versions": [
+      "2"
+    ],
+    "adapter": "native",
+    "kind": "composer",
+    "package": "yiisoft/yii2",
+    "recipe": "phpunit",
+    "validation": "native-adapter",
+    "sources": [
+      "https://www.yiiframework.com/doc/guide/2.0/en/test-overview"
+    ],
+    "testRunner": "codecept"
+  },
+  "fiber": {
+    "description": "fiber: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "go"
+    ],
+    "defaultVersion": "3",
+    "versions": [
+      "2",
+      "3"
+    ],
+    "adapter": "native",
+    "kind": "go",
+    "package": "github.com/gofiber/fiber/v3",
+    "recipe": "go",
+    "validation": "native-adapter",
+    "sources": [
+      "https://docs.gofiber.io/api/app/"
+    ],
+    "variants": {
+      "2": {
+        "package": "github.com/gofiber/fiber/v2"
+      }
+    }
+  },
+  "chi": {
+    "description": "chi: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "go"
+    ],
+    "defaultVersion": "5",
+    "versions": [
+      "5"
+    ],
+    "adapter": "native",
+    "kind": "go",
+    "package": "github.com/go-chi/chi/v5",
+    "recipe": "go",
+    "validation": "native-adapter",
+    "sources": [
+      "https://github.com/go-chi/chi"
+    ]
+  },
+  "rocket": {
+    "description": "rocket: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "rust"
+    ],
+    "defaultVersion": "0.5",
+    "versions": [
+      "0.5"
+    ],
+    "adapter": "native",
+    "kind": "cargo",
+    "package": "rocket",
+    "recipe": "rust",
+    "validation": "native-adapter",
+    "sources": [
+      "https://rocket.rs/guide/v0.5/testing/"
+    ]
+  },
+  "warp": {
+    "description": "warp: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "rust"
+    ],
+    "defaultVersion": "0.4",
+    "versions": [
+      "0.3",
+      "0.4"
+    ],
+    "adapter": "native",
+    "kind": "cargo",
+    "package": "warp",
+    "recipe": "rust",
+    "validation": "native-adapter",
+    "sources": [
+      "https://docs.rs/warp/latest/warp/test/index.html"
+    ]
+  },
+  "poem": {
+    "description": "poem: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "rust"
+    ],
+    "defaultVersion": "3",
+    "versions": [
+      "3"
+    ],
+    "adapter": "native",
+    "kind": "cargo",
+    "package": "poem",
+    "recipe": "rust",
+    "validation": "native-adapter",
+    "sources": [
+      "https://docs.rs/poem/latest/poem/test/index.html"
+    ]
+  },
+  "quarkus": {
+    "description": "quarkus: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "java"
+    ],
+    "defaultVersion": "3",
+    "versions": [
+      "3"
+    ],
+    "adapter": "native",
+    "kind": "maven",
+    "package": "io.quarkus.platform",
+    "recipe": "jvm",
+    "validation": "native-adapter",
+    "sources": [
+      "https://quarkus.io/guides/getting-started-testing/"
+    ]
+  },
+  "micronaut": {
+    "description": "micronaut: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "java"
+    ],
+    "defaultVersion": "4",
+    "versions": [
+      "4"
+    ],
+    "adapter": "native",
+    "kind": "maven",
+    "package": "io.micronaut.platform",
+    "recipe": "jvm",
+    "validation": "native-adapter",
+    "sources": [
+      "https://docs.micronaut.io/latest/guide/"
+    ]
+  },
+  "dropwizard": {
+    "description": "dropwizard: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "java"
+    ],
+    "defaultVersion": "4",
+    "versions": [
+      "4"
+    ],
+    "adapter": "native",
+    "kind": "maven",
+    "package": "io.dropwizard",
+    "recipe": "jvm",
+    "validation": "native-adapter",
+    "sources": [
+      "https://www.dropwizard.io/en/stable/manual/testing.html"
+    ]
+  },
+  "grails": {
+    "description": "grails: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "groovy"
+    ],
+    "defaultVersion": "7",
+    "versions": [
+      "6",
+      "7"
+    ],
+    "adapter": "native",
+    "kind": "maven",
+    "package": "org.grails",
+    "recipe": "jvm",
+    "validation": "native-adapter",
+    "sources": [
+      "https://grails.apache.org/docs/latest/guide/testing.html",
+      "https://grails.apache.org/docs/latest/guide/upgrading.html"
+    ],
+    "variants": {
+      "7": {
+        "package": "org.apache.grails"
+      }
+    }
+  },
+  "spock": {
+    "description": "spock: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "groovy"
+    ],
+    "defaultVersion": "2",
+    "versions": [
+      "2"
+    ],
+    "adapter": "native",
+    "kind": "maven",
+    "package": "org.spockframework",
+    "recipe": "jvm",
+    "validation": "native-adapter",
+    "sources": [
+      "https://spockframework.org/spock/docs/2.3/all_in_one.html"
+    ]
+  },
+  "liveview": {
+    "description": "liveview: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "elixir"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "0.20",
+      "1"
+    ],
+    "adapter": "native",
+    "kind": "mix",
+    "package": "phoenix_live_view",
+    "recipe": "phoenix",
+    "validation": "native-adapter",
+    "sources": [
+      "https://hexdocs.pm/phoenix_live_view/Phoenix.LiveViewTest.html"
+    ]
+  },
+  "ash": {
+    "description": "ash: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "elixir"
+    ],
+    "defaultVersion": "3",
+    "versions": [
+      "3"
+    ],
+    "adapter": "native",
+    "kind": "mix",
+    "package": "ash",
+    "recipe": "phoenix",
+    "validation": "native-adapter",
+    "sources": [
+      "https://hexdocs.pm/ash/testing.html"
+    ]
+  },
+  "hummingbird": {
+    "description": "hummingbird: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "swift"
+    ],
+    "defaultVersion": "2",
+    "versions": [
+      "2"
+    ],
+    "adapter": "native",
+    "kind": "swift",
+    "package": "hummingbird",
+    "recipe": "vapor",
+    "validation": "native-adapter",
+    "sources": [
+      "https://github.com/hummingbird-project/hummingbird/tree/main/Tests"
+    ]
+  },
+  "avalonia": {
+    "description": "avalonia: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "csharp"
+    ],
+    "defaultVersion": "11",
+    "versions": [
+      "11"
+    ],
+    "adapter": "native",
+    "kind": "nuget",
+    "package": "Avalonia",
+    "recipe": "dotnet",
+    "validation": "native-adapter",
+    "sources": [
+      "https://docs.avaloniaui.net/docs/testing/headless/"
+    ],
+    "sdkVersion": "8"
+  },
+  "kemal": {
+    "description": "kemal: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "crystal"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "adapter": "native",
+    "kind": "shards",
+    "package": "kemal",
+    "recipe": "crystal",
+    "validation": "native-adapter",
+    "sources": [
+      "https://github.com/kemalcr/spec-kemal"
+    ]
+  },
+  "amber": {
+    "description": "amber: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "crystal"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "adapter": "native",
+    "kind": "shards",
+    "package": "amber",
+    "recipe": "crystal",
+    "validation": "native-adapter",
+    "sources": [
+      "https://amberframework.org/docs/v1.5/guides/testing"
+    ]
+  },
+  "cowboy": {
+    "description": "cowboy: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "erlang"
+    ],
+    "defaultVersion": "2",
+    "versions": [
+      "2"
+    ],
+    "adapter": "native",
+    "kind": "rebar",
+    "package": "cowboy",
+    "recipe": "erlang",
+    "validation": "native-adapter",
+    "sources": [
+      "https://rebar3.org/docs/testing/"
+    ],
+    "notes": "Requires existing rebar.lock and cached dependencies; REBAR_OFFLINE=1 prevents fetching new dependencies."
+  },
+  "ring": {
+    "description": "ring: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "clojure"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "adapter": "native",
+    "kind": "lein",
+    "package": "ring/ring-core",
+    "recipe": "clojure",
+    "validation": "native-adapter",
+    "sources": [
+      "https://github.com/ring-clojure/ring"
+    ],
+    "notes": "Leiningen projects with explicit dependency versions only. Tests use lein -o; tools.deps-only projects need a custom profile."
+  },
+  "reitit": {
+    "description": "reitit: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "clojure"
+    ],
+    "defaultVersion": "0.7",
+    "versions": [
+      "0.7"
+    ],
+    "adapter": "native",
+    "kind": "lein",
+    "package": "metosin/reitit",
+    "recipe": "clojure",
+    "validation": "native-adapter",
+    "sources": [
+      "https://github.com/metosin/reitit"
+    ],
+    "notes": "Leiningen projects with explicit dependency versions only. Tests use lein -o; tools.deps-only projects need a custom profile."
+  },
+  "pedestal": {
+    "description": "pedestal: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "clojure"
+    ],
+    "defaultVersion": "0.7",
+    "versions": [
+      "0.7"
+    ],
+    "adapter": "native",
+    "kind": "lein",
+    "package": "io.pedestal/pedestal.service",
+    "recipe": "clojure",
+    "validation": "native-adapter",
+    "sources": [
+      "https://pedestal.io/pedestal/0.7/guides/unit-testing.html"
+    ],
+    "notes": "Leiningen projects with explicit dependency versions only. Tests use lein -o; tools.deps-only projects need a custom profile."
+  },
+  "yesod": {
+    "description": "yesod: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "haskell"
+    ],
+    "defaultVersion": "1.6",
+    "versions": [
+      "1.6"
+    ],
+    "adapter": "native",
+    "kind": "cabal",
+    "package": "yesod",
+    "recipe": "haskell",
+    "validation": "native-adapter",
+    "sources": [
+      "https://www.yesodweb.com/book/testing"
+    ],
+    "notes": "Cabal projects with cabal.project.freeze only. Match GHC via toolPkgs; Stack-only projects need a custom profile."
+  },
+  "servant": {
+    "description": "servant: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "haskell"
+    ],
+    "defaultVersion": "0.20",
+    "versions": [
+      "0.20"
+    ],
+    "adapter": "native",
+    "kind": "cabal",
+    "package": "servant",
+    "recipe": "haskell",
+    "validation": "native-adapter",
+    "sources": [
+      "https://docs.servant.dev/en/latest/cookbook/testing/Testing.html"
+    ],
+    "notes": "Cabal projects with cabal.project.freeze only. Match GHC via toolPkgs; Stack-only projects need a custom profile."
+  },
+  "shiny": {
+    "description": "shiny: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "r"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "adapter": "native",
+    "kind": "renv",
+    "package": "shiny",
+    "recipe": "r",
+    "validation": "native-adapter",
+    "sources": [
+      "https://shiny.posit.co/r/articles/improve/server-function-testing/"
+    ],
+    "notes": "Requires renv.lock and DVT_PROJECT_RSCRIPT plus DVT_PROJECT_R_LIBRARY pointing to an existing project library. No renv bootstrap or restore is performed."
+  },
+  "plumber": {
+    "description": "plumber: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "r"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "adapter": "native",
+    "kind": "renv",
+    "package": "plumber",
+    "recipe": "r",
+    "validation": "native-adapter",
+    "sources": [
+      "https://github.com/rstudio/plumber"
+    ],
+    "notes": "Requires renv.lock and DVT_PROJECT_RSCRIPT plus DVT_PROJECT_R_LIBRARY pointing to an existing project library. No renv bootstrap or restore is performed."
+  },
+  "golem": {
+    "description": "golem: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "r"
+    ],
+    "defaultVersion": "0.5",
+    "versions": [
+      "0.5"
+    ],
+    "adapter": "native",
+    "kind": "renv",
+    "package": "golem",
+    "recipe": "r",
+    "validation": "native-adapter",
+    "sources": [
+      "https://thinkr-open.github.io/golem/reference/testhelpers.html"
+    ],
+    "notes": "Requires renv.lock and DVT_PROJECT_RSCRIPT plus DVT_PROJECT_R_LIBRARY pointing to an existing project library. No renv bootstrap or restore is performed."
+  },
+  "genie": {
+    "description": "genie: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "julia"
+    ],
+    "defaultVersion": "5",
+    "versions": [
+      "5"
+    ],
+    "adapter": "native",
+    "kind": "julia",
+    "package": "Genie",
+    "recipe": "julia",
+    "validation": "native-adapter",
+    "sources": [
+      "https://github.com/GenieFramework/Genie.jl/tree/main/test"
+    ],
+    "notes": "Uses the existing Manifest.toml, Julia runtime and test/runtests.jl; no Pkg.resolve, instantiate or environment changes."
+  },
+  "mojolicious": {
+    "description": "mojolicious: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "perl"
+    ],
+    "defaultVersion": "9",
+    "versions": [
+      "9"
+    ],
+    "adapter": "native",
+    "kind": "cpan",
+    "package": "Mojolicious",
+    "recipe": "perl",
+    "validation": "native-adapter",
+    "sources": [
+      "https://docs.mojolicious.org/Test/Mojo"
+    ],
+    "notes": "Requires cpanfile.snapshot and DVT_PROJECT_PERL; uses the existing local/lib/perl5 with TAP::Harness, never installs CPAN modules."
+  },
+  "dancer2": {
+    "description": "dancer2: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "perl"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "adapter": "native",
+    "kind": "cpan",
+    "package": "Dancer2",
+    "recipe": "perl",
+    "validation": "native-adapter",
+    "sources": [
+      "https://metacpan.org/pod/Dancer2::Manual"
+    ],
+    "notes": "Requires cpanfile.snapshot and DVT_PROJECT_PERL; uses the existing local/lib/perl5 with TAP::Harness, never installs CPAN modules."
+  },
+  "serverpod": {
+    "description": "serverpod: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "dart"
+    ],
+    "defaultVersion": "3",
+    "versions": [
+      "2",
+      "3"
+    ],
+    "adapter": "native",
+    "kind": "pub",
+    "package": "serverpod",
+    "recipe": "dart",
+    "validation": "native-adapter",
+    "sources": [
+      "https://docs.serverpod.dev/concepts/testing/"
+    ],
+    "notes": "Requires existing pubspec.lock and .dart_tool/package_config.json. Runs the installed test package entrypoint directly, avoiding dart run automatic pub resolution."
+  },
+  "shelf": {
+    "description": "shelf: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "dart"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "adapter": "native",
+    "kind": "pub",
+    "package": "shelf",
+    "recipe": "dart",
+    "validation": "native-adapter",
+    "sources": [
+      "https://pub.dev/packages/shelf"
+    ],
+    "notes": "Requires existing pubspec.lock and .dart_tool/package_config.json. Runs the installed test package entrypoint directly, avoiding dart run automatic pub resolution."
+  },
+  "qt": {
+    "description": "qt: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "c-cpp"
+    ],
+    "defaultVersion": "6",
+    "versions": [
+      "5",
+      "6"
+    ],
+    "adapter": "native",
+    "kind": "cpp",
+    "package": "qt",
+    "recipe": "cmake",
+    "validation": "native-adapter",
+    "sources": [
+      "https://doc.qt.io/qt-6/qttest-index.html"
+    ],
+    "notes": "Requires Conan lock or vcpkg installed metadata and an already configured/built CMake tree. Checks never configure, fetch or rebuild dependencies. Set options.cmakeBuildDirectory for non-default build directories."
+  },
+  "catch2": {
+    "description": "catch2: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "c-cpp"
+    ],
+    "defaultVersion": "3",
+    "versions": [
+      "2",
+      "3"
+    ],
+    "adapter": "native",
+    "kind": "cpp",
+    "package": "catch2",
+    "recipe": "cmake",
+    "validation": "native-adapter",
+    "sources": [
+      "https://catch2-temp.readthedocs.io/en/latest/cmake-integration.html"
+    ],
+    "notes": "Requires Conan lock or vcpkg installed metadata and an already configured/built CMake tree. Checks never configure, fetch or rebuild dependencies. Set options.cmakeBuildDirectory for non-default build directories."
+  },
+  "googletest": {
+    "description": "googletest: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "c-cpp"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "adapter": "native",
+    "kind": "cpp",
+    "package": "gtest",
+    "recipe": "cmake",
+    "validation": "native-adapter",
+    "sources": [
+      "https://google.github.io/googletest/quickstart-cmake.html"
+    ],
+    "notes": "Requires Conan lock or vcpkg installed metadata and an already configured/built CMake tree. Checks never configure, fetch or rebuild dependencies. Set options.cmakeBuildDirectory for non-default build directories."
+  },
+  "drogon": {
+    "description": "drogon: version-checked project commands with existing dependencies; isolated source tools",
+    "languages": [
+      "c-cpp"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "adapter": "native",
+    "kind": "cpp",
+    "package": "drogon",
+    "recipe": "cmake",
+    "validation": "native-adapter",
+    "sources": [
+      "https://github.com/drogonframework/drogon/wiki/ENG-19-Testing-Framework"
+    ],
+    "notes": "Requires Conan lock or vcpkg installed metadata and an already configured/built CMake tree. Checks never configure, fetch or rebuild dependencies. Set options.cmakeBuildDirectory for non-default build directories."
+  },
+  "starlette": {
+    "description": "starlette: isolated Python source checks and project-runtime framework tests",
+    "languages": [
+      "python"
+    ],
+    "defaultVersion": "0.47",
+    "versions": [
+      "0.46",
+      "0.47"
+    ],
+    "distribution": "starlette",
+    "adapter": "python",
+    "validation": "project-adapter",
+    "sources": [
+      "https://www.starlette.io/testclient/"
+    ]
+  },
+  "litestar": {
+    "description": "litestar: isolated Python source checks and project-runtime framework tests",
+    "languages": [
+      "python"
+    ],
+    "defaultVersion": "2",
+    "versions": [
+      "2"
+    ],
+    "distribution": "litestar",
+    "adapter": "python",
+    "validation": "project-adapter",
+    "sources": [
+      "https://docs.litestar.dev/2/usage/testing.html"
+    ]
+  },
+  "pyramid": {
+    "description": "pyramid: isolated Python source checks and project-runtime framework tests",
+    "languages": [
+      "python"
+    ],
+    "defaultVersion": "2",
+    "versions": [
+      "2"
+    ],
+    "distribution": "pyramid",
+    "adapter": "python",
+    "validation": "project-adapter",
+    "sources": [
+      "https://docs.pylonsproject.org/projects/pyramid/en/latest/narr/testing.html"
+    ]
+  },
+  "tornado": {
+    "description": "tornado: isolated Python source checks and project-runtime framework tests",
+    "languages": [
+      "python"
+    ],
+    "defaultVersion": "6",
+    "versions": [
+      "6"
+    ],
+    "distribution": "tornado",
+    "adapter": "python",
+    "validation": "project-adapter",
+    "sources": [
+      "https://www.tornadoweb.org/en/stable/testing.html"
+    ]
+  },
+  "aiohttp": {
+    "description": "aiohttp: isolated Python source checks and project-runtime framework tests",
+    "languages": [
+      "python"
+    ],
+    "defaultVersion": "3",
+    "versions": [
+      "3"
+    ],
+    "distribution": "aiohttp",
+    "adapter": "python",
+    "validation": "project-adapter",
+    "sources": [
+      "https://docs.aiohttp.org/en/stable/testing.html"
+    ]
+  },
+  "falcon": {
+    "description": "falcon: isolated Python source checks and project-runtime framework tests",
+    "languages": [
+      "python"
+    ],
+    "defaultVersion": "4",
+    "versions": [
+      "4"
+    ],
+    "distribution": "falcon",
+    "adapter": "python",
+    "validation": "project-adapter",
+    "sources": [
+      "https://falcon.readthedocs.io/en/stable/api/testing.html"
+    ]
+  },
+  "streamlit": {
+    "description": "streamlit: isolated Python source checks and project-runtime framework tests",
+    "languages": [
+      "python"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "distribution": "streamlit",
+    "adapter": "python",
+    "validation": "project-adapter",
+    "sources": [
+      "https://docs.streamlit.io/develop/api-reference/app-testing"
+    ]
+  },
+  "scrapy": {
+    "description": "scrapy: isolated Python source checks and project-runtime framework tests",
+    "languages": [
+      "python"
+    ],
+    "defaultVersion": "2",
+    "versions": [
+      "2"
+    ],
+    "distribution": "scrapy",
+    "adapter": "python",
+    "validation": "project-adapter",
+    "sources": [
+      "https://docs.scrapy.org/en/latest/topics/contracts.html"
+    ]
+  },
+  "mkdocs": {
+    "description": "mkdocs: isolated Python source checks and project-runtime framework tests",
+    "languages": [
+      "python",
+      "markdown"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "distribution": "mkdocs",
+    "adapter": "python",
+    "validation": "project-adapter",
+    "sources": [
+      "https://www.mkdocs.org/user-guide/cli/"
+    ]
+  },
+  "angular": {
+    "description": "angular: locked source tools and existing project compiler/test runner",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "22",
+    "versions": [
+      "19",
+      "20",
+      "21",
+      "22"
+    ],
+    "adapter": "node",
+    "bundle": "typescript",
+    "package": "@angular/core",
+    "compiler": "angular",
+    "validation": "tool-and-adapter",
+    "sources": [
+      "https://angular.dev/reference/versions"
+    ],
+    "bundleKey": "typescript",
+    "requires": [
+      {
+        "kind": "npm",
+        "package": "@angular/cli",
+        "version": "$framework"
+      }
+    ]
+  },
+  "nuxt": {
+    "description": "nuxt: locked source tools and existing project compiler/test runner",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "4",
+    "versions": [
+      "3",
+      "4"
+    ],
+    "adapter": "node",
+    "bundle": "vue-3",
+    "package": "nuxt",
+    "compiler": "nuxt",
+    "validation": "tool-and-adapter",
+    "sources": [
+      "https://nuxt.com/docs/4.x/api/commands/typecheck"
+    ],
+    "bundleKey": "vue-3"
+  },
+  "svelte": {
+    "description": "svelte: locked source tools and existing project compiler/test runner",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "5",
+    "versions": [
+      "4",
+      "5"
+    ],
+    "adapter": "node",
+    "bundle": "svelte",
+    "package": "svelte",
+    "compiler": "svelte",
+    "validation": "tool-and-adapter",
+    "sources": [
+      "https://svelte.dev/docs/svelte/typescript"
+    ],
+    "bundleKey": "svelte",
+    "variants": {
+      "4": {
+        "bundleKey": "svelte-4"
+      },
+      "5": {
+        "bundleKey": "svelte-5"
+      }
+    }
+  },
+  "sveltekit": {
+    "description": "sveltekit: locked source tools and existing project compiler/test runner",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "2",
+    "versions": [
+      "2"
+    ],
+    "adapter": "node",
+    "bundle": "svelte-5",
+    "package": "@sveltejs/kit",
+    "compiler": "sveltekit",
+    "validation": "tool-and-adapter",
+    "sources": [
+      "https://svelte.dev/docs/kit/cli"
+    ],
+    "bundleKey": "svelte-5",
+    "requires": [
+      {
+        "kind": "npm",
+        "package": "svelte",
+        "version": "5"
+      }
+    ]
+  },
+  "astro": {
+    "description": "astro: locked source tools and existing project compiler/test runner",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "6",
+    "versions": [
+      "5",
+      "6"
+    ],
+    "adapter": "node",
+    "bundle": "astro",
+    "package": "astro",
+    "compiler": "astro",
+    "validation": "tool-and-adapter",
+    "sources": [
+      "https://docs.astro.build/en/reference/cli-reference/"
+    ],
+    "bundleKey": "astro"
+  },
+  "nestjs": {
+    "description": "nestjs: locked source tools and existing project compiler/test runner",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "11",
+    "versions": [
+      "10",
+      "11"
+    ],
+    "adapter": "node",
+    "bundle": "typescript",
+    "package": "@nestjs/core",
+    "compiler": "nest",
+    "validation": "tool-and-adapter",
+    "sources": [
+      "https://docs.nestjs.com/fundamentals/testing"
+    ],
+    "bundleKey": "typescript"
+  },
+  "express": {
+    "description": "express: locked source tools and existing project compiler/test runner",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "5",
+    "versions": [
+      "4",
+      "5"
+    ],
+    "adapter": "node",
+    "bundle": "typescript",
+    "package": "express",
+    "compiler": "typescript",
+    "validation": "tool-and-adapter",
+    "sources": [
+      "https://expressjs.com/en/guide/migrating-5.html"
+    ],
+    "bundleKey": "typescript"
+  },
+  "fastify": {
+    "description": "fastify: locked source tools and existing project compiler/test runner",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "5",
+    "versions": [
+      "4",
+      "5"
+    ],
+    "adapter": "node",
+    "bundle": "typescript",
+    "package": "fastify",
+    "compiler": "typescript",
+    "validation": "tool-and-adapter",
+    "sources": [
+      "https://fastify.dev/docs/latest/Guides/Testing/"
+    ],
+    "bundleKey": "typescript"
+  },
+  "hono": {
+    "description": "hono: locked source tools and existing project compiler/test runner",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "4",
+    "versions": [
+      "4"
+    ],
+    "adapter": "node",
+    "bundle": "typescript",
+    "package": "hono",
+    "compiler": "typescript",
+    "validation": "tool-and-adapter",
+    "sources": [
+      "https://hono.dev/docs/helpers/testing"
+    ],
+    "bundleKey": "typescript"
+  },
+  "docusaurus": {
+    "description": "docusaurus: locked source tools and existing project compiler/test runner",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "3",
+    "versions": [
+      "3"
+    ],
+    "adapter": "node",
+    "bundle": "typescript",
+    "package": "@docusaurus/core",
+    "compiler": "docusaurus",
+    "validation": "tool-and-adapter",
+    "sources": [
+      "https://docusaurus.io/docs/cli"
+    ],
+    "bundleKey": "typescript"
+  },
+  "vitepress": {
+    "description": "vitepress: locked source tools and existing project compiler/test runner",
+    "languages": [
+      "typescript",
+      "node"
+    ],
+    "defaultVersion": "1",
+    "versions": [
+      "1"
+    ],
+    "adapter": "node",
+    "bundle": "vue-3",
+    "package": "vitepress",
+    "compiler": "vitepress",
+    "validation": "tool-and-adapter",
+    "sources": [
+      "https://vitepress.dev/reference/cli"
+    ],
+    "bundleKey": "vue-3"
+  }
+}

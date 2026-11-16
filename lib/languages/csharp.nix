@@ -31,15 +31,15 @@
     DOTNET_NOLOGO = "1";
   };
 
-  lint = ''
+  quality = ''
     when_any '*.csproj' dotnet build --no-restore --warnaserror
   '';
 
-  fmt = ''
+  style = ''
     when_any '*.cs' csharpier format .
   '';
 
-  scan = ''
+  security = ''
     when_any '*.csproj' dotnet list package --vulnerable --include-transitive
   '';
 

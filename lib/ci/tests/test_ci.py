@@ -326,22 +326,19 @@ class Commands(unittest.TestCase):
 
 
 class Layers(unittest.TestCase):
-    def test_without_architecture_toml_it_fails_with_one_line_and_builds_nothing(self):
-        root, nix = plain()
+    def test_without_architecture_toml_it_runs_configured_tools(self):
+        root, nix = plain(architecture='run true\nexit "$status"\n')
         result = ci(root, "architecture", nix=nix)
-        self.assertEqual(result.code, 1)
-        self.assertEqual(
-            result.err,
-            "ci: architecture: there is no architecture.toml in this checkout, so nothing was checked. Add one that names the layers and "
-            'what each may use. A project with nothing to keep apart says so with one layer: paths = ["."].\n',
-        )
-        self.assertEqual((result.out, nix.calls), ("", []))
+        self.assertEqual(result.code, 0, result.err)
+        self.assertIn(":: true", result.out)
+        self.assertTrue(nix.calls)
 
-    def test_the_same_holds_with_a_flake_of_its_own(self):
-        root, nix = flaked(shell(CLEAN))
+    def test_existing_project_architecture_command_needs_no_rules_file(self):
+        root, nix = flaked(shell({**CLEAN, "architecture": 'run false\nexit "$status"\n'}))
         result = ci(root, "architecture", nix=nix)
-        self.assertEqual((result.code, nix.calls), (1, []))
-        self.assertTrue(result.err.startswith("ci: architecture: there is no architecture.toml in this checkout"), result.err)
+        self.assertEqual(result.code, 1, result.err)
+        self.assertIn(":: false", result.out)
+        self.assertTrue(nix.calls)
 
     def test_with_one_it_runs(self):
         root, nix = plain({"run.sh": "echo 1\n", "architecture.toml": RULES})

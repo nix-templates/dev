@@ -42,17 +42,17 @@
 
   ];
 
-  lint = ''
+  quality = ''
     run yamllint --strict .
     when_any '*.yaml' kube-linter lint .
     when Chart.yaml helm lint .
   '';
 
-  fmt = ''
+  style = ''
     run yamlfmt .
   '';
 
-  scan = ''
+  security = ''
     run trivy config --exit-code 1 --skip-dirs .direnv .
     when_any '*.yaml' kubeconform -summary -ignore-missing-schemas .
   '';

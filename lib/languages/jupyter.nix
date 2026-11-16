@@ -59,17 +59,17 @@ in
     venvDir = ".venv";
   };
 
-  lint = ''
+  quality = ''
     run ruff check .
     when pyproject.toml mypy .
   '';
 
-  fmt = ''
+  style = ''
     run ruff format .
     run_on '*.ipynb' nbstripout
   '';
 
-  scan = ''
+  security = ''
     # bandit reads a .bandit file by itself, and [tool.bandit] only when told where it is.
     if has tool.bandit pyproject.toml; then
       run bandit --quiet --recursive . --exclude ./.venv,./.direnv -c pyproject.toml

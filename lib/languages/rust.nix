@@ -71,23 +71,23 @@ in
     LLVM_PROFDATA = "${pkgs.rustc.llvmPackages.llvm}/bin/llvm-profdata";
   };
 
-  lint = ''
+  quality = ''
     when Cargo.toml cargo clippy --all-targets --all-features -- --deny warnings
     when Cargo.toml cargo machete
     when Cargo.toml taplo lint
   '';
 
-  fmt = ''
+  style = ''
     when Cargo.toml cargo fmt --all
     when Cargo.toml taplo fmt
   '';
 
-  scan = ''
+  security = ''
     when Cargo.lock cargo audit
     when deny.toml cargo deny check
   '';
 
-  layers = [
+  architecture = [
     ''
       # Banned crates, and which crates may pull one in (`wrappers`), from deny.toml.
       when deny.toml cargo deny check bans

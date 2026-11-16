@@ -30,13 +30,13 @@
     # macOS gets the rest of the environment rather than no shell at all.
     ++ lib.optional (!stdenv.hostPlatform.isDarwin) yosys;
 
-  lint = ''
+  quality = ''
     run_on '*.sv' verible-verilog-lint
     run_on '*.v' verible-verilog-lint
     run_on '*.sv' verible-verilog-format --verify
   '';
 
-  fmt = ''
+  style = ''
     run_on '*.sv' verible-verilog-format --inplace
     run_on '*.v' verible-verilog-format --inplace
   '';

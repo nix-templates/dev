@@ -14,11 +14,11 @@
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     when_any '*.odin' odin check .
   '';
 
-  fmt = ''
+  style = ''
     run odin fmt .
   '';
 

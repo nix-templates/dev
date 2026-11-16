@@ -14,12 +14,12 @@
 
   trivy = true;
 
-  lint = ''
+  quality = ''
     when cue.mod cue vet ./...
     run cue fmt --check ./...
   '';
 
-  fmt = ''
+  style = ''
     run cue fmt ./...
   '';
 

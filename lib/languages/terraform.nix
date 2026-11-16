@@ -26,21 +26,26 @@
 
   ];
 
+  # The same requirements as data, for consumers that construct a package set.
+  packageConfig = {
+    allowInsecurePredicate = pkg: lib.getName pkg == "ecdsa";
+  };
+
   # What the project's nixpkgs has to allow before these tools evaluate.
   nixpkgsConfig = [
     ''config.allowInsecurePredicate = pkg: inputs.nixpkgs.lib.getName pkg == "ecdsa";''
   ];
 
-  lint = ''
+  quality = ''
     when_any '*.tf' tofu fmt -check -recursive
     when_any '*.tf' tflint --recursive
   '';
 
-  fmt = ''
+  style = ''
     when_any '*.tf' tofu fmt -recursive
   '';
 
-  scan = ''
+  security = ''
     when_any '*.tf' tfsec --soft-fail=false .
     when_any '*.tf' checkov --quiet --compact --directory .
     run trivy config --exit-code 1 --skip-dirs .direnv .

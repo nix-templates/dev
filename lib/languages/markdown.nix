@@ -29,16 +29,16 @@
 
   ];
 
-  lint = ''
+  quality = ''
     run markdownlint-cli2 '**/*.md'
     when .vale.ini vale .
   '';
 
-  fmt = ''
+  style = ''
     run prettier --write --log-level warn '**/*.md'
   '';
 
-  scan = ''
+  security = ''
     run lychee --no-progress --offline --exclude-path .direnv .
   '';
 }

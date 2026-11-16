@@ -41,7 +41,7 @@ A checkout with a flake whose default dev shell has the command runs it
 there. Any other checkout gets a dev shell made for the languages found in it.
 
   style         is `style --check` here: nothing is rewritten
-  architecture  fails when the checkout has no {RULES}
+  architecture  uses the project command; {RULES} is optional
   arguments     go to the command as they are, as in `ci architecture --since origin/main`
 
 It exits 0 when the check passed, 1 when it found something, 2 when it could
@@ -160,13 +160,7 @@ def follow(program: str, arguments: list[str], root: str, entered: environment.E
 def check(command: str, arguments: list[str], root: str, settings: dict, strict: set[str]) -> int:
     cases: list[tuple[str, str]] = []
     if command == "architecture":
-        missing, uncompared = rules(arguments)
-        if missing:
-            say(
-                f"architecture: there is no {missing} in this checkout, so nothing was checked. Add one that names the layers "
-                'and what each may use. A project with nothing to keep apart says so with one layer: paths = ["."].'
-            )
-            return 1
+        _, uncompared = rules(arguments)
         if uncompared:
             cases.append(uncompared)
     if command == "style" and "--check" not in arguments:

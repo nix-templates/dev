@@ -713,5 +713,54 @@ class Effects(unittest.TestCase):
         self.assertFalse(covers("os", "ostrich", "ostrich"))
 
 
+
+
+
+class FrameworkComponents(unittest.TestCase):
+    RULES = '[[layer]]\nname="core"\npaths=["core"]\npure=true\n[[layer]]\nname="ui"\npaths=["ui"]\n'
+
+    def test_vue_and_svelte_imports_are_not_skipped(self):
+        root = tree({
+            'core/Page.vue': '<template><p>import "not-a-dependency"</p></template>\n<script setup lang="ts">\nimport View from "../ui/View.vue";\nfetch("/api");\n</script>',
+            'ui/View.vue': '<template><p>Hello</p></template>',
+            'core/Page.svelte': '<script>import View from "../ui/View.vue";</script>\n<main>{Date.now()}</main>',
+            'architecture.toml': self.RULES,
+        })
+        violations = found(root)
+        self.assertIn(('layer', 'core/Page.vue', 'ui/View.vue'), violations)
+        self.assertIn(('purity', 'core/Page.vue', 'fetch()'), violations)
+        self.assertIn(('layer', 'core/Page.svelte', 'ui/View.vue'), violations)
+        self.assertIn(('purity', 'core/Page.svelte', 'Date.now()'), violations)
+
+    def test_external_scripts_and_component_test_exclusion(self):
+        root = tree({
+            'core/Page.vue': '<script src="../ui/logic.ts"></script>',
+            'core/Page.test.vue': '<script>import x from "../ui/logic.ts";</script>',
+            'ui/logic.ts': 'export const x = 1;',
+            'architecture.toml': self.RULES,
+        })
+        self.assertEqual(found(root), {('layer', 'core/Page.vue', 'ui/logic.ts')})
+
+    def test_comments_and_styles_are_not_javascript(self):
+        root = tree({
+            'core/Page.vue': '<!-- <script>import x from "../ui/logic.ts";</script> -->\n<template><p>Hello</p></template><style>.x { content: "Date.now()"; }</style>',
+            'ui/logic.ts': 'export const x = 1;',
+            'architecture.toml': self.RULES,
+        })
+        self.assertEqual(found(root), set())
+
+    def test_vue_literal_braces_are_not_svelte_expressions(self):
+        root = tree({'core/Page.vue': '<template><p>A literal { character</p></template>', 'architecture.toml': self.RULES})
+        self.assertEqual(found(root), set())
+
+    def test_template_expression_comments_preserve_brace_matching(self):
+        root = tree({'core/Page.vue': '<template><p>{{ /* } */ Date.now() }}</p></template>', 'architecture.toml': self.RULES})
+        self.assertEqual(found(root), {('purity', 'core/Page.vue', 'Date.now()')})
+
+    def test_malformed_script_fails_unreadable(self):
+        root = tree({'core/Page.vue': '<script>import x from "vue";', 'architecture.toml': self.RULES})
+        self.assertEqual(found(root), {('unreadable', 'core/Page.vue', '-')})
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -2,28 +2,80 @@
 
 [![check](https://github.com/nix-templates/dev/actions/workflows/check.yml/badge.svg)](https://github.com/nix-templates/dev/actions/workflows/check.yml)
 
-A Nix dev shell for your language, with the tools already in it.
+Project-aware development environments and checks, built with Nix.
 
-Run `nix develop` and you have the compiler, the language server, the linters,
-the formatter, the security scanners and the test tools. There are 68 language
-templates, and all of them answer to the same five commands:
+`dvt` discovers the languages, supported frameworks and configured tools in an
+existing repository, then generates a `flake.nix` for them. It keeps project
+checks attached to their existing dependencies and configuration. Additional
+framework tools live in separate, pinned Nix environments.
+
+Every environment exposes the same five commands in the terminal and CI:
 
 | Command | What it runs |
 | :--- | :--- |
-| `quality` | Every linter and static analyser for your languages. |
-| `style` | Every formatter. `style --check` reports and changes nothing. |
-| `security` | Leaked secrets, vulnerable dependencies, SAST. |
-| `architecture` | Your architecture rules: which code may use which, and what must stay pure. |
-| `tests` | Your tests. `tests --coverage` and `tests --mutation` where the language has a tool for it. |
+| `quality` | Configured static analysis, type checks and framework diagnostics. |
+| `style` | Configured formatters. `style --check` checks a source copy and reports changes. |
+| `security` | Configured security tools, or language defaults for secrets, dependencies and SAST. |
+| `architecture` | Existing dependency and boundary checks, plus optional built-in architecture rules. |
+| `tests` | Project test runners. Additional modes depend on the selected language/profile. |
 
-The terminal, VS Code and Neovim all call these same five, so your editor and
-your CI never disagree about what "clean" means. And when CI stops you, the
-name of the job says which of the five it was.
+## Start with your project
 
-Four of them had other names before: `lint`, `fmt`, `scan` and `layers`.
-Those are gone.
+Run these from the repository root:
 
-## Quick start
+```shell
+nix run github:nix-templates/dev#dvt -- inspect
+nix run github:nix-templates/dev#dvt -- init
+nix develop
+quality
+architecture
+tests
+```
+
+`inspect` reports each component's languages, framework release lines and tool
+configuration without running application code. Bare `init` uses that discovery
+to create `flake.nix` and `.envrc`. Components in a repository with several
+projects keep their own working directories and run in separate environments;
+the root commands collect their results.
+
+Existing category scripts and recognized tool configurations take precedence
+over defaults for that category. For example, architecture checks can use
+import-linter, dependency-cruiser, Deptrac, Packwerk or configured JVM build
+plugins with their existing rules. **`architecture.toml` is optional.**
+
+Initialization does not install application dependencies or rewrite manifests,
+lockfiles or tool configuration. Missing project tools fail with an explanation.
+Use your existing dependency manager to prepare the project environment.
+Initialization refuses to overwrite `flake.nix` or `.envrc`; `init --dry-run`
+prints the proposed files as JSON for review or integration into an existing
+flake. `--exclude <path>` omits a directory from discovery.
+
+## Choose a framework or language
+
+For a new project, or an explicit selection:
+
+```shell
+nix run github:nix-templates/dev#dvt -- init rails --framework-version 7.2
+nix run github:nix-templates/dev#dvt -- init sveltekit --framework-version 2
+nix run github:nix-templates/dev#dvt -- init rust
+nix run github:nix-templates/dev#dvt -- list
+```
+
+The registry currently has **81 framework profiles, 120 release-line
+selections across 24 language modules, and defaults for all 69 language
+modules**. This is broad coverage, not every framework or configuration.
+`dvt describe <framework-or-language>` shows compatibility notes and primary
+sources. The [framework guide](docs/frameworks.md) distinguishes real application
+fixtures, tool fixtures, adapter tests and researched candidates.
+
+A framework selection records its release line. Commands check that selection
+against installed or locked metadata and reject mismatches. Tool bundles keep
+their parsers and plugins together; checks that need application imports or
+framework plugins use the project's existing environment. Commit `flake.lock`
+to pin Nix inputs. Older runtimes and independently pinned tool package sets can
+be selected explicitly in the generated flake.
+
+## Language templates
 
 ```shell
 nix flake init -t github:nix-templates/dev#rust
@@ -43,19 +95,23 @@ A project in several languages lists several names:
 languages = [ "rust" "python" "nix" ];
 ```
 
-One shell, three toolsets, and each command covers all three.
+This explicit `mkProject` setup combines language toolsets in one shell.
+Use discovered `mkWorkspace` components when projects need separate environments.
 
 Don't like what a language brings? Copy its file from `lib/languages/` next to
 your flake, edit it, and list the path instead of the name:
 `languages = [ ./rust.nix ]`.
 
-## Tools wait for their config
+## Defaults and existing configuration
 
-Most tools only run when your project has their config file. No `deny.toml`,
+Language defaults make many checks conditional on a configuration file. No `deny.toml`,
 no cargo-deny. No `.go-arch-lint.yml`, no go-arch-lint. A new project starts
 quiet and gets stricter as you add config.
 
-Every project gets `typos`, `editorconfig-checker` and `gitleaks` regardless.
+Default categories also include shared repository checks such as `typos`,
+`editorconfig-checker` and `gitleaks`. A discovered configured category replaces
+that category’s defaults, including its shared checks; review `dvt inspect` to
+see which tools will own it.
 
 A command says what it left out. Every tool it skips gets a line,
 `:: skipping cargo-deny (no deny.toml here)`. And when nothing at all ran for
@@ -63,7 +119,13 @@ one of your languages, you get `:: checked nothing: tests for python`.
 
 ## Architecture rules
 
-`architecture` reads `architecture.toml` and fails when code breaks it.
+`architecture` runs configured architecture tools with their own rules and
+project dependencies. It does not require a common configuration format. If no
+architecture check is configured, it exits with status 2 rather than reporting
+success.
+
+You can also opt into the built-in source analysis by adding `architecture.toml`.
+That engine checks layer boundaries and purity alongside configured tools:
 
 ```toml
 version = 1
@@ -106,7 +168,7 @@ That last line is written for coding agents as much as for people. An agent
 that hits it gets told how to fix the design, which beats it papering over
 the error.
 
-### Old code
+### Baselines for built-in rules
 
 Existing code won't pass new rules on day one. So:
 
@@ -125,7 +187,7 @@ widening `may_use`, excluding the file, or moving it to a layer that asks
 less. Rules may only get stricter. `--allow-weaker` is for the one change
 where loosening them was agreed.
 
-### What it reads
+### What the built-in engine reads
 
 55 languages. `architecture --languages` lists them with their file types.
 
@@ -151,7 +213,7 @@ unread. In a git checkout it reads what git tracks or would add, so whatever
 the language its `#!` line names.
 
 Some languages have a real architecture tool of their own. `architecture`
-runs it after the rules, when you have its config: go-arch-lint, `cargo deny check
+runs it independently of the built-in rules, when configured: go-arch-lint, `cargo deny check
 bans`, deptry and import-linter, dependency-cruiser and knip, the Maven
 enforcer, Gradle's `buildHealth`, sbt-explicit-dependencies, `mix xref`,
 `rebar3 xref`, deptrac, packwerk, weeder, `dependency_validator`, periphery
@@ -165,7 +227,8 @@ apart, which is how you say that apps or plugins do not use each other.
 
 ## In your own flake
 
-The templates are a thin layer over one function. Call it yourself:
+Use `mkProject` for an explicit environment, or `mkWorkspace` for isolated
+components with shared dispatch commands. An explicit project looks like this:
 
 ```nix
 {
@@ -199,7 +262,10 @@ project builds with.
 | :--- | :--- |
 | `pkgs` | Your package set. The only required one. |
 | `languages` | Names, paths to your own language files, or both. |
-| `src` | Your source tree, `self` in a flake. Turns on `checks`, which needs an `architecture.toml`. |
+| `src` | Your source tree, `self` in a flake. Enables the built-in rules check when `architecture.toml` exists. |
+| `frameworks` | Named release-line selections or custom profiles. |
+| `configured` | Category commands using existing project tools and configuration. |
+| `toolPkgs` | A separately pinned package set for additional tooling. |
 | `rustToolchain` | Your pinned Rust toolchain. Clippy changes its lints every release, so pin it. |
 | `python` | Another Python interpreter. |
 | `extraTools` | More packages for the shell. |
@@ -224,10 +290,11 @@ A project without one gets a dev shell made on the spot: `ci` reads the files
 git tracks, works out the languages and asks `mkProject` for them.
 `ci --languages` shows what it found.
 
-CI is stricter than your terminal in two places. `style` is `style --check`,
-because CI never rewrites your files. And `architecture` fails when there is no
-`architecture.toml`: a check with nothing to check should not go green. A
-project with nothing to keep apart says so with one layer, `paths = ["."]`.
+CI runs `style --check` to check formatting on a source copy. Architecture
+checks use the command in your environment, including existing project tools;
+`architecture.toml` is only needed for the optional built-in engine. A command
+with no configured architecture check exits 2. Run `dvt init` before adopting
+the generated environment in CI so discovery choices are reviewed and pinned.
 
 It exits 0 when the check passed, 1 when it found something and 2 when it
 could not run. Arguments go to the command:
@@ -447,7 +514,9 @@ extra modes next to plain `tests`.
 
 ## Editors
 
-Every language template comes with `.envrc`, `.vscode/` and `.nvim.lua`.
+The static language templates include `.envrc`, `.vscode/` and `.nvim.lua`.
+`dvt init` generates only the flake and `.envrc`; existing editor configuration
+stays in place and can call the same five commands.
 
 **VS Code.** Install the [direnv extension][direnv-ext]. It loads the shell into
 the editor so extensions find the binaries, and the five commands show up as
@@ -472,6 +541,10 @@ Answer `:trust` the first time. You get LSP through the built-in
 inherits the whole toolchain through `PATH`.
 
 ## Notes on individual templates
+
+These notes describe optional upstream integrations. `dvt init` never performs
+these installations. Keep framework plugins in the existing project environment
+and package standalone additions separately when dependency isolation is needed.
 
 - **`elixir`**: `mix credo` and `mix deps.audit` are Hex dependencies; add :credo and :mix_audit to mix.exs.
 - **`haxe`**: The Haxe language server ships with the vshaxe VS Code extension rather than as a standalone nixpkgs package.
@@ -510,7 +583,10 @@ has a row for each.
 | Path | What it is |
 | :--- | :--- |
 | `lib/languages/` | One file per language: its tools and its part of each command. |
-| `lib/default.nix` | `mkProject`, which puts languages together. |
+| `lib/default.nix` | `mkProject`, which composes defaults, profiles and configured checks. |
+| `lib/workspace.nix` | Separate component environments and root dispatch commands. |
+| `lib/dvt/` | Initialization and read-only project discovery. |
+| `lib/frameworks/` | Release-line profiles, isolated tool bundles, research and validation. |
 | `lib/helpers.sh` | The shell helpers the commands share (`run`, `when`, `run_on`, ...). |
 | `lib/layers/` | `architecture`, in Python with no dependencies, and its tests. |
 | `lib/ci/` | `ci`, same. |

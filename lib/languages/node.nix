@@ -1,7 +1,7 @@
 # Node.js.
-{ pkgs, ... }:
+{ pkgs, options, ... }:
 let
-  nodejs = pkgs.nodejs;
+  nodejs = options.node or pkgs.nodejs;
   yarn = pkgs.yarn.override { inherit nodejs; };
 
   tools = with pkgs; [
@@ -34,22 +34,22 @@ in
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when eslint.config.js eslint .
     when eslint.config.mjs eslint .
     run oxlint .
     when biome.json biome check .
   '';
 
-  fmt = ''
+  style = ''
     run prettier --write --ignore-unknown --log-level warn .
   '';
 
-  scan = ''
+  security = ''
     when package-lock.json npm audit --audit-level=high
   '';
 
-  layers = [
+  architecture = [
     ''
       depcruise_sources() {
         if [ -d src ]; then

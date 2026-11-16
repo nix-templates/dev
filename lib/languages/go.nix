@@ -31,23 +31,22 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when go.mod golangci-lint run ./...
     when go.mod go vet ./...
     when go.mod staticcheck ./...
   '';
 
-  fmt = ''
+  style = ''
     run gofumpt -l -w .
-    when go.mod go mod tidy
   '';
 
-  scan = ''
+  security = ''
     when go.mod gosec -quiet ./...
     when go.mod govulncheck ./...
   '';
 
-  layers = [
+  architecture = [
     ''
       when .go-arch-lint.yml go-arch-lint check
     ''

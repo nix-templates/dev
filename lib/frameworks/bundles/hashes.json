@@ -1,0 +1,13 @@
+{
+  "nextjs-14": "sha256-L0YjjLsnyjAWYqsDmKN8YNNyoQsvJrm/3QQgclXZkT8=",
+  "nextjs-15": "sha256-6iQLXhVGTJKNtPdhhy5ikXBjIuxBfmEnk489jyuOEM0=",
+  "nextjs-16": "sha256-Vlrl9HhLocUmCGjPNAnEbIg8zWX5PP/cusVCglsb61o=",
+  "react-18": "sha256-8DDW+tzrW9NszyYsbtQYFyWhIKf1c8WuUCIMUFBQjjg=",
+  "react-19": "sha256-LD14CNzV7ujoDFcWBxARs3GQR3nO/4GgolshKJWOHEo=",
+  "vue-2": "sha256-N/m0ydSDiLNT1pAGBmaVkhYle5BZyfK5xrxGNXSksRs=",
+  "vue-3": "sha256-1zQ5iXdQ1QUdO7+ltr4eNsejNLEjqfPBm5vjDysaMIE=",
+  "typescript": "sha256-6TRVTQy5rcVkUubm0p9CKmfVuuS9WWRG2mMJBO57I/E=",
+  "svelte-4": "sha256-PauLsiPbsB2lPYPRyNuX3/ZzzMzVDpZBGFRAI62faME=",
+  "svelte-5": "sha256-KomfUndDaJmgrjJ15Re1QuC8ZFpgenJaIY9AAT7AJNM=",
+  "astro": "sha256-9R8T9ograCvTCgKNbuBEvLgsfLOcNPM4dBG9ko4jbB8="
+}

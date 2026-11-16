@@ -30,16 +30,16 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when_any '*.kt' ktlint --relative
     when_any '*.kt' detekt --build-upon-default-config
   '';
 
-  fmt = ''
+  style = ''
     when_any '*.kt' ktlint --format --relative
   '';
 
-  layers = [
+  architecture = [
     ''
       if has com.autonomousapps.dependency-analysis build.gradle build.gradle.kts settings.gradle settings.gradle.kts; then
         run gradle --no-daemon -q buildHealth

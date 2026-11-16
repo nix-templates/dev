@@ -38,23 +38,29 @@
 
   ];
 
+  # The same requirements as data, for consumers that construct a package set.
+  packageConfig = {
+    allowUnfree = true;
+    allowInsecurePredicate = pkg: lib.getName pkg == "ecdsa";
+  };
+
   # What the project's nixpkgs has to allow before these tools evaluate.
   nixpkgsConfig = [
     "config.allowUnfree = true;"
     ''config.allowInsecurePredicate = pkg: inputs.nixpkgs.lib.getName pkg == "ecdsa";''
   ];
 
-  lint = ''
+  quality = ''
     when_any '*.tf' terraform fmt -check -recursive
     when_any '*.tf' tflint --recursive
     when_any '*.pkr.hcl' packer fmt -check -recursive .
   '';
 
-  fmt = ''
+  style = ''
     when_any '*.tf' terraform fmt -recursive
   '';
 
-  scan = ''
+  security = ''
     when_any '*.tf' tfsec --soft-fail=false .
     when_any '*.tf' checkov --quiet --compact --directory .
   '';

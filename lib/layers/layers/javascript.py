@@ -11,7 +11,7 @@ import re
 from .model import Ref, Scan
 from .walk import read
 
-EXTENSIONS = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")
+EXTENSIONS = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts", ".vue", ".svelte")
 
 _SPECIFIER = re.compile(
     r"""(?:\bimport\s+(?:type\s+)?(?:[\w*${}\s,]+\s+from\s+)?   # import x from, import {a} from, import "x"
@@ -19,7 +19,7 @@ _SPECIFIER = re.compile(
          |\brequire\s*\(\s*
          |\bimport\s*\(\s*)
         (['"])([^'"\n]+)\1""",
-    re.X,
+    re.VERBOSE,
 )
 
 _EFFECTS = (
@@ -67,10 +67,73 @@ def strip_comments(src: str) -> str:
     return "".join(out)
 
 
+
+def component_code(text: str, svelte: bool = False) -> tuple[str, list[tuple[str, int]]]:
+    """Script blocks and brace expressions, preserving original line positions.
+
+    This is text analysis, not a Vue/Svelte compiler. Template directives and
+    generated framework imports are outside its view, as are generated imports
+    in other languages' build systems.
+    """
+    blank = lambda value: "".join("\n" if char == "\n" else " " for char in value)
+    clean = re.sub(r"<!--.*?-->", lambda match: blank(match[0]), text, flags=re.DOTALL)
+    code = list(blank(clean))
+    external = []
+    scripts = list(re.finditer(r"<script\b([^>]*)>(.*?)</script\s*>", clean, re.DOTALL | re.IGNORECASE))
+    if len(scripts) != len(re.findall(r"<script\b", clean, re.IGNORECASE)):
+        raise ValueError("component has an unclosed script block")
+    hidden = list(clean)
+    for match in scripts:
+        start, end = match.span(2)
+        code[start:end] = clean[start:end]
+        attributes = match[1]
+        source = re.search(r"\bsrc\s*=\s*(['\"])(.*?)\1", attributes, re.DOTALL)
+        if source:
+            external.append((source[2], match.start(1) + source.start()))
+        start, end = match.span()
+        hidden[start:end] = blank(clean[start:end])
+    # CSS braces are not JavaScript expressions.
+    markup = re.sub(r"<style\b[^>]*>.*?</style\s*>", lambda match: blank(match[0]), "".join(hidden), flags=re.DOTALL | re.IGNORECASE)
+    index = 0
+    while index < len(markup):
+        if (svelte and markup[index] != "{") or (not svelte and not markup.startswith("{{", index)):
+            index += 1
+            continue
+        start = index
+        depth = 1 if svelte else 2
+        index += depth
+        while index < len(markup) and depth:
+            char = markup[index]
+            if markup.startswith("/*", index):
+                end = markup.find("*/", index + 2)
+                if end < 0:
+                    raise ValueError("component has an unclosed JavaScript comment")
+                index = end + 2
+                continue
+            if markup.startswith("//", index):
+                end = markup.find("\n", index + 2)
+                index = len(markup) if end < 0 else end
+                continue
+            if char in "'\"`":
+                quote = char
+                index += 1
+                while index < len(markup) and markup[index] != quote:
+                    index += 2 if markup[index] == "\\" else 1
+            elif char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+            index += 1
+        if depth:
+            raise ValueError("component has an unclosed template expression")
+        code[start:index] = markup[start:index]
+    return "".join(code), external
+
+
 def is_test(path: str) -> bool:
     parts = path.split("/")
     return bool({"__tests__", "tests", "test", "e2e"} & set(parts[:-1])) or bool(
-        re.search(r"\.(test|spec)\.[cm]?[jt]sx?$", parts[-1])
+        re.search(r"\.(test|spec)\.(?:[cm]?[jt]sx?|vue|svelte)$", parts[-1])
     )
 
 
@@ -111,11 +174,18 @@ def extract(root: str, files: list[str], aliases: dict[str, str], include_tests:
         if translation(path, text):
             continue
         scan.files.append(path)
+        external = []
+        if path.endswith((".vue", ".svelte")):
+            try:
+                text, external = component_code(text, svelte=path.endswith(".svelte"))
+            except ValueError as error:
+                scan.unreadable.append((path, str(error)))
+                continue
         code = strip_comments(text)
         directory = posixpath.dirname(path)
-        for match in _SPECIFIER.finditer(code):
-            specifier = match.group(2)
-            line = code.count("\n", 0, match.start()) + 1
+        specifiers = [(match.group(2), match.start()) for match in _SPECIFIER.finditer(code)] + external
+        for specifier, position in specifiers:
+            line = code.count("\n", 0, position) + 1
             candidate = None
             if specifier.startswith("."):
                 candidate = posixpath.normpath(posixpath.join(directory, specifier))

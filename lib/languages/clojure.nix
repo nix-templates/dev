@@ -25,12 +25,12 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when_any '*.clj' clj-kondo --lint .
     run cljfmt check .
   '';
 
-  fmt = ''
+  style = ''
     run cljfmt fix .
   '';
 

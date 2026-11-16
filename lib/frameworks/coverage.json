@@ -1,0 +1,1358 @@
+{
+  "reviewed": "2026-11-16",
+  "scope": "Every language module in this repository; candidate frameworks are researched, not automatically certified.",
+  "languages": {
+    "ansible": {
+      "frameworks": [
+        "Molecule",
+        "Ansible collections"
+      ],
+      "tools": [
+        "ansible-lint",
+        "yamlfmt",
+        "Molecule",
+        "ansible-test"
+      ],
+      "compatibility": "Pin ansible-core, collections and Molecule drivers together; provisioners may create external resources.",
+      "sources": [
+        "https://docs.ansible.com/projects/molecule/installation/"
+      ],
+      "implementedProfiles": []
+    },
+    "assembly": {
+      "frameworks": [],
+      "tools": [
+        "assembler diagnostics",
+        "project test harness"
+      ],
+      "compatibility": "No universal application framework; architecture, target ABI and harness are project-specific. Language defaults remain available.",
+      "sources": [
+        "https://www.nasm.us/"
+      ],
+      "implementedProfiles": []
+    },
+    "bun": {
+      "frameworks": [
+        "Next.js",
+        "React",
+        "Vue",
+        "Nuxt",
+        "Angular",
+        "SvelteKit",
+        "NestJS",
+        "Hono"
+      ],
+      "tools": [
+        "ESLint with framework plugins",
+        "Prettier with framework plugins",
+        "Vitest/Jest",
+        "Playwright",
+        "dependency-cruiser"
+      ],
+      "compatibility": "Pin host, parser and plugin together. Next.js 16 removed its wrapper; Vue 2 and 3 have different rules. Angular CLI must match Angular. Do not install these into project node_modules.",
+      "sources": [
+        "https://nextjs.org/docs/app/api-reference/config/eslint",
+        "https://eslint.vuejs.org/user-guide/",
+        "https://angular.dev/reference/versions",
+        "https://sveltejs.github.io/eslint-plugin-svelte/user-guide/",
+        "https://hono.dev/docs/helpers/testing"
+      ],
+      "implementedProfiles": []
+    },
+    "c-cpp": {
+      "frameworks": [
+        "Qt",
+        "Drogon",
+        "Catch2",
+        "GoogleTest"
+      ],
+      "tools": [
+        "clang-tidy/Clazy",
+        "clang-format",
+        "CTest",
+        "Qt Test/DrogonTest"
+      ],
+      "compatibility": "Match compiler ABI, Qt major version, compile_commands.json and existing CMake presets; never fetch a second framework into the project.",
+      "sources": [
+        "https://doc.qt.io/qtcreator/creator-preferences-analyzer-clang-tools.html",
+        "https://doc.qt.io/qt-6/qttestlib-tutorial1-example.html",
+        "https://github.com/drogonframework/drogon/wiki/ENG-19-Testing-Framework"
+      ],
+      "implementedProfiles": [
+        "catch2",
+        "drogon",
+        "googletest",
+        "qt"
+      ]
+    },
+    "clojure": {
+      "frameworks": [
+        "Ring",
+        "Reitit",
+        "Pedestal"
+      ],
+      "tools": [
+        "clj-kondo",
+        "cljfmt",
+        "clojure.test",
+        "Kaocha"
+      ],
+      "compatibility": "Keep tool aliases separate from application aliases; framework macros may need matching clj-kondo hooks.",
+      "sources": [
+        "https://cljdoc.org/d/clj-kondo/clj-kondo/2026.10.20/doc/running-on-the-jvm",
+        "https://cljdoc.org/d/clj-kondo/clj-kondo/2026.10.20/doc/linters"
+      ],
+      "implementedProfiles": [
+        "pedestal",
+        "reitit",
+        "ring"
+      ]
+    },
+    "crystal": {
+      "frameworks": [
+        "Kemal",
+        "Amber"
+      ],
+      "tools": [
+        "Ameba",
+        "crystal tool format",
+        "crystal spec"
+      ],
+      "compatibility": "Match Crystal and shards.lock; framework test helpers use project shards rather than a global install.",
+      "sources": [
+        "https://amberframework.org/docs/v1.5/guides/testing"
+      ],
+      "implementedProfiles": [
+        "amber",
+        "kemal"
+      ]
+    },
+    "csharp": {
+      "frameworks": [
+        "ASP.NET Core",
+        "Giraffe"
+      ],
+      "tools": [
+        "SDK analyzers",
+        "dotnet format/Fantomas",
+        "xUnit/NUnit/MSTest",
+        "NetArchTest"
+      ],
+      "compatibility": "Honor global.json, target frameworks and test-platform selection. Framework test hosts remain project dependencies.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/aspnet/core/testing/integration-testing",
+        "https://github.com/giraffe-fsharp/Giraffe",
+        "https://github.com/BenMorris/NetArchTest"
+      ],
+      "implementedProfiles": [
+        "aspnetcore",
+        "avalonia"
+      ]
+    },
+    "cue": {
+      "frameworks": [
+        "CUE modules"
+      ],
+      "tools": [
+        "cue vet",
+        "cue fmt"
+      ],
+      "compatibility": "Pin CUE language/module version and schemas; validate against the project schema.",
+      "sources": [
+        "https://cuelang.org/docs/reference/command/cue-help-vet/",
+        "https://cuelang.org/docs/reference/command/cue-help-fmt/"
+      ],
+      "implementedProfiles": []
+    },
+    "dart": {
+      "frameworks": [
+        "Flutter",
+        "Serverpod"
+      ],
+      "tools": [
+        "flutter analyze",
+        "dart format",
+        "flutter test",
+        "integration_test"
+      ],
+      "compatibility": "Flutter supplies a specific Dart SDK. Do not add a second Dart SDK ahead of it or update pubspec.lock while checking.",
+      "sources": [
+        "https://docs.flutter.dev/reference/flutter-cli",
+        "https://docs.flutter.dev/testing/testing-plugins"
+      ],
+      "implementedProfiles": [
+        "flutter",
+        "serverpod",
+        "shelf"
+      ]
+    },
+    "deno": {
+      "frameworks": [
+        "Fresh",
+        "Hono"
+      ],
+      "tools": [
+        "Deno quality/style/tests",
+        "Deno check",
+        "browser tests"
+      ],
+      "compatibility": "Use the project deno.lock, permission policy and pinned Deno version. Fresh 1 and 2 have different build setups.",
+      "sources": [
+        "https://fresh.deno.dev/docs/1.x/concepts/islands",
+        "https://hono.dev/docs/helpers/testing"
+      ],
+      "implementedProfiles": []
+    },
+    "dhall": {
+      "frameworks": [
+        "Dhall packages"
+      ],
+      "tools": [
+        "Dhall type checking",
+        "dhall format",
+        "dhall lint"
+      ],
+      "compatibility": "Preserve semantic hashes of imports; normalization is distinct from formatting.",
+      "sources": [
+        "https://docs.dhall-lang.org/howtos/FAQ.html"
+      ],
+      "implementedProfiles": []
+    },
+    "docker": {
+      "frameworks": [
+        "Docker Compose",
+        "BuildKit"
+      ],
+      "tools": [
+        "Hadolint",
+        "Buildx checks",
+        "Trivy",
+        "container-structure-test"
+      ],
+      "compatibility": "Build checks require suitable Buildx and Dockerfile syntax versions; container tests need a runtime and fixtures.",
+      "sources": [
+        "https://docs.docker.com/build/checks/"
+      ],
+      "implementedProfiles": []
+    },
+    "elixir": {
+      "frameworks": [
+        "Phoenix",
+        "LiveView"
+      ],
+      "tools": [
+        "mix format with HTMLFormatter",
+        "Credo",
+        "Sobelow",
+        "ExUnit",
+        "mix xref"
+      ],
+      "compatibility": "Pin Elixir/OTP and respect mix.lock; HEEx formatting plugins load from the project. Tests can require a database.",
+      "sources": [
+        "https://phoenix.hexdocs.pm/testing.html"
+      ],
+      "implementedProfiles": [
+        "ash",
+        "liveview",
+        "phoenix"
+      ]
+    },
+    "elm": {
+      "frameworks": [
+        "elm-ui",
+        "Lamdera"
+      ],
+      "tools": [
+        "elm-format",
+        "elm-review",
+        "elm-test"
+      ],
+      "compatibility": "Respect elm.json compiler and package constraints; elm-review has its own project and dependency graph.",
+      "sources": [
+        "https://package.elm-lang.org/packages/jfmengels/elm-review/latest/"
+      ],
+      "implementedProfiles": []
+    },
+    "empty": {
+      "frameworks": [],
+      "tools": [
+        "shared repository checks"
+      ],
+      "compatibility": "No language or framework selected. Start with common checks, then explicitly compose languages and frameworks.",
+      "sources": [
+        "https://wiki.nixos.org/wiki/Flakes/en"
+      ],
+      "implementedProfiles": []
+    },
+    "erlang": {
+      "frameworks": [
+        "Cowboy",
+        "OTP"
+      ],
+      "tools": [
+        "erlfmt",
+        "Dialyzer",
+        "EUnit",
+        "Common Test",
+        "rebar3 xref"
+      ],
+      "compatibility": "Respect OTP compatibility and rebar.lock; run the project test profile rather than loading libraries from another code path.",
+      "sources": [
+        "https://rebar3.org/docs/testing/",
+        "https://www.rebar3.org/docs/testing/ct/"
+      ],
+      "implementedProfiles": [
+        "cowboy"
+      ]
+    },
+    "fortran": {
+      "frameworks": [
+        "fpm",
+        "pFUnit",
+        "test-drive"
+      ],
+      "tools": [
+        "compiler diagnostics",
+        "fprettify",
+        "fpm test",
+        "pFUnit"
+      ],
+      "compatibility": "Compiler ABI, preprocessing and MPI affect framework compatibility; preserve fpm dependencies and lock configuration.",
+      "sources": [
+        "https://fpm.fortran-lang.org/spec/features.html",
+        "https://fortran-lang.org/packages/pfunit/"
+      ],
+      "implementedProfiles": []
+    },
+    "fsharp": {
+      "frameworks": [
+        "ASP.NET Core",
+        "Giraffe"
+      ],
+      "tools": [
+        "SDK analyzers",
+        "dotnet format/Fantomas",
+        "xUnit/NUnit/MSTest",
+        "NetArchTest"
+      ],
+      "compatibility": "Honor global.json, target frameworks and test-platform selection. Framework test hosts remain project dependencies.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/aspnet/core/testing/integration-testing",
+        "https://github.com/giraffe-fsharp/Giraffe",
+        "https://github.com/BenMorris/NetArchTest"
+      ],
+      "implementedProfiles": [
+        "giraffe"
+      ]
+    },
+    "github-actions": {
+      "frameworks": [
+        "GitHub Actions"
+      ],
+      "tools": [
+        "actionlint",
+        "zizmor",
+        "yamllint"
+      ],
+      "compatibility": "Pin action schemas and tooling; running workflows with act is different from validating source.",
+      "sources": [
+        "https://docs.zizmor.sh/integrations/"
+      ],
+      "implementedProfiles": []
+    },
+    "gleam": {
+      "frameworks": [
+        "Wisp",
+        "Lustre"
+      ],
+      "tools": [
+        "gleam check",
+        "gleam format",
+        "gleeunit"
+      ],
+      "compatibility": "Pin Gleam and its Erlang or JavaScript target runtime; use manifest.toml and the project test runner.",
+      "sources": [
+        "https://gleeunit.hexdocs.pm/index.html"
+      ],
+      "implementedProfiles": []
+    },
+    "go": {
+      "frameworks": [
+        "Gin",
+        "Echo",
+        "Fiber"
+      ],
+      "tools": [
+        "golangci-lint",
+        "gofumpt",
+        "gosec",
+        "govulncheck",
+        "go test/httptest"
+      ],
+      "compatibility": "Respect the go directive and go.sum; configure read-only module mode. Framework test helpers compile with the existing module graph.",
+      "sources": [
+        "https://gin-gonic.com/en/docs/testing/",
+        "https://echo.labstack.com/guide/testing/"
+      ],
+      "implementedProfiles": [
+        "chi",
+        "echo",
+        "fiber",
+        "gin"
+      ]
+    },
+    "graphql": {
+      "frameworks": [
+        "GraphQL server/client frameworks"
+      ],
+      "tools": [
+        "GraphQL ESLint",
+        "Prettier",
+        "GraphQL Inspector",
+        "resolver tests"
+      ],
+      "compatibility": "Match GraphQL runtime, schema and code generation plugins with the hosting language profile.",
+      "sources": [
+        "https://the-guild.dev/graphql/inspector/docs"
+      ],
+      "implementedProfiles": []
+    },
+    "groovy": {
+      "frameworks": [
+        "Grails",
+        "Spock"
+      ],
+      "tools": [
+        "CodeNarc",
+        "Spock",
+        "Gradle tests",
+        "ArchUnit"
+      ],
+      "compatibility": "Spock artifacts are compiled for specific Groovy lines. Choose the matching artifact rather than installing a newer global Spock.",
+      "sources": [
+        "https://spockframework.org/spock/docs/2.5/all_in_one.html"
+      ],
+      "implementedProfiles": [
+        "grails",
+        "spock"
+      ]
+    },
+    "hashi": {
+      "frameworks": [
+        "OpenTofu modules",
+        "Terraform modules",
+        "Packer",
+        "Nomad"
+      ],
+      "tools": [
+        "TFLint",
+        "Checkov",
+        "tofu/terraform fmt",
+        "native tests",
+        "packer validate"
+      ],
+      "compatibility": "Pin engine, providers and schemas. Native infrastructure tests can provision resources; never run them as an implicit source-only check.",
+      "sources": [
+        "https://opentofu.org/docs/cli/commands/test/",
+        "https://developer.hashicorp.com/nomad/commands/job/validate"
+      ],
+      "implementedProfiles": []
+    },
+    "haskell": {
+      "frameworks": [
+        "Yesod",
+        "Servant",
+        "IHP"
+      ],
+      "tools": [
+        "HLint",
+        "Ormolu",
+        "Hspec",
+        "yesod-test",
+        "Weeder"
+      ],
+      "compatibility": "GHC ABI, package snapshots, plugins and test helpers must match; use the existing Cabal/Stack project environment.",
+      "sources": [
+        "https://www.yesodweb.com/blog/2013/05/yesod-1-2-released"
+      ],
+      "implementedProfiles": [
+        "servant",
+        "yesod"
+      ]
+    },
+    "haxe": {
+      "frameworks": [
+        "Heaps",
+        "OpenFL",
+        "Lime"
+      ],
+      "tools": [
+        "Haxe compiler diagnostics",
+        "formatter",
+        "utest/MUnit"
+      ],
+      "compatibility": "Haxe target, HashLink/Neko and haxelib versions matter; preserve the project-local haxelib repository.",
+      "sources": [
+        "https://heaps.io/documentation/installation.html",
+        "https://lib.haxe.org/t/testing/"
+      ],
+      "implementedProfiles": []
+    },
+    "hdl": {
+      "frameworks": [
+        "cocotb",
+        "VUnit",
+        "UVM"
+      ],
+      "tools": [
+        "Verilator",
+        "Verible",
+        "GHDL",
+        "cocotb/VUnit tests"
+      ],
+      "compatibility": "Match simulator, HDL standard, Python ABI and test framework release; simulator support varies.",
+      "sources": [
+        "https://docs.cocotb.org/en/development/simulator_support.html"
+      ],
+      "implementedProfiles": []
+    },
+    "java": {
+      "frameworks": [
+        "Spring Boot",
+        "Quarkus",
+        "Micronaut"
+      ],
+      "tools": [
+        "Checkstyle",
+        "PMD",
+        "SpotBugs",
+        "JUnit",
+        "ArchUnit"
+      ],
+      "compatibility": "Choose JDK and build wrapper by framework line; run project-pinned build plugins and tests. Avoid injecting agents or replacing the dependency graph.",
+      "sources": [
+        "https://docs.spring.io/spring-boot/system-requirements.html",
+        "https://quarkus.io/guides/getting-started-testing/",
+        "https://www.archunit.org/userguide/html/000_Index.html"
+      ],
+      "implementedProfiles": [
+        "dropwizard",
+        "micronaut",
+        "quarkus",
+        "spring-boot"
+      ]
+    },
+    "julia": {
+      "frameworks": [
+        "Genie",
+        "SciML"
+      ],
+      "tools": [
+        "JuliaFormatter",
+        "Aqua",
+        "JET",
+        "Pkg.test"
+      ],
+      "compatibility": "Honor Julia version and Manifest.toml. Run analyzers in their own Julia project, tests in the application project.",
+      "sources": [
+        "https://pkgdocs.julialang.org/v1.2/api/"
+      ],
+      "implementedProfiles": [
+        "genie"
+      ]
+    },
+    "jupyter": {
+      "frameworks": [
+        "Jupyter",
+        "nbval",
+        "Papermill"
+      ],
+      "tools": [
+        "Ruff",
+        "nbstripout",
+        "nbval"
+      ],
+      "compatibility": "Keep notebook kernel dependencies in the project kernel; tool plugins run in a separate environment and must target that kernel.",
+      "sources": [
+        "https://nbval.readthedocs.io/en/latest/"
+      ],
+      "implementedProfiles": []
+    },
+    "kotlin": {
+      "frameworks": [
+        "Ktor",
+        "Spring Boot",
+        "Compose"
+      ],
+      "tools": [
+        "ktlint",
+        "detekt",
+        "JUnit/kotlin.test",
+        "ArchUnit"
+      ],
+      "compatibility": "Kotlin compiler, Gradle, detekt compiler API and framework versions must agree; use the existing Gradle wrapper and configuration.",
+      "sources": [
+        "https://ktor.io/docs/server-testing.html",
+        "https://docs.spring.io/spring-boot/system-requirements.html"
+      ],
+      "implementedProfiles": [
+        "ktor"
+      ]
+    },
+    "kubernetes": {
+      "frameworks": [
+        "Helm",
+        "Kustomize"
+      ],
+      "tools": [
+        "helm lint",
+        "kubeconform",
+        "helm-unittest",
+        "policy checks"
+      ],
+      "compatibility": "Pin Kubernetes schema, Helm major version, chart dependencies and CRD schemas; cluster tests require explicit setup.",
+      "sources": [
+        "https://helm.sh/docs/v2/helm/helm_lint/"
+      ],
+      "implementedProfiles": []
+    },
+    "latex": {
+      "frameworks": [
+        "LaTeX packages",
+        "l3build"
+      ],
+      "tools": [
+        "ChkTeX",
+        "latexindent",
+        "l3build"
+      ],
+      "compatibility": "Pin TeX distribution and engines; snapshot output can change with TeX versions.",
+      "sources": [
+        "https://tug.ctan.org/macros/latex/contrib/l3build/l3build.pdf"
+      ],
+      "implementedProfiles": []
+    },
+    "lean4": {
+      "frameworks": [
+        "Mathlib",
+        "Lake"
+      ],
+      "tools": [
+        "Lake build",
+        "Lake lint",
+        "Lake test"
+      ],
+      "compatibility": "Honor lean-toolchain and lake-manifest.json. Test-driver support is Lean-version-specific.",
+      "sources": [
+        "https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/"
+      ],
+      "implementedProfiles": []
+    },
+    "lua": {
+      "frameworks": [
+        "L\u00d6VE",
+        "Lapis",
+        "OpenResty"
+      ],
+      "tools": [
+        "Luacheck/Selene",
+        "StyLua",
+        "Busted"
+      ],
+      "compatibility": "Match Lua versus LuaJIT and LuaRocks ABI. Engine-provided globals and runtime APIs need framework-specific configuration.",
+      "sources": [
+        "https://lunarmodules.github.io/busted/"
+      ],
+      "implementedProfiles": []
+    },
+    "markdown": {
+      "frameworks": [
+        "Docusaurus",
+        "MkDocs",
+        "VitePress"
+      ],
+      "tools": [
+        "markdownlint",
+        "Vale",
+        "Prettier",
+        "link/build checks"
+      ],
+      "compatibility": "MDX and template dialects require framework-aware parsers; site builds can validate links and routes.",
+      "sources": [
+        "https://docusaurus.io/tests/pages"
+      ],
+      "implementedProfiles": [
+        "mkdocs"
+      ]
+    },
+    "nickel": {
+      "frameworks": [
+        "Nickel contracts"
+      ],
+      "tools": [
+        "Nickel type checking",
+        "Nickel format",
+        "contract evaluation"
+      ],
+      "compatibility": "Pin Nickel and imported contracts; type checking alone does not evaluate every runtime contract.",
+      "sources": [
+        "https://nickel-lang.org/user-manual/typing/"
+      ],
+      "implementedProfiles": []
+    },
+    "nim": {
+      "frameworks": [
+        "Jester",
+        "Prologue"
+      ],
+      "tools": [
+        "nph/nimpretty",
+        "nim check",
+        "unittest/Testament"
+      ],
+      "compatibility": "Match Nim and the project Nimble dependency set. Thread and HTTP backend settings affect framework checks.",
+      "sources": [
+        "https://nim-lang.org/1.4.2/tools.html",
+        "https://planety.github.io/prologue/faq/"
+      ],
+      "implementedProfiles": []
+    },
+    "nix": {
+      "frameworks": [
+        "NixOS",
+        "Home Manager",
+        "flake-parts"
+      ],
+      "tools": [
+        "Statix",
+        "deadnix",
+        "nixfmt",
+        "flake checks",
+        "NixOS VM tests"
+      ],
+      "compatibility": "Pin Nixpkgs and module inputs separately from application dependencies; VM tests have host requirements.",
+      "sources": [
+        "https://wiki.nixos.org/wiki/Flakes/en"
+      ],
+      "implementedProfiles": []
+    },
+    "node": {
+      "frameworks": [
+        "Next.js",
+        "React",
+        "Vue",
+        "Nuxt",
+        "Angular",
+        "SvelteKit",
+        "NestJS",
+        "Hono"
+      ],
+      "tools": [
+        "ESLint with framework plugins",
+        "Prettier with framework plugins",
+        "Vitest/Jest",
+        "Playwright",
+        "dependency-cruiser"
+      ],
+      "compatibility": "Pin host, parser and plugin together. Next.js 16 removed its wrapper; Vue 2 and 3 have different rules. Angular CLI must match Angular. Do not install these into project node_modules.",
+      "sources": [
+        "https://nextjs.org/docs/app/api-reference/config/eslint",
+        "https://eslint.vuejs.org/user-guide/",
+        "https://angular.dev/reference/versions",
+        "https://sveltejs.github.io/eslint-plugin-svelte/user-guide/",
+        "https://hono.dev/docs/helpers/testing"
+      ],
+      "implementedProfiles": [
+        "angular",
+        "astro",
+        "docusaurus",
+        "express",
+        "fastify",
+        "hono",
+        "nestjs",
+        "nextjs",
+        "nuxt",
+        "react",
+        "svelte",
+        "sveltekit",
+        "vitepress",
+        "vue"
+      ]
+    },
+    "ocaml": {
+      "frameworks": [
+        "Dream",
+        "Opium",
+        "Eliom"
+      ],
+      "tools": [
+        "ocamlformat",
+        "Dune tests",
+        "Alcotest",
+        "Bisect_ppx"
+      ],
+      "compatibility": "Use the project opam switch and pinned ocamlformat version; compiler PPX plugins cannot be mixed across OCaml ABIs.",
+      "sources": [
+        "https://github.com/camlworks/dream",
+        "https://aantron.github.io/bisect_ppx/"
+      ],
+      "implementedProfiles": []
+    },
+    "odin": {
+      "frameworks": [
+        "Odin core testing",
+        "Raylib integrations"
+      ],
+      "tools": [
+        "odin check/vet",
+        "odin test"
+      ],
+      "compatibility": "Pin the compiler revision and foreign library ABI; not every binding supplies a separate framework checker.",
+      "sources": [
+        "https://odin-lang.org/docs/overview/"
+      ],
+      "implementedProfiles": []
+    },
+    "opa": {
+      "frameworks": [
+        "Rego",
+        "Conftest"
+      ],
+      "tools": [
+        "Regal",
+        "opa fmt",
+        "opa test",
+        "Conftest"
+      ],
+      "compatibility": "OPA 0.x and 1.x language modes differ; pin engine, capabilities and policies.",
+      "sources": [
+        "https://www.openpolicyagent.org/ecosystem/by-feature/policy-testing"
+      ],
+      "implementedProfiles": []
+    },
+    "perl": {
+      "frameworks": [
+        "Mojolicious",
+        "Dancer2",
+        "Catalyst"
+      ],
+      "tools": [
+        "Perl::Critic",
+        "Perl::Tidy",
+        "prove/Test::Mojo"
+      ],
+      "compatibility": "Keep PERL5LIB and local::lib aligned with the application Perl ABI; framework test helpers belong to its existing environment.",
+      "sources": [
+        "https://docs.mojolicious.org/Mojolicious/Guides/Testing"
+      ],
+      "implementedProfiles": [
+        "dancer2",
+        "mojolicious"
+      ]
+    },
+    "php": {
+      "frameworks": [
+        "Laravel",
+        "Symfony"
+      ],
+      "tools": [
+        "Pint",
+        "PHPStan/Larastan",
+        "Psalm",
+        "PHPUnit/Pest",
+        "Deptrac"
+      ],
+      "compatibility": "Match PHP, framework, PHPStan extension and test runner. Use project vendor for bootstrapping; isolated PHARs cannot replace framework runtime dependencies.",
+      "sources": [
+        "https://laravel.com/framework/docs/pint",
+        "https://symfony.com/doc/current/testing.html",
+        "https://deptrac.github.io/deptrac/configuration/"
+      ],
+      "implementedProfiles": [
+        "cakephp",
+        "codeigniter",
+        "laravel",
+        "slim",
+        "symfony",
+        "yii"
+      ]
+    },
+    "platformio": {
+      "frameworks": [
+        "Arduino",
+        "ESP-IDF",
+        "Zephyr",
+        "Unity"
+      ],
+      "tools": [
+        "PlatformIO check",
+        "clang-format",
+        "pio test"
+      ],
+      "compatibility": "Pin the PlatformIO platform and board SDK; distinguish native tests from tests that flash hardware.",
+      "sources": [
+        "https://docs.platformio.org/en/stable/advanced/unit-testing/frameworks/index.html"
+      ],
+      "implementedProfiles": []
+    },
+    "powershell": {
+      "frameworks": [
+        "Pester",
+        "PSRule"
+      ],
+      "tools": [
+        "PSScriptAnalyzer",
+        "Pester"
+      ],
+      "compatibility": "Pester major versions have different configuration and PowerShell support; isolate module search paths.",
+      "sources": [
+        "https://pester.dev/docs/v5/introduction/installation"
+      ],
+      "implementedProfiles": []
+    },
+    "presenterm": {
+      "frameworks": [
+        "Presenterm"
+      ],
+      "tools": [
+        "markdownlint",
+        "Vale",
+        "presentation rendering"
+      ],
+      "compatibility": "Presentation syntax extends Markdown; use the selected presenterm release to render validation fixtures.",
+      "sources": [
+        "https://mfontanini.github.io/presenterm/features/introduction.html"
+      ],
+      "implementedProfiles": []
+    },
+    "protobuf": {
+      "frameworks": [
+        "Buf",
+        "gRPC"
+      ],
+      "tools": [
+        "buf lint",
+        "buf format",
+        "buf breaking"
+      ],
+      "compatibility": "Pin Buf configuration version, remote plugins and compatibility baseline.",
+      "sources": [
+        "https://buf.build/docs/lint/"
+      ],
+      "implementedProfiles": []
+    },
+    "pulumi": {
+      "frameworks": [
+        "Pulumi SDKs"
+      ],
+      "tools": [
+        "language-native checks",
+        "Pulumi mocks",
+        "policy checks"
+      ],
+      "compatibility": "Choose the profile for the Pulumi program language and match CLI/SDK/provider versions; keep unit mocks separate from deployments.",
+      "sources": [
+        "https://www.pulumi.com/docs/iac/guides/testing/unit/"
+      ],
+      "implementedProfiles": []
+    },
+    "purescript": {
+      "frameworks": [
+        "Halogen",
+        "Spork"
+      ],
+      "tools": [
+        "purs-tidy",
+        "Spago tests",
+        "purescript-spec"
+      ],
+      "compatibility": "Compiler and Spago package sets must agree. Keep tool project dependencies separate from the application package set.",
+      "sources": [
+        "https://pursuit.purescript.org/packages/purescript-halogen/7.1.0",
+        "https://github.com/purescript/spago"
+      ],
+      "implementedProfiles": []
+    },
+    "python": {
+      "frameworks": [
+        "Django",
+        "Flask",
+        "FastAPI"
+      ],
+      "tools": [
+        "Ruff",
+        "djLint",
+        "Bandit",
+        "pytest",
+        "import-linter"
+      ],
+      "compatibility": "Framework checks and tests must use the project interpreter; keep framework and pytest plugins version-matched.",
+      "sources": [
+        "https://docs.djangoproject.com/en/5.2/ref/django-admin/",
+        "https://djlint.com/docs/languages/django/"
+      ],
+      "implementedProfiles": [
+        "aiohttp",
+        "django",
+        "falcon",
+        "fastapi",
+        "flask",
+        "litestar",
+        "mkdocs",
+        "pyramid",
+        "scrapy",
+        "starlette",
+        "streamlit",
+        "tornado"
+      ]
+    },
+    "qml": {
+      "frameworks": [
+        "Qt Quick"
+      ],
+      "tools": [
+        "qmllint",
+        "qmlformat",
+        "Qt Quick Test"
+      ],
+      "compatibility": "QML tools need matching Qt modules and import paths; pin Qt version and schema, not just the executable name.",
+      "sources": [
+        "https://doc.qt.io/qt-6/qtqml-tooling-qmllint.html",
+        "https://doc.qt.io/qt-6.10/qtqml-tooling-qmlformat.html"
+      ],
+      "implementedProfiles": []
+    },
+    "r": {
+      "frameworks": [
+        "Shiny",
+        "Plumber"
+      ],
+      "tools": [
+        "lintr",
+        "styler",
+        "testthat",
+        "shinytest2"
+      ],
+      "compatibility": "Honor renv.lock and the R version. Browser tests need a compatible Chrome; isolated R analyzers must not replace the application library.",
+      "sources": [
+        "https://shiny.posit.co/r/articles/improve/shinytest2/"
+      ],
+      "implementedProfiles": [
+        "golem",
+        "plumber",
+        "shiny"
+      ]
+    },
+    "racket": {
+      "frameworks": [
+        "Racket web-server",
+        "RackUnit"
+      ],
+      "tools": [
+        "raco make",
+        "raco test",
+        "RackUnit"
+      ],
+      "compatibility": "Use the project package collection path and Racket version; tests may execute integration code.",
+      "sources": [
+        "https://docs.racket-lang.org/rackunit/"
+      ],
+      "implementedProfiles": []
+    },
+    "ruby": {
+      "frameworks": [
+        "Rails",
+        "Sinatra",
+        "Hanami"
+      ],
+      "tools": [
+        "RuboCop Rails",
+        "Brakeman",
+        "Minitest/RSpec",
+        "Packwerk"
+      ],
+      "compatibility": "Respect .ruby-version and Gemfile.lock. Framework-loading tools need the existing bundle, while standalone analyzers can have isolated gem bundles.",
+      "sources": [
+        "https://guides.rubyonrails.org/command_line.html",
+        "https://github.com/Shopify/packwerk"
+      ],
+      "implementedProfiles": [
+        "hanami",
+        "rails",
+        "roda",
+        "sinatra"
+      ]
+    },
+    "rust": {
+      "frameworks": [
+        "Axum",
+        "Actix Web",
+        "Rocket",
+        "Bevy"
+      ],
+      "tools": [
+        "Clippy",
+        "rustfmt",
+        "cargo-audit",
+        "cargo-deny",
+        "cargo test/nextest"
+      ],
+      "compatibility": "Keep Cargo/rustc/Clippy/rustfmt together, respect rust-toolchain.toml and Cargo.lock, and use project-selected framework test helpers.",
+      "sources": [
+        "https://actix.rs/docs/testing/",
+        "https://docs.rs/axum/latest/src/axum/service_ext.rs.html"
+      ],
+      "implementedProfiles": [
+        "actix-web",
+        "axum",
+        "poem",
+        "rocket",
+        "warp"
+      ]
+    },
+    "scala": {
+      "frameworks": [
+        "Play",
+        "http4s",
+        "ZIO"
+      ],
+      "tools": [
+        "scalafmt",
+        "Scalafix",
+        "ScalaTest/specs2",
+        "sbt dependency checks"
+      ],
+      "compatibility": "Scala binary versions and sbt plugins must match; Play 2.9 and 3.0 differ in their underlying runtime.",
+      "sources": [
+        "https://www.playframework.com/documentation/3.0.x/ScalaTestingWithScalaTest"
+      ],
+      "implementedProfiles": []
+    },
+    "shell": {
+      "frameworks": [
+        "Bats",
+        "ShellSpec"
+      ],
+      "tools": [
+        "ShellCheck",
+        "shfmt",
+        "Bats"
+      ],
+      "compatibility": "Bats syntax requires compatible ShellCheck/shfmt modes; do not parse every test as ordinary Bash.",
+      "sources": [
+        "https://bats-core.readthedocs.io/en/stable/faq.html"
+      ],
+      "implementedProfiles": []
+    },
+    "solidity": {
+      "frameworks": [
+        "Foundry",
+        "Hardhat"
+      ],
+      "tools": [
+        "Slither",
+        "forge fmt",
+        "forge test",
+        "fuzz/invariant tests"
+      ],
+      "compatibility": "Pin solc, Foundry/Hardhat and plugins; preserve compiler settings and dependency locks.",
+      "sources": [
+        "https://www.getfoundry.sh/forge/index.html"
+      ],
+      "implementedProfiles": []
+    },
+    "sql": {
+      "frameworks": [
+        "dbt",
+        "SQLMesh",
+        "pgTAP"
+      ],
+      "tools": [
+        "SQLFluff",
+        "sqruff",
+        "dbt tests",
+        "schema assertions"
+      ],
+      "compatibility": "SQL dialect, adapter, dbt and templater must agree. Some template evaluation and tests require a database.",
+      "sources": [
+        "https://docs.sqlfluff.com/en/stable/configuration/templating/dbt.html"
+      ],
+      "implementedProfiles": []
+    },
+    "swi-prolog": {
+      "frameworks": [
+        "SWI HTTP",
+        "PlUnit"
+      ],
+      "tools": [
+        "load checks",
+        "PlUnit"
+      ],
+      "compatibility": "Pin SWI-Prolog and packs, and run the existing tests without installing packs during checks.",
+      "sources": [
+        "https://www.swi-prolog.org/pldoc/man?section=pldoc-running"
+      ],
+      "implementedProfiles": []
+    },
+    "swift": {
+      "frameworks": [
+        "Vapor",
+        "SwiftUI"
+      ],
+      "tools": [
+        "SwiftLint",
+        "SwiftFormat",
+        "swift test",
+        "VaporTesting/XCTVapor"
+      ],
+      "compatibility": "Match Swift tools version and Package.resolved. VaporTesting and older XCTVapor have different integration requirements. SwiftUI needs Apple tooling.",
+      "sources": [
+        "https://docs.vapor.codes/advanced/testing/",
+        "https://docs.vapor.codes/install/macos/"
+      ],
+      "implementedProfiles": [
+        "hummingbird",
+        "vapor"
+      ]
+    },
+    "terraform": {
+      "frameworks": [
+        "OpenTofu modules",
+        "Terraform modules",
+        "Packer",
+        "Nomad"
+      ],
+      "tools": [
+        "TFLint",
+        "Checkov",
+        "tofu/terraform fmt",
+        "native tests",
+        "packer validate"
+      ],
+      "compatibility": "Pin engine, providers and schemas. Native infrastructure tests can provision resources; never run them as an implicit source-only check.",
+      "sources": [
+        "https://opentofu.org/docs/cli/commands/test/",
+        "https://developer.hashicorp.com/nomad/commands/job/validate"
+      ],
+      "implementedProfiles": []
+    },
+    "typescript": {
+      "frameworks": [
+        "Next.js",
+        "React",
+        "Vue",
+        "Nuxt",
+        "Angular",
+        "SvelteKit",
+        "NestJS",
+        "Hono"
+      ],
+      "tools": [
+        "ESLint with framework plugins",
+        "Prettier with framework plugins",
+        "Vitest/Jest",
+        "Playwright",
+        "dependency-cruiser"
+      ],
+      "compatibility": "Pin host, parser and plugin together. Next.js 16 removed its wrapper; Vue 2 and 3 have different rules. Angular CLI must match Angular. Do not install these into project node_modules.",
+      "sources": [
+        "https://nextjs.org/docs/app/api-reference/config/eslint",
+        "https://eslint.vuejs.org/user-guide/",
+        "https://angular.dev/reference/versions",
+        "https://sveltejs.github.io/eslint-plugin-svelte/user-guide/",
+        "https://hono.dev/docs/helpers/testing"
+      ],
+      "implementedProfiles": [
+        "angular",
+        "astro",
+        "docusaurus",
+        "express",
+        "fastify",
+        "hono",
+        "nestjs",
+        "nextjs",
+        "nuxt",
+        "react",
+        "svelte",
+        "sveltekit",
+        "vitepress",
+        "vue"
+      ]
+    },
+    "typst": {
+      "frameworks": [
+        "Typst packages"
+      ],
+      "tools": [
+        "Tinymist",
+        "Typstyle",
+        "Typst compilation"
+      ],
+      "compatibility": "Pin Typst and imported Universe package versions; package tests may need a custom harness.",
+      "sources": [
+        "https://typst.app/open-source/"
+      ],
+      "implementedProfiles": []
+    },
+    "vlang": {
+      "frameworks": [
+        "veb",
+        "V testing"
+      ],
+      "tools": [
+        "v vet",
+        "v fmt",
+        "v test"
+      ],
+      "compatibility": "Pin the V revision and framework module set; compiler-provided commands move with that revision.",
+      "sources": [
+        "https://docs.vlang.io/tools.html"
+      ],
+      "implementedProfiles": []
+    },
+    "web": {
+      "frameworks": [
+        "Next.js",
+        "React",
+        "Vue",
+        "Nuxt",
+        "Angular",
+        "SvelteKit",
+        "NestJS",
+        "Hono"
+      ],
+      "tools": [
+        "ESLint with framework plugins",
+        "Prettier with framework plugins",
+        "Vitest/Jest",
+        "Playwright",
+        "dependency-cruiser"
+      ],
+      "compatibility": "Pin host, parser and plugin together. Next.js 16 removed its wrapper; Vue 2 and 3 have different rules. Angular CLI must match Angular. Do not install these into project node_modules.",
+      "sources": [
+        "https://nextjs.org/docs/app/api-reference/config/eslint",
+        "https://eslint.vuejs.org/user-guide/",
+        "https://angular.dev/reference/versions",
+        "https://sveltejs.github.io/eslint-plugin-svelte/user-guide/",
+        "https://hono.dev/docs/helpers/testing"
+      ],
+      "implementedProfiles": []
+    },
+    "zig": {
+      "frameworks": [
+        "Zig build system",
+        "zls integrations"
+      ],
+      "tools": [
+        "zig fmt",
+        "zig build test"
+      ],
+      "compatibility": "Pin the Zig release with build.zig and build.zig.zon; the build API changes between releases.",
+      "sources": [
+        "https://ziglang.org/learn/getting-started/",
+        "https://ziglang.org/intro/build-system/"
+      ],
+      "implementedProfiles": []
+    }
+  }
+}

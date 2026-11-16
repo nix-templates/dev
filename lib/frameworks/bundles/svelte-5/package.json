@@ -1,0 +1,15 @@
+{
+  "name": "dvt-svelte-5",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "eslint": "9.39.1",
+    "@typescript-eslint/parser": "8.46.4",
+    "typescript": "5.9.3",
+    "prettier": "3.6.2",
+    "globals": "16.5.0",
+    "eslint-plugin-svelte": "3.12.4",
+    "prettier-plugin-svelte": "3.4.0",
+    "svelte": "5.39.6"
+  }
+}

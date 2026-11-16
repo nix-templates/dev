@@ -36,17 +36,17 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when tsconfig.json tsc --noEmit
     run oxlint .
     when biome.json biome check .
   '';
 
-  fmt = ''
+  style = ''
     run prettier --write --ignore-unknown --log-level warn .
   '';
 
-  layers = [
+  architecture = [
     ''
       depcruise_sources() {
         if [ -d src ]; then

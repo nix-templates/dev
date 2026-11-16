@@ -1,0 +1,36 @@
+{
+  "import-linter": {
+    "version": "2.16",
+    "wheels": {
+      "x86_64-linux": {
+        "url": "https://files.pythonhosted.org/packages/e1/f9/0f8a5a9a95c2b3b7e87e7406a2941a5620aeaacc4207155d5010263dabb6/import_linter-2.16-py3-none-any.whl",
+        "sha256": "e775602e9214ab3933fc7d2162278ea1f11dd9229c914735c1bda43b94619565"
+      },
+      "aarch64-linux": {
+        "url": "https://files.pythonhosted.org/packages/e1/f9/0f8a5a9a95c2b3b7e87e7406a2941a5620aeaacc4207155d5010263dabb6/import_linter-2.16-py3-none-any.whl",
+        "sha256": "e775602e9214ab3933fc7d2162278ea1f11dd9229c914735c1bda43b94619565"
+      },
+      "aarch64-darwin": {
+        "url": "https://files.pythonhosted.org/packages/e1/f9/0f8a5a9a95c2b3b7e87e7406a2941a5620aeaacc4207155d5010263dabb6/import_linter-2.16-py3-none-any.whl",
+        "sha256": "e775602e9214ab3933fc7d2162278ea1f11dd9229c914735c1bda43b94619565"
+      }
+    }
+  },
+  "grimp": {
+    "version": "3.20",
+    "wheels": {
+      "x86_64-linux": {
+        "url": "https://files.pythonhosted.org/packages/d7/e8/12e168379a1cca54e6292f733a661c61d273651017f6cbe465e8ae1c3478/grimp-3.20-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+        "sha256": "b1a288f453839f93747864c4cab5e09dfb00f162e45294a8fc5c3634756b35c5"
+      },
+      "aarch64-linux": {
+        "url": "https://files.pythonhosted.org/packages/b5/85/90fafa8dea17ad7e4dce844b8d631f7f10a6245eac0ffdbcb2026a0c01a3/grimp-3.20-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl",
+        "sha256": "5ed8fddaa9db627e57d9f3cc9cb694854712cd3b8988b420eac8db3845f7dee5"
+      },
+      "aarch64-darwin": {
+        "url": "https://files.pythonhosted.org/packages/00/ad/44d8354c345f5d1158b53ed4a12335331df36c55eb5cbc35bcbd37355a08/grimp-3.20-cp312-cp312-macosx_11_0_arm64.whl",
+        "sha256": "e8721f396c9e853b2807abd1e5a5757944d981829dddce8e4def94b116c7e6f3"
+      }
+    }
+  }
+}

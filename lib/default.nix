@@ -6,9 +6,6 @@
 # one definition here, so `nix flake update` brings every improvement to every
 # project.
 #
-# The commands were `lint`, `fmt`, `scan` and `layers` before, and those names
-# are gone. A language's module still names its part of each command that way,
-# and so does the folder of the architecture program.
 { lib }:
 let
   helpers = builtins.readFile ./helpers.sh;
@@ -22,6 +19,8 @@ let
           file: type: type == "regular" && lib.hasSuffix ".nix" file && file != "common.nix"
         ) (builtins.readDir ./languages)
       );
+
+  frameworks = import ./frameworks { inherit lib; };
 
   # The program that checks a repository against its architecture.toml.
   architecture =
@@ -41,8 +40,14 @@ let
     {
       # The project's own package set, so tools match what the project builds with.
       pkgs,
+      # Optional package set dedicated to tooling, independent of application packages.
+      toolPkgs ? pkgs,
       # Names from `languages`, paths to modules of your own, or the modules themselves.
       languages ? [ ],
+      # Framework profiles add their languages and refine their commands.
+      frameworks ? [ ],
+      # Explicit argv from existing project configuration, by canonical category.
+      configured ? { },
       # The source tree, for `checks`. In a flake this is `self`.
       src ? null,
       # More packages for the shell and the commands' PATH.
@@ -65,21 +70,86 @@ let
           import language
         else
           language;
+      resolveFramework =
+        profile:
+        if builtins.isPath profile then
+          import profile
+        else if builtins.isAttrs profile && ((profile ? module) || !(profile ? name)) then
+          profile
+        else
+          let
+            name = if builtins.isString profile then profile else profile.name;
+            metadata =
+              self.frameworks.${name}
+                or (throw "nix-templates/dev: unknown framework '${name}'. Known frameworks: ${lib.concatStringsSep ", " (builtins.attrNames self.frameworks)}");
+            version =
+              if builtins.isString profile then
+                metadata.defaultVersion
+              else
+                profile.version or metadata.defaultVersion;
+          in
+          assert lib.assertMsg (lib.elem version metadata.versions)
+            "nix-templates/dev: unsupported ${name} version '${version}'. Supported: ${lib.concatStringsSep ", " metadata.versions}";
+          metadata
+          // {
+            inherit name version;
+            toolPkgs = if builtins.isAttrs profile then profile.toolPkgs or toolPkgs else toolPkgs;
+          };
+      profiles = map resolveFramework frameworks;
+      frameworkLanguages = lib.concatMap (profile: profile.languages or [ ]) profiles;
+      selectedLanguages = lib.unique (languages ++ frameworkLanguages);
+      # Defaults do not depend on options: resolve them once, then load profiles
+      # with the final project options. Explicit project options win.
+      profileDefaults = lib.foldl' (
+        acc: profile:
+        lib.recursiveUpdate acc ((loadWith options (profile.module or profile)).defaults or { })
+      ) { } profiles;
       moduleOptions =
-        options // lib.filterAttrs (_: value: value != null) { inherit rustToolchain python; };
-      load =
-        module:
+        (lib.recursiveUpdate (
+          profileDefaults
+          // lib.optionalAttrs (lib.any (spec: spec.runner == "python") (
+            lib.concatLists (builtins.attrValues configured)
+          )) { pythonProjectEnvironment = true; }
+        ) options)
+        // lib.filterAttrs (_: value: value != null) { inherit rustToolchain python; };
+      loadWithPkgs =
+        packageSet: opts: module:
         if builtins.isFunction module then
           module {
-            inherit pkgs lib;
-            options = moduleOptions;
+            pkgs = packageSet;
+            inherit lib;
+            options = opts;
           }
         else
           module;
-
-      # The project's languages in the order given, then what every project gets.
-      own = map (language: load (resolve language)) languages;
-      common = load (import ./languages/common.nix);
+      loadWith = loadWithPkgs toolPkgs;
+      load = loadWith moduleOptions;
+      frameworkModules = map (
+        profile:
+        loadWithPkgs (profile.toolPkgs or toolPkgs) (
+          moduleOptions
+          // {
+            frameworkVersion = profile.version or null;
+          }
+        ) (profile.module or profile)
+      ) profiles;
+      replacements =
+        name: lib.unique (lib.concatMap (module: (module.replace or { }).${name} or [ ]) frameworkModules);
+      # A profile can replace a language's command without running both test
+      # runners or both formatters. Other language commands are inherited.
+      languageModules = lib.zipListsWith (
+        language: module: builtins.removeAttrs module (replacements (nameOf language))
+      ) selectedLanguages (map (language: load (resolve language)) selectedLanguages);
+      configuredModule = import ./configured.nix {
+        pkgs = toolPkgs;
+        inherit lib configured;
+        options = moduleOptions;
+      };
+      configuredNames = builtins.attrNames configured;
+      own =
+        (map (module: builtins.removeAttrs module configuredNames) (languageModules ++ frameworkModules))
+        ++ lib.optional (configured != { }) configuredModule;
+      common = builtins.removeAttrs (load (import ./languages/common.nix)) configuredNames;
       modules = own ++ [ common ];
 
       # What a command calls each language when it says what it ran nothing for.
@@ -91,9 +161,13 @@ let
           lib.removeSuffix ".nix" (baseNameOf language)
         else
           "a language of your own";
-      named = lib.zipListsWith (name: module: { inherit name module; }) (map nameOf languages) own;
+      named = lib.zipListsWith (name: module: { inherit name module; }) (
+        (map nameOf selectedLanguages)
+        ++ (map (profile: profile.name or "custom framework") profiles)
+        ++ lib.optional (configured != { }) "configured project tools"
+      ) own;
 
-      wants = flag: lib.any (module: module.${flag} or false) own;
+      wants = flag: !(configured ? security) && lib.any (module: module.${flag} or false) own;
       text = name: list: lib.concatMapStrings (module: module.${name} or "") list;
       # A command's text for the project's languages: each language's part
       # under its name, then `part_end` for what follows them.
@@ -109,7 +183,7 @@ let
         + ''
           part_end
         '';
-      # A module's `layers` and `tests` are lists of blocks. Languages that share a build
+      # A module's `architecture` and `tests` are lists of blocks. Languages that share a build
       # tool share blocks, and a shared block runs once.
       blocks = get: lib.concatStrings (lib.unique (lib.concatMap get own));
       modes = lib.unique (
@@ -130,11 +204,11 @@ let
           ${block}
         '') (lib.unique (lib.concatMap of own));
 
-      rules = "${architecture pkgs}/bin/architecture";
+      rules = "${architecture toolPkgs}/bin/architecture";
       tools = lib.unique (
         lib.concatMap (module: module.tools or [ ]) modules
-        ++ lib.optional (wants "semgrep") pkgs.semgrep
-        ++ lib.optional (wants "trivy") pkgs.trivy
+        ++ lib.optional (wants "semgrep") toolPkgs.semgrep
+        ++ lib.optional (wants "trivy") toolPkgs.trivy
         ++ extraTools
       );
 
@@ -142,45 +216,96 @@ let
         mode: if mode == "run" then "tests" else "tests --${mode}"
       ) modes;
 
+      runtimeChecks = lib.concatMapStrings (
+        profile:
+        lib.optionalString (profile ? distribution) ''
+          env -u PYTHONPATH -u PYTHONHOME PYTHONNOUSERSITE=1 "$interpreter" -c ${lib.escapeShellArg ''
+            import importlib.metadata, sys
+            try:
+                actual = importlib.metadata.version(${builtins.toJSON profile.distribution})
+            except importlib.metadata.PackageNotFoundError:
+                sys.exit("${profile.name}: install the project's existing dependencies first")
+            if actual.split(".")[:${toString (builtins.length (lib.splitString "." profile.version))}] != ${builtins.toJSON (lib.splitString "." profile.version)}:
+                sys.exit("${profile.name}: profile ${profile.version} does not match installed " + actual + "; select the matching framework version")
+          ''} || return $?
+        ''
+      ) profiles;
+      commandHelpers =
+        helpers
+        + lib.optionalString (moduleOptions.pythonProjectEnvironment or false) (''
+          project_python() {
+            local interpreter=${lib.escapeShellArg (moduleOptions.projectPython or ".venv/bin/python")}
+            interpreter="''${DVT_PROJECT_PYTHON:-$interpreter}"
+            if [ ! -x "$interpreter" ]; then
+              echo "project Python is missing: $interpreter. Install project dependencies with your existing manager, or set DVT_PROJECT_PYTHON." >&2
+              return 127
+            fi
+            ${runtimeChecks}
+            # Nix Python packages must not leak into the application interpreter.
+            env -u PYTHONPATH -u PYTHONHOME PYTHONNOUSERSITE=1 "$interpreter" "$@"
+          }
+        '');
+
+      preflight = lib.concatMapStrings (module: module.preflight or "") (
+        frameworkModules ++ lib.optional (configured != { }) configuredModule
+      );
       texts = {
-        quality = helpers + ''
-          ${parts "lint"}
-          ${common.lint}
-          checked quality
-          exit "$status"
-        '';
+        quality =
+          commandHelpers
+          + preflight
+          + ''
+            ${parts "quality"}
+            ${common.quality or ""}
+            checked quality
+            exit "$status"
+          '';
 
         # `style` writes. `style --check` formats a copy and compares, so it
         # covers every formatter, whether or not it has a check mode of its own.
-        style = helpers + ''
-          if [ "''${1:-}" = "--check" ]; then
-            keep=(--exclude=/.git --exclude=.direnv --exclude=.venv --exclude=node_modules --exclude=target --exclude=result --exclude=build --exclude=dist --exclude=.build --exclude=_build --exclude=vendor --exclude=.terraform --exclude=.stack-work)
-            here=$PWD
-            copy=$(mktemp -d)
-            trap 'rm -rf "$copy"' EXIT
-            rsync -a "''${keep[@]}" ./ "$copy/"
-            if [ -e .git ]; then
-              ln -s "$here/.git" "$copy/.git"
+        style =
+          commandHelpers
+          + preflight
+          + ''
+            if [ "''${1:-}" = "--check" ]; then
+              keep=(--exclude=/.git --exclude=.direnv --exclude=.venv --exclude=.bundle --exclude=node_modules --exclude=target --exclude=result --exclude=build --exclude=dist --exclude=.build --exclude=_build --exclude=vendor --exclude=.terraform --exclude=.stack-work)
+              here=$PWD
+              copy=$(mktemp -d)
+              trap 'rm -rf "$copy"' EXIT
+              rsync -a "''${keep[@]}" ./ "$copy/"
+              # Formatters may load project plugins. Link dependency directories,
+              # which remain excluded from the source comparison and formatting.
+              for dependency in .venv node_modules vendor .bundle; do
+                if [ -d "$here/$dependency" ]; then ln -s "$here/$dependency" "$copy/$dependency"; fi
+              done
+              if [ ! -e "$copy/node_modules" ] && [ -n "''${DVT_PROJECT_ROOT:-}" ]; then
+                if directory=$(cd "$DVT_PROJECT_ROOT" && ${
+                  toolPkgs.python3.withPackages (ps: [ ps.pyyaml ])
+                }/bin/python3 -I -B ${./frameworks/version_guard.py} --node-modules 2>/dev/null); then
+                  ln -s "$directory" "$copy/node_modules"
+                fi
+              fi
+              if [ -e .git ]; then
+                ln -s "$here/.git" "$copy/.git"
+              fi
+              cd "$copy"
             fi
-            cd "$copy"
-          fi
 
-          ${parts "fmt"}
-          ${text "fmt" [ common ]}
-          checked style
-          if [ "''${1:-}" = "--check" ]; then
-            cd "$here"
-            changed=$(rsync -rcn --existing "''${keep[@]}" --out-format='%n' "$copy/" ./ | grep -v '/$' || true)
-            if [ -n "$changed" ]; then
-              echo "style would change:"
-              while IFS= read -r file; do
-                echo "  $file"
-              done <<< "$changed"
-              status=1
+            ${parts "style"}
+            ${text "style" [ common ]}
+            checked style
+            if [ "''${1:-}" = "--check" ]; then
+              cd "$here"
+              changed=$(rsync -rcn --delete "''${keep[@]}" --out-format='%n' "$copy/" ./ | grep -v '/$' || true)
+              if [ -n "$changed" ]; then
+                echo "style would change:"
+                while IFS= read -r file; do
+                  echo "  $file"
+                done <<< "$changed"
+                status=1
+              fi
             fi
-          fi
-          exit "$status"
-        '';
+            exit "$status"
+          '';
 
         # trivy reports and exits 0 unless told otherwise, so every trivy line
         # says --exit-code 1: a scanner that cannot fail is no check.
@@ -193,71 +318,84 @@ let
               exec /usr/bin/security "$@"
             fi
           ''
-          + helpers
+          + commandHelpers
+          + preflight
           + ''
-            ${parts "scan"}
+            ${parts "security"}
             ${lib.optionalString (wants "semgrep") "run semgrep scan --config auto --error --quiet ."}
             ${lib.optionalString (wants "trivy") "run trivy fs --scanners vuln,secret --no-progress --exit-code 1 --skip-dirs .direnv --skip-dirs .venv ."}
-            ${common.scan}
+            ${common.security or ""}
             checked security
             exit "$status"
           '';
 
-        # `architecture` is the rules of architecture.toml, then each language's
-        # own architecture tools where the project has their config. Its other
-        # modes, and machine-readable output, are the rules program alone.
-        architecture = helpers + ''
-          for argument in "$@"; do
-            case "$argument" in
-              --accept | --prune | --explain | --languages | --version | --help | -h | json | --format=json)
-                exec ${rules} "$@"
-                ;;
-            esac
-          done
+        # Existing architecture tools are independent of the optional built-in
+        # rules file. Explicit rule-engine modes still target that engine.
+        architecture =
+          commandHelpers
+          + preflight
+          + ''
+            for argument in "$@"; do
+              case "$argument" in
+                --accept | --prune | --explain | --languages | --version | --help | -h | json | --format=json)
+                  exec ${rules} "$@"
+                  ;;
+              esac
+            done
 
-          echo ":: architecture''${*:+ $*}"
-          rules=0
-          ${rules} "$@" || rules=1
-          ${blocks (module: module.layers or [ ])}
-          if [ "$status" -ne 0 ]; then
-            echo "architecture: FAIL: an architecture tool above did not pass"
-          fi
-          if [ "$rules" -ne 0 ]; then
-            status=1
-          fi
-          exit "$status"
-        '';
+            echo ":: architecture''${*:+ $*}"
+            if [ -f architecture.toml ] || [ "$#" -gt 0 ]; then
+              run ${rules} "$@"
+            fi
+            ${blocks (module: module.architecture or [ ])}
+            if [ "$status" -ne 0 ]; then
+              echo "architecture: FAIL: an architecture tool above did not pass"
+            fi
+            if [ "$ran" -eq 0 ]; then
+              echo "architecture: no configured architecture check was found" >&2
+              exit 2
+            fi
+            exit "$status"
+          '';
 
         # `tests` runs the project's tests. The other modes are there when one
         # of the project's languages has a tool for them.
-        tests = helpers + ''
-          mode="''${1:-run}"
-          mode="''${mode#--}"
-          case "$mode" in
-          ${lib.concatMapStrings (mode: ''
-            ${mode})
-              echo ":: tests: ${mode}"
-            ${testBlocks mode}
-              checked ${lib.escapeShellArg (if mode == "run" then "tests" else "tests --${mode}")}
-              ;;
-          '') modes}
-            help | h)
-              echo "usage: ${usage}"
-              exit 0
-              ;;
-            *)
-              echo "tests: there is no '$mode' here. usage: ${usage}" >&2
-              exit 2
-              ;;
-          esac
-          exit "$status"
-        '';
+        tests =
+          commandHelpers
+          + preflight
+          + ''
+            mode="''${1:-run}"
+            mode="''${mode#--}"
+            case "$mode" in
+            ${lib.concatMapStrings (mode: ''
+              ${mode})
+                echo ":: tests: ${mode}"
+              ${testBlocks mode}
+                checked ${lib.escapeShellArg (if mode == "run" then "tests" else "tests --${mode}")}
+                ;;
+            '') modes}
+              help | h)
+                echo "usage: ${usage}"
+                exit 0
+                ;;
+              *)
+                echo "tests: there is no '$mode' here. usage: ${usage}" >&2
+                exit 2
+                ;;
+            esac
+            exit "$status"
+          '';
       };
 
       mkScript =
         name: text:
         pkgs.writeShellApplication {
-          inherit name text;
+          inherit name;
+          text =
+            lib.concatStrings (
+              lib.mapAttrsToList (key: value: "export ${key}=${lib.escapeShellArg (toString value)}\n") env
+            )
+            + text;
           runtimeInputs = tools ++ [
             pkgs.git
             pkgs.rsync
@@ -276,6 +414,28 @@ let
       mkShell =
         if lib.any (module: module.needsCC or false) modules then pkgs.mkShell else pkgs.mkShellNoCC;
     in
+    assert lib.assertMsg (lib.all
+      (
+        language:
+        lib.all
+          (
+            command:
+            builtins.length (
+              lib.filter (
+                module: lib.elem command ((module.replace or { }).${nameOf language} or [ ])
+              ) frameworkModules
+            ) <= 1
+          )
+          [
+            "quality"
+            "style"
+            "security"
+            "architecture"
+            "tests"
+          ]
+      )
+      selectedLanguages
+    ) "Framework profiles replace the same language command; use a custom combined profile instead.";
     {
       # `quality`, `style`, `security`, `architecture` and `tests`, each a package.
       inherit commands;
@@ -299,9 +459,9 @@ let
       );
 
       # What can be checked inside the Nix sandbox, without a network.
-      checks = lib.optionalAttrs (src != null) {
-        # Naming the file makes a missing architecture.toml a failure. A flake
-        # only sees files git knows about, so a new one must be `git add`ed.
+      checks = lib.optionalAttrs (src != null && builtins.pathExists (src + "/architecture.toml")) {
+        # Only the optional source rules can run without project dependencies
+        # in the Nix sandbox. Configured project tools run through architecture.
         architecture = pkgs.runCommand "architecture-check" { } ''
           ${rules} --check --root ${src} --config ${src}/architecture.toml
           touch $out
@@ -398,10 +558,10 @@ let
           name = tool.pname or (builtins.parseDrvName tool.name).name;
           description = tool.meta.description or "";
         }) (loaded.tools or [ ]);
-        lint = loaded.lint or "";
-        fmt = loaded.fmt or "";
-        scan = loaded.scan or "";
-        layers = loaded.layers or [ ];
+        quality = loaded.quality or "";
+        style = loaded.style or "";
+        security = loaded.security or "";
+        architecture = loaded.architecture or [ ];
         tests = loaded.tests or { };
         semgrep = loaded.semgrep or false;
         trivy = loaded.trivy or false;
@@ -410,8 +570,10 @@ let
     ) self.languages;
 
   self = {
+    mkWorkspace = import ./workspace.nix { inherit lib mkProject; };
     inherit
       languages
+      frameworks
       architecture
       mkProject
       catalogue

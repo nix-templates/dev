@@ -15,7 +15,7 @@
   semgrep = true;
   trivy = true;
 
-  fmt = ''
+  style = ''
     run typos --write-changes .
   '';
 

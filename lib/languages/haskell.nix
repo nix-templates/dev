@@ -27,17 +27,17 @@
   semgrep = true;
   trivy = true;
 
-  lint = ''
+  quality = ''
     when_any '*.hs' hlint .
     run_on '*.hs' ormolu --mode check
   '';
 
-  fmt = ''
+  style = ''
     run_on '*.hs' ormolu --mode inplace
     run_on '*.cabal' cabal-fmt --inplace
   '';
 
-  layers = [
+  architecture = [
     ''
       when weeder.toml weeder
     ''
