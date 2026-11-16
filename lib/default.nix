@@ -268,6 +268,9 @@ let
           + ''
             if [ "''${1:-}" = "--check" ]; then
               keep=(--exclude=/.git --exclude=.direnv --exclude=.venv --exclude=.bundle --exclude=node_modules --exclude=target --exclude=result --exclude=build --exclude=dist --exclude=.build --exclude=_build --exclude=vendor --exclude=.terraform --exclude=.stack-work)
+              # Tool caches are outputs, not source formatting. Ruff keys its
+              # cache by absolute path, so formatting a copy creates new entries.
+              keep+=(--exclude=.ruff_cache --exclude=.mypy_cache --exclude=.pytest_cache --exclude=__pycache__ --exclude=.eslintcache --exclude=.prettiercache --exclude=.stylelintcache --exclude=.rubocop_cache --exclude=.php-cs-fixer.cache)
               here=$PWD
               copy=$(mktemp -d)
               trap 'rm -rf "$copy"' EXIT

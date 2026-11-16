@@ -132,6 +132,8 @@ in
 {
   framework-python-adapters = import ./tests/python-adapters.nix { inherit pkgs lib dev; };
 
+  style-check-regressions = import ./tests/style-checks.nix { inherit pkgs dev; };
+
   workspace-checks = import ./tests/workspace-checks.nix { inherit pkgs lib dev; };
 
   configured-project-checks = import ./tests/configured-checks.nix { inherit pkgs lib dev; };
