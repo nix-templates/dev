@@ -25,10 +25,17 @@
         );
     in
     {
-      # The shell used to work *on* this repository, not the one templates give you.
+      # Named shells provide language environments; default maintains this repository.
       devShells = forEachSupportedSystem (
         { pkgs, system }:
-        {
+        (lib.mapAttrs (
+          name: _:
+          (self.lib.mkProject {
+            inherit pkgs;
+            languages = [ name ];
+          }).devShell
+        ) self.lib.languages)
+        // {
           default =
             let
               forEachTemplate = exec: ''
